@@ -14,7 +14,7 @@
     --input-bg: rgba(15, 18, 40, 0.55); --input-border: rgba(255, 255, 255, 0.15);
     --row-bg: rgba(255,255,255,0.04); --row-border: rgba(255,255,255,0.08);
     --accent1: #6d5bff; --accent2: #4f7bff;
-    --error: #ff6b7d; --ok: #4ade80;
+    --error: #ff6b7d; --ok: #4ade80; --warn: #fbbf24;
   }
   [data-theme="light"] {
     --bg1: #dfe6fb; --bg2: #eef1ff; --bg3: #ffffff;
@@ -22,6 +22,7 @@
     --text: #1b1f3a; --text-dim: #5a6088;
     --input-bg: rgba(255, 255, 255, 0.6); --input-border: rgba(90, 96, 136, 0.25);
     --row-bg: rgba(90,96,136,0.06); --row-border: rgba(90,96,136,0.15);
+    --warn: #b45309;
   }
   html, body { height: 100%; margin: 0; }
   body {
@@ -52,18 +53,24 @@
     padding: 28px; border-radius: 20px; width: 100%; max-width: 460px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.35);
   }
+  .box + .box { margin-top: 20px; }
   h1 { font-size: 19px; margin: 0 0 20px; text-align: center; }
   .search-box { display: flex; gap: 8px; margin-bottom: 16px; }
-  input {
+  input, textarea {
     width: 100%; padding: 11px 14px; border-radius: 12px;
     border: 1px solid var(--input-border); background: var(--input-bg);
-    color: var(--text); font-size: 14px; outline: none;
+    color: var(--text); font-size: 14px; outline: none; font-family: inherit;
   }
-  input:focus { border-color: var(--accent1); }
+  input:focus, textarea:focus { border-color: var(--accent1); }
+  textarea { direction: ltr; text-align: left; min-height: 160px; resize: vertical; line-height: 1.6; }
   button {
     padding: 11px 18px; border: none; border-radius: 12px;
     background: linear-gradient(135deg, var(--accent1), var(--accent2));
     color: #fff; font-weight: bold; font-size: 14px; cursor: pointer; white-space: nowrap;
+  }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  button.secondary {
+    background: var(--row-bg); border: 1px solid var(--row-border); color: var(--text);
   }
   #userList {
     max-height: 280px;
@@ -93,6 +100,7 @@
   #msg { text-align: center; color: var(--text-dim); font-size: 13px; min-height: 18px; margin-top: 4px; }
   .error { color: var(--error); }
   .ok { color: var(--ok); }
+  .warn { color: var(--warn); }
   .history { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
   .history .row {
     display: flex; justify-content: space-between; align-items: center;
@@ -105,6 +113,23 @@
     font-size: 15px; line-height: 1; color: var(--error); box-shadow: none;
   }
   .hint { font-size: 11px; color: var(--text-dim); margin-bottom: 10px; }
+
+  /* ثبت دسته‌ای */
+  .bulk-date-label { font-size: 13px; margin-bottom: 6px; display: block; }
+  .bulk-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .bulk-actions button { flex: 1; }
+  #bulkPreview { margin-top: 14px; display: none; }
+  #bulkPreview.show { display: block; }
+  .bulk-summary {
+    background: var(--row-bg); border: 1px solid var(--row-border);
+    border-radius: 12px; padding: 12px 14px; font-size: 13px; line-height: 1.9;
+  }
+  .bulk-summary .big { font-weight: bold; }
+  .bulk-list {
+    margin-top: 8px; max-height: 120px; overflow-y: auto; direction: ltr; text-align: left;
+    font-size: 12px; color: var(--text-dim); line-height: 1.7; word-break: break-all;
+  }
+  #bulkMsg { text-align: center; font-size: 13px; min-height: 18px; margin-top: 10px; color: var(--text-dim); }
 </style>
 </head>
 <body>
@@ -114,6 +139,31 @@
     <span>🌙</span>
   </div>
 
+  <!-- ثبت دسته‌ای از اکسل -->
+  <div class="box">
+    <h1>ثبت دسته‌ای از اکسل</h1>
+
+    <label class="bulk-date-label" for="bulkDate">تاریخی که آمار برایش ثبت می‌شود</label>
+    <input id="bulkDate" type="text" placeholder="مثلاً 1405/06/28" dir="ltr" style="text-align:right; margin-bottom:12px" />
+
+    <label class="bulk-date-label" for="bulkText">لیست از اکسل (هر خط: نام کاربری و تعداد)</label>
+    <textarea id="bulkText" placeholder="a.alavi 323.9&#10;a.barghi 750.2&#10;a.biabani 837.3"></textarea>
+
+    <div class="bulk-actions">
+      <button id="bulkCheckBtn">بررسی لیست</button>
+    </div>
+
+    <div id="bulkPreview">
+      <div class="bulk-summary" id="bulkSummary"></div>
+      <div class="bulk-actions">
+        <button id="bulkSaveBtn">ثبت نهایی</button>
+        <button id="bulkCancelBtn" class="secondary">لغو</button>
+      </div>
+    </div>
+    <div id="bulkMsg"></div>
+  </div>
+
+  <!-- ثبت تکی -->
   <div class="box">
     <h1>پنل مدیریت سفارش‌ها</h1>
 
@@ -129,7 +179,7 @@
       <div class="hint">تاریخ رو به فرمت 1405/06/28 وارد کنید</div>
       <div class="form-row">
         <input id="dateInput" type="text" placeholder="تاریخ (مثلاً 1405/06/28)" />
-        <input id="countInput" type="number" placeholder="تعداد" style="max-width:90px" />
+        <input id="countInput" type="number" step="any" placeholder="تعداد" style="max-width:90px" />
       </div>
       <button id="saveBtn" style="width:100%">ثبت</button>
       <div id="msg"></div>
@@ -152,6 +202,211 @@
     else { root.setAttribute("data-theme", "light"); localStorage.setItem("site_theme", "light"); }
   });
 
+  // تبدیل ارقام فارسی/عربی به انگلیسی
+  function normalizeDigits(s) {
+    return String(s)
+      .replace(/[۰-۹]/g, d => String(d.charCodeAt(0) - 0x06F0))
+      .replace(/[٠-٩]/g, d => String(d.charCodeAt(0) - 0x0660))
+      .replace(/٫/g, ".");
+  }
+
+  /* =========================================================
+     ثبت دسته‌ای از اکسل
+     ========================================================= */
+  const bulkDateEl = document.getElementById("bulkDate");
+  const bulkTextEl = document.getElementById("bulkText");
+  const bulkCheckBtn = document.getElementById("bulkCheckBtn");
+  const bulkSaveBtn = document.getElementById("bulkSaveBtn");
+  const bulkCancelBtn = document.getElementById("bulkCancelBtn");
+  const bulkPreviewEl = document.getElementById("bulkPreview");
+  const bulkSummaryEl = document.getElementById("bulkSummary");
+  const bulkMsgEl = document.getElementById("bulkMsg");
+
+  let pendingRows = [];   // ردیف‌هایی که آماده ثبت‌اند
+  let pendingDate = "";
+
+  function setBulkMsg(text, cls) {
+    bulkMsgEl.textContent = text;
+    bulkMsgEl.className = cls || "";
+  }
+
+  // گرفتن همه‌ی نام‌کاربری‌ها (صفحه‌به‌صفحه، چون سوپابیس در هر درخواست حداکثر ۱۰۰۰ ردیف می‌دهد)
+  async function fetchAllUsernames() {
+    const all = [];
+    const pageSize = 1000;
+    let from = 0;
+    while (true) {
+      const { data, error } = await supabaseClient
+        .from("profiles")
+        .select("username")
+        .range(from, from + pageSize - 1);
+      if (error) throw error;
+      all.push(...data.map(r => r.username));
+      if (data.length < pageSize) break;
+      from += pageSize;
+    }
+    return all;
+  }
+
+  function addListBlock(parent, title, items, cls) {
+    const t = document.createElement("div");
+    t.className = cls;
+    t.textContent = title;
+    parent.appendChild(t);
+    const list = document.createElement("div");
+    list.className = "bulk-list";
+    list.textContent = items.join("  |  ");
+    parent.appendChild(list);
+  }
+
+  bulkCheckBtn.addEventListener("click", async () => {
+    setBulkMsg("");
+    bulkPreviewEl.classList.remove("show");
+    pendingRows = [];
+
+    const date = normalizeDigits(bulkDateEl.value.trim());
+    if (!/^\d{4}\/\d{2}\/\d{2}$/.test(date)) {
+      setBulkMsg("تاریخ رو به فرمت 1405/06/28 وارد کنید", "error");
+      return;
+    }
+    const raw = normalizeDigits(bulkTextEl.value);
+    if (!raw.trim()) {
+      setBulkMsg("لیست خالیه؛ داده‌ی اکسل رو پیست کنید", "error");
+      return;
+    }
+
+    bulkCheckBtn.disabled = true;
+    setBulkMsg("در حال بررسی کاربران...");
+
+    let usernames;
+    try {
+      usernames = await fetchAllUsernames();
+    } catch (e) {
+      setBulkMsg("خواندن لیست کاربران ناموفق بود: " + (e.message || e), "error");
+      bulkCheckBtn.disabled = false;
+      return;
+    }
+    bulkCheckBtn.disabled = false;
+
+    // نام کاربری با حروف کوچک -> نام دقیق در دیتابیس
+    const userMap = new Map(usernames.map(u => [String(u).toLowerCase(), u]));
+
+    const matched = new Map();   // username -> count (آخرین مقدار برای تکراری‌ها)
+    const notFound = [];
+    const invalid = [];
+    let duplicates = 0;
+
+    raw.split(/\r?\n/).forEach(line => {
+      const trimmed = line.trim();
+      if (!trimmed) return;
+      const parts = trimmed.split(/\s+/);
+      const name = parts[0];
+      const numStr = parts[parts.length - 1];
+
+      if (parts.length < 2 || !/^-?\d+(\.\d+)?$/.test(numStr)) {
+        invalid.push(trimmed);
+        return;
+      }
+      const real = userMap.get(name.toLowerCase());
+      if (!real) {
+        notFound.push(name);
+        return;
+      }
+      if (matched.has(real)) duplicates++;
+      matched.set(real, parseFloat(numStr));
+    });
+
+    pendingRows = [...matched.entries()].map(([username, count]) => ({
+      username, order_date: date, order_count: count
+    }));
+    pendingDate = date;
+
+    // ساخت پیش‌نمایش
+    bulkSummaryEl.innerHTML = "";
+    const l1 = document.createElement("div");
+    l1.innerHTML = 'تاریخ ثبت: <span class="big"></span>';
+    l1.querySelector(".big").textContent = date;
+    bulkSummaryEl.appendChild(l1);
+
+    const l2 = document.createElement("div");
+    l2.className = "ok";
+    l2.textContent = "✔ آماده ثبت: " + pendingRows.length + " نفر";
+    bulkSummaryEl.appendChild(l2);
+
+    if (notFound.length) {
+      addListBlock(bulkSummaryEl, "✖ در سایت نیستن (ثبت نمی‌شن): " + notFound.length + " نفر", notFound, "warn");
+    }
+    if (invalid.length) {
+      addListBlock(bulkSummaryEl, "⚠ خط نامعتبر (نادیده گرفته شد): " + invalid.length, invalid, "error");
+    }
+    if (duplicates) {
+      const d = document.createElement("div");
+      d.className = "warn";
+      d.textContent = "⚠ " + duplicates + " نام تکراری بود؛ آخرین مقدار ثبت می‌شه";
+      bulkSummaryEl.appendChild(d);
+    }
+
+    bulkSaveBtn.disabled = pendingRows.length === 0;
+    bulkPreviewEl.classList.add("show");
+    if (pendingRows.length === 0) setBulkMsg("هیچ کاربر معتبری پیدا نشد", "error");
+  });
+
+  bulkCancelBtn.addEventListener("click", () => {
+    pendingRows = [];
+    bulkPreviewEl.classList.remove("show");
+    setBulkMsg("");
+  });
+
+  bulkSaveBtn.addEventListener("click", async () => {
+    if (!pendingRows.length) return;
+
+    const sure = confirm(
+      "آمار " + pendingRows.length + " نفر برای تاریخ " + pendingDate + " ثبت بشه؟\n" +
+      "اگه برای کسی قبلاً همین تاریخ ثبت شده باشه، مقدارش جایگزین می‌شه."
+    );
+    if (!sure) return;
+
+    bulkSaveBtn.disabled = true;
+    bulkCancelBtn.disabled = true;
+    bulkCheckBtn.disabled = true;
+
+    const batchSize = 200;
+    let done = 0;
+    for (let i = 0; i < pendingRows.length; i += batchSize) {
+      const batch = pendingRows.slice(i, i + batchSize);
+      setBulkMsg("در حال ذخیره... " + done + " از " + pendingRows.length);
+
+      const { error } = await supabaseClient
+        .from("orders")
+        .upsert(batch, { onConflict: "username,order_date" });
+
+      if (error) {
+        setBulkMsg(
+          "ثبت متوقف شد (" + done + " نفر ثبت شده بود): " + (error.message || "خطای نامشخص"),
+          "error"
+        );
+        bulkSaveBtn.disabled = false;
+        bulkCancelBtn.disabled = false;
+        bulkCheckBtn.disabled = false;
+        return;
+      }
+      done += batch.length;
+    }
+
+    setBulkMsg("✔ آمار " + done + " نفر برای تاریخ " + pendingDate + " ثبت شد", "ok");
+    pendingRows = [];
+    bulkPreviewEl.classList.remove("show");
+    bulkTextEl.value = "";
+    bulkCancelBtn.disabled = false;
+    bulkCheckBtn.disabled = false;
+
+    // اگه کاربری در پنل پایین انتخاب شده بود، تاریخچه‌اش رو تازه کن
+    if (selectedUsername) loadHistory(selectedUsername);
+  });
+
+  /* =========================================================
+     ثبت تکی (مثل قبل)
+     ========================================================= */
   const userListEl = document.getElementById("userList");
   const panelEl = document.getElementById("panel");
   const msgEl = document.getElementById("msg");
@@ -241,8 +496,8 @@
 
   document.getElementById("saveBtn").addEventListener("click", async () => {
     if (!selectedUsername) return;
-    const date = document.getElementById("dateInput").value.trim();
-    const count = parseInt(document.getElementById("countInput").value, 10);
+    const date = normalizeDigits(document.getElementById("dateInput").value.trim());
+    const count = parseFloat(normalizeDigits(document.getElementById("countInput").value));
 
     if (!date || isNaN(count)) {
       msgEl.textContent = "تاریخ و تعداد رو کامل وارد کنید";
