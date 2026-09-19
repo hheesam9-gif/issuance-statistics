@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>حساب کاربری</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: Tahoma, Arial, sans-serif;
+    background: #0f172a;
+    color: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+  }
+  .box {
+    background: #1e293b;
+    padding: 32px;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 360px;
+    text-align: center;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  h1 { font-size: 20px; margin-bottom: 8px; }
+  .username { color: #94a3b8; margin-bottom: 24px; }
+  .count {
+    font-size: 48px;
+    font-weight: bold;
+    color: #22c55e;
+    margin-bottom: 24px;
+  }
+  .label { color: #94a3b8; font-size: 14px; margin-top: -18px; margin-bottom: 24px;}
+  button {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    background: #334155;
+    color: #f1f5f9;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+  <div class="box">
+    <h1>خوش اومدید</h1>
+    <div class="username" id="usernameDisplay">...</div>
+    <div class="count" id="orderCount">-</div>
+    <div class="label">تعداد سفارش‌های شما</div>
+    <button id="logoutBtn">خروج</button>
+  </div>
+
+<script>
+  const SUPABASE_URL = "https://jmbpskxloffcrbxiqcdy.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptYnBza3hsb2ZmY3JieGlxY2R5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MjU3MDgsImV4cCI6MjEwNTQwMTcwOH0.ZFHwX9hg7FxyjcEV4oJRpA2Rgoh0UqL2Xj7D3IO3YMU";
+
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  async function init() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) {
+      window.location.href = "index.html";
+      return;
+    }
+
+    const username = localStorage.getItem("current_username");
+    document.getElementById("usernameDisplay").textContent = username || "";
+
+    const { data, error } = await supabaseClient
+      .from("profiles")
+      .select("order_count")
+      .eq("username", username)
+      .single();
+
+    if (!error && data) {
+      document.getElementById("orderCount").textContent = data.order_count;
+    } else {
+      document.getElementById("orderCount").textContent = "0";
+    }
+  }
+
+  document.getElementById("logoutBtn").addEventListener("click", async () => {
+    await supabaseClient.auth.signOut();
+    localStorage.removeItem("current_username");
+    window.location.href = "index.html";
+  });
+
+  init();
+</script>
+</body>
+</html>

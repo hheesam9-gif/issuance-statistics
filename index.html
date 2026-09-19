@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ورود به سایت</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: Tahoma, Arial, sans-serif;
+    background: #0f172a;
+    color: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+  }
+  .box {
+    background: #1e293b;
+    padding: 32px;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 360px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  h1 { font-size: 20px; margin-bottom: 20px; text-align: center; }
+  label { display: block; margin-bottom: 6px; font-size: 14px; color: #94a3b8; }
+  input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 16px;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    background: #0f172a;
+    color: #f1f5f9;
+    font-size: 15px;
+  }
+  button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    background: #22c55e;
+    color: #052e16;
+    font-weight: bold;
+    font-size: 15px;
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.6; cursor: not-allowed; }
+  #msg { margin-top: 14px; text-align: center; font-size: 14px; min-height: 18px; }
+  .error { color: #f87171; }
+  .ok { color: #4ade80; }
+</style>
+</head>
+<body>
+  <div class="box">
+    <h1>ورود به حساب کاربری</h1>
+    <label for="username">نام کاربری</label>
+    <input id="username" type="text" placeholder="نام کاربری خودتون رو بزنید" />
+    <label for="password">رمز عبور</label>
+    <input id="password" type="password" placeholder="رمز عبور" />
+    <button id="loginBtn">ورود</button>
+    <div id="msg"></div>
+  </div>
+
+<script>
+  // این دو مقدار مخصوص پروژه شماست
+  const SUPABASE_URL = "https://jmbpskxloffcrbxiqcdy.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptYnBza3hsb2ZmY3JieGlxY2R5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MjU3MDgsImV4cCI6MjEwNTQwMTcwOH0.ZFHwX9hg7FxyjcEV4oJRpA2Rgoh0UqL2Xj7D3IO3YMU";
+
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const loginBtn = document.getElementById("loginBtn");
+  const msg = document.getElementById("msg");
+
+  loginBtn.addEventListener("click", async () => {
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value;
+
+    if (!username || !password) {
+      msg.textContent = "لطفاً نام کاربری و رمز عبور رو وارد کنید";
+      msg.className = "error";
+      return;
+    }
+
+    loginBtn.disabled = true;
+    msg.textContent = "در حال بررسی...";
+    msg.className = "";
+
+    // یوزرنیم رو به همون ایمیل ساختگی که توی Supabase ساختیم تبدیل می‌کنیم
+    const fakeEmail = username + "@yourapp.local";
+
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+      email: fakeEmail,
+      password: password
+    });
+
+    if (error) {
+      msg.textContent = "نام کاربری یا رمز عبور اشتباهه";
+      msg.className = "error";
+      loginBtn.disabled = false;
+      return;
+    }
+
+    // ورود موفق -> ذخیره یوزرنیم و رفتن به صفحه داشبورد
+    localStorage.setItem("current_username", username);
+    msg.textContent = "ورود موفق! در حال انتقال...";
+    msg.className = "ok";
+    window.location.href = "dashboard.html";
+  });
+
+  // اگه با Enter زدن هم بخوان وارد بشن
+  document.getElementById("password").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") loginBtn.click();
+  });
+</script>
+</body>
+</html>

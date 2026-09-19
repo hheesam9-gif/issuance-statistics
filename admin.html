@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>پنل مدیریت</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: Tahoma, Arial, sans-serif;
+    background: #0f172a;
+    color: #f1f5f9;
+    min-height: 100vh;
+    margin: 0;
+    padding: 32px 16px;
+  }
+  .wrap { max-width: 480px; margin: 0 auto; }
+  h1 { font-size: 20px; margin-bottom: 24px; text-align: center; }
+  .search-box {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  input {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    background: #1e293b;
+    color: #f1f5f9;
+    font-size: 15px;
+  }
+  button {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    background: #22c55e;
+    color: #052e16;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .card {
+    background: #1e293b;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .card .name { font-weight: bold; }
+  .counter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .counter button {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    font-size: 18px;
+    background: #334155;
+    color: #f1f5f9;
+  }
+  .counter .val { min-width: 24px; text-align: center; font-size: 17px; }
+  #msg { text-align: center; color: #94a3b8; margin-top: 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>پنل مدیریت سفارش‌ها</h1>
+  <div class="search-box">
+    <input id="searchInput" type="text" placeholder="نام کاربری رو تایپ کنید..." />
+    <button id="searchBtn">جستجو</button>
+  </div>
+  <div id="results"></div>
+  <div id="msg"></div>
+</div>
+
+<script>
+  const SUPABASE_URL = "https://jmbpskxloffcrbxiqcdy.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptYnBza3hsb2ZmY3JieGlxY2R5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MjU3MDgsImV4cCI6MjEwNTQwMTcwOH0.ZFHwX9hg7FxyjcEV4oJRpA2Rgoh0UqL2Xj7D3IO3YMU";
+
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const resultsEl = document.getElementById("results");
+  const msgEl = document.getElementById("msg");
+
+  async function search() {
+    const term = document.getElementById("searchInput").value.trim();
+    resultsEl.innerHTML = "";
+    msgEl.textContent = "در حال جستجو...";
+
+    let query = supabaseClient.from("profiles").select("username, order_count");
+    if (term) {
+      query = query.ilike("username", "%" + term + "%");
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      msgEl.textContent = "خطا در جستجو";
+      return;
+    }
+    if (!data || data.length === 0) {
+      msgEl.textContent = "کاربری پیدا نشد";
+      return;
+    }
+    msgEl.textContent = "";
+    data.forEach(renderCard);
+  }
+
+  function renderCard(user) {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <div class="name">${user.username}</div>
+      <div class="counter">
+        <button class="minus">-</button>
+        <div class="val">${user.order_count}</div>
+        <button class="plus">+</button>
+      </div>
+    `;
+    const valEl = card.querySelector(".val");
+
+    card.querySelector(".plus").addEventListener("click", () => updateCount(user.username, 1, valEl));
+    card.querySelector(".minus").addEventListener("click", () => updateCount(user.username, -1, valEl));
+
+    resultsEl.appendChild(card);
+  }
+
+  async function updateCount(username, delta, valEl) {
+    const current = parseInt(valEl.textContent, 10) || 0;
+    const next = Math.max(0, current + delta);
+    valEl.textContent = next;
+
+    const { error } = await supabaseClient
+      .from("profiles")
+      .update({ order_count: next })
+      .eq("username", username);
+
+    if (error) {
+      msgEl.textContent = "ذخیره نشد، دوباره امتحان کنید";
+    }
+  }
+
+  document.getElementById("searchBtn").addEventListener("click", search);
+  document.getElementById("searchInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") search();
+  });
+
+  // اول یه لیست خالی از کل کاربرا نشون بده
+  search();
+</script>
+</body>
+</html>
