@@ -4,54 +4,97 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ورود به سایت</title>
+<script>
+  /* اعمال تم قبل از رسم صفحه تا موقع لود چشمک نزنه */
+  try { if (localStorage.getItem("site_theme") === "light") document.documentElement.setAttribute("data-theme", "light"); } catch (e) {}
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   * { box-sizing: border-box; }
   :root {
-    --bg1: #0b1020;
-    --bg2: #1a1f3a;
-    --bg3: #241a4a;
-    --card-bg: rgba(30, 35, 65, 0.55);
-    --card-border: rgba(255, 255, 255, 0.12);
+    --page-base: #0b0e1e;
+    --blob1: rgba(109, 91, 255, 0.45);
+    --blob2: rgba(79, 123, 255, 0.34);
+    --blob3: rgba(150, 90, 230, 0.26);
+    --dot: rgba(255, 255, 255, 0.09);
+    --grain-opacity: 0.09;
+    --grain-blend: overlay;
+    --card-bg: rgba(19, 23, 46, 0.92);
+    --card-border: rgba(255, 255, 255, 0.09);
+    --card-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
     --text: #eef1fb;
     --text-dim: #9aa3c7;
-    --input-bg: rgba(15, 18, 40, 0.55);
-    --input-border: rgba(255, 255, 255, 0.15);
+    --input-bg: rgba(8, 10, 26, 0.6);
+    --input-border: rgba(255, 255, 255, 0.13);
     --accent1: #6d5bff;
     --accent2: #4f7bff;
     --error: #ff6b7d;
     --ok: #4ade80;
   }
   [data-theme="light"] {
-    --bg1: #dfe6fb;
-    --bg2: #eef1ff;
-    --bg3: #ffffff;
-    --card-bg: rgba(255, 255, 255, 0.55);
-    --card-border: rgba(120, 120, 180, 0.25);
+    --page-base: #e9ecf7;
+    --blob1: rgba(140, 125, 255, 0.42);
+    --blob2: rgba(110, 150, 255, 0.36);
+    --blob3: rgba(190, 150, 255, 0.30);
+    --dot: rgba(60, 66, 120, 0.13);
+    --grain-opacity: 0.10;
+    --grain-blend: multiply;
+    --card-bg: rgba(255, 255, 255, 0.92);
+    --card-border: rgba(110, 115, 180, 0.20);
+    --card-shadow: 0 30px 70px rgba(70, 75, 140, 0.22);
     --text: #1b1f3a;
     --text-dim: #5a6088;
-    --input-bg: rgba(255, 255, 255, 0.6);
+    --input-bg: rgba(238, 241, 255, 0.85);
     --input-border: rgba(90, 96, 136, 0.25);
   }
-  html, body { height: 100%; margin: 0; }
+
+  html { margin: 0; min-height: 100%; background: var(--page-base); }
   body {
+    margin: 0;
     font-family: Tahoma, Arial, sans-serif;
-    background: radial-gradient(circle at 20% 20%, var(--bg3), var(--bg2) 45%, var(--bg1) 100%);
     color: var(--text);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    transition: background 0.4s ease, color 0.4s ease;
+    background: transparent;
+    min-height: 100vh; min-height: 100dvh;
+    padding: 24px 16px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
   }
+
+  /* ---------- پس‌زمینه ثابت و مات ---------- */
+  .bg {
+    position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
+    background: var(--page-base);
+  }
+  .blob {
+    position: absolute; border-radius: 50%; filter: blur(110px);
+    will-change: transform;
+  }
+  .b1 { width: 62vmax; height: 62vmax; top: -22vmax; right: -16vmax; background: var(--blob1); animation: drift1 34s ease-in-out infinite alternate; }
+  .b2 { width: 56vmax; height: 56vmax; bottom: -24vmax; left: -18vmax; background: var(--blob2); animation: drift2 41s ease-in-out infinite alternate; }
+  .b3 { width: 40vmax; height: 40vmax; top: 34%; left: 30%; background: var(--blob3); animation: drift3 47s ease-in-out infinite alternate; }
+  @keyframes drift1 { to { transform: translate3d(-9vmax, 11vmax, 0) scale(1.08); } }
+  @keyframes drift2 { to { transform: translate3d(12vmax, -8vmax, 0) scale(1.1); } }
+  @keyframes drift3 { to { transform: translate3d(-14vmax, -6vmax, 0) scale(0.9); } }
+
+  .dots {
+    position: absolute; inset: 0;
+    background-image: radial-gradient(var(--dot) 1.2px, transparent 1.3px);
+    background-size: 30px 30px;
+    -webkit-mask-image: radial-gradient(ellipse at center, #000 15%, transparent 72%);
+            mask-image: radial-gradient(ellipse at center, #000 15%, transparent 72%);
+  }
+  .grain {
+    position: absolute; inset: 0; opacity: var(--grain-opacity); mix-blend-mode: var(--grain-blend);
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+
+  /* ---------- سوییچ تم ---------- */
   .theme-toggle {
     display: flex; align-items: center; gap: 8px;
     background: var(--card-bg); border: 1px solid var(--card-border);
-    border-radius: 999px; padding: 6px 10px; margin-bottom: 24px;
-    backdrop-filter: blur(12px); cursor: pointer; user-select: none;
+    border-radius: 999px; padding: 6px 12px; margin-bottom: 22px;
+    cursor: pointer; user-select: none;
   }
-  .theme-toggle span { font-size: 16px; }
+  .theme-toggle span { font-size: 15px; }
   .switch {
     width: 40px; height: 20px; background: var(--input-bg);
     border-radius: 999px; position: relative; border: 1px solid var(--input-border);
@@ -61,69 +104,111 @@
     border-radius: 50%; background: linear-gradient(135deg, var(--accent1), var(--accent2));
     transition: transform 0.3s ease;
   }
-  [data-theme="light"] .switch .knob { transform: translateX(18px); }
+  [data-theme="light"] .switch .knob { transform: translateX(-20px); }
+
+  /* ---------- کارت ---------- */
   .box {
     background: var(--card-bg); border: 1px solid var(--card-border);
-    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
-    padding: 36px 32px; border-radius: 20px; width: 100%; max-width: 380px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
+    padding: 38px 32px 30px; border-radius: 22px; width: 100%; max-width: 390px;
+    box-shadow: var(--card-shadow);
     text-align: center;
   }
   .logo {
-    width: 52px; height: 52px; margin: 0 auto 14px; border-radius: 14px;
-    background: linear-gradient(135deg, var(--accent1), var(--accent2));
-    display: flex; align-items: center; justify-content: center; font-size: 24px;
-    box-shadow: 0 8px 24px rgba(109, 91, 255, 0.4);
+    width: 54px; height: 54px; margin: 0 auto 16px; border-radius: 16px;
+    background: linear-gradient(140deg, var(--accent1), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 10px 26px rgba(90, 100, 255, 0.35);
   }
-  h1 { font-size: 20px; margin: 0 0 4px; }
-  .subtitle { color: var(--text-dim); font-size: 13px; margin-bottom: 24px; }
+  .logo svg { width: 26px; height: 26px; stroke: #fff; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  .subtitle { color: var(--text-dim); font-size: 13px; margin-bottom: 26px; }
   label { display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-dim); text-align: right; }
   .input-wrap { position: relative; margin-bottom: 16px; }
   input {
-    width: 100%; padding: 12px 40px 12px 14px; border-radius: 12px;
+    width: 100%; padding: 13px 42px 13px 14px; border-radius: 12px;
     border: 1px solid var(--input-border); background: var(--input-bg);
-    color: var(--text); font-size: 15px; outline: none;
+    color: var(--text); font-size: 15px; outline: none; font-family: inherit;
+    direction: ltr; text-align: right;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
-  input:focus { border-color: var(--accent1); }
-  .icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--text-dim); font-size: 15px; }
-  button {
-    width: 100%; padding: 13px; border: none; border-radius: 12px;
+  input::placeholder { color: var(--text-dim); opacity: 0.75; }
+  input:focus { border-color: var(--accent1); box-shadow: 0 0 0 3px rgba(109, 91, 255, 0.22); }
+  #password { padding-left: 44px; }
+  .icon {
+    position: absolute; right: 13px; top: 50%; transform: translateY(-50%);
+    width: 18px; height: 18px; stroke: var(--text-dim); fill: none;
+    stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; pointer-events: none;
+  }
+  .eye {
+    position: absolute; left: 6px; top: 50%; transform: translateY(-50%);
+    width: 34px; height: 34px; padding: 0; border: none; border-radius: 9px;
+    background: transparent; cursor: pointer; box-shadow: none;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .eye svg { width: 18px; height: 18px; stroke: var(--text-dim); fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .eye:hover svg { stroke: var(--text); }
+  .eye:focus-visible { outline: 2px solid var(--accent1); }
+
+  #loginBtn {
+    width: 100%; padding: 14px; border: none; border-radius: 12px; margin-top: 4px;
     background: linear-gradient(135deg, var(--accent1), var(--accent2));
-    color: #fff; font-weight: bold; font-size: 15px; cursor: pointer;
-    box-shadow: 0 10px 24px rgba(79, 123, 255, 0.35);
+    color: #fff; font-weight: bold; font-size: 15px; cursor: pointer; font-family: inherit;
+    box-shadow: 0 10px 22px rgba(79, 123, 255, 0.28);
+    transition: transform 0.15s ease, filter 0.2s ease;
   }
-  button:disabled { opacity: 0.6; cursor: not-allowed; }
+  #loginBtn:hover { filter: brightness(1.06); }
+  #loginBtn:active { transform: scale(0.985); }
+  #loginBtn:focus-visible { outline: 2px solid var(--accent2); outline-offset: 3px; }
+  #loginBtn:disabled { opacity: 0.6; cursor: not-allowed; }
   #msg { margin-top: 14px; text-align: center; font-size: 13px; min-height: 18px; }
   .error { color: var(--error); }
   .ok { color: var(--ok); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .blob { animation: none; }
+    .switch .knob, input, #loginBtn { transition: none; }
+  }
 </style>
 </head>
 <body>
-  <div class="theme-toggle" id="themeToggle">
+  <div class="bg" aria-hidden="true">
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+    <div class="dots"></div>
+    <div class="grain"></div>
+  </div>
+
+  <div class="theme-toggle" id="themeToggle" role="button" tabindex="0" aria-label="تغییر تم">
     <span>☀️</span>
     <div class="switch"><div class="knob"></div></div>
     <span>🌙</span>
   </div>
 
   <div class="box">
-    <div class="logo">🔐</div>
+    <div class="logo">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="3"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+    </div>
     <h1>ورود به حساب کاربری</h1>
     <div class="subtitle">به پنل کاربری خود خوش آمدید</div>
 
     <label for="username">نام کاربری</label>
     <div class="input-wrap">
-      <input id="username" type="text" placeholder="نام کاربری" />
-      <span class="icon">👤</span>
+      <input id="username" type="text" placeholder="نام کاربری" autocomplete="username" autocapitalize="none" spellcheck="false" />
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
     </div>
 
     <label for="password">رمز عبور</label>
     <div class="input-wrap">
-      <input id="password" type="password" placeholder="رمز عبور" />
-      <span class="icon">🔒</span>
+      <input id="password" type="password" placeholder="رمز عبور" autocomplete="current-password" />
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="3"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+      <button type="button" class="eye" id="eyeBtn" aria-label="نمایش رمز عبور">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
     </div>
 
     <button id="loginBtn">ورود</button>
-    <div id="msg"></div>
+    <div id="msg" role="status" aria-live="polite"></div>
   </div>
 
 <script>
@@ -132,12 +217,11 @@
 
   const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+  /* ---------- تم ---------- */
   const root = document.documentElement;
   const themeToggle = document.getElementById("themeToggle");
-  const savedTheme = localStorage.getItem("site_theme") || "dark";
-  if (savedTheme === "light") root.setAttribute("data-theme", "light");
 
-  themeToggle.addEventListener("click", () => {
+  function toggleTheme() {
     const isLight = root.getAttribute("data-theme") === "light";
     if (isLight) {
       root.removeAttribute("data-theme");
@@ -146,8 +230,23 @@
       root.setAttribute("data-theme", "light");
       localStorage.setItem("site_theme", "light");
     }
+  }
+  themeToggle.addEventListener("click", toggleTheme);
+  themeToggle.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleTheme(); }
   });
 
+  /* ---------- نمایش/مخفی کردن رمز ---------- */
+  const passwordEl = document.getElementById("password");
+  const eyeBtn = document.getElementById("eyeBtn");
+  eyeBtn.addEventListener("click", () => {
+    const show = passwordEl.type === "password";
+    passwordEl.type = show ? "text" : "password";
+    eyeBtn.setAttribute("aria-label", show ? "مخفی کردن رمز عبور" : "نمایش رمز عبور");
+    eyeBtn.style.opacity = show ? "1" : "";
+  });
+
+  /* ---------- ورود (منطق قبلی بدون تغییر) ---------- */
   const loginBtn = document.getElementById("loginBtn");
   const msg = document.getElementById("msg");
 
@@ -185,8 +284,11 @@
     window.location.href = "dashboard.html";
   });
 
-  document.getElementById("password").addEventListener("keydown", (e) => {
+  passwordEl.addEventListener("keydown", (e) => {
     if (e.key === "Enter") loginBtn.click();
+  });
+  document.getElementById("username").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") passwordEl.focus();
   });
 </script>
 </body>
