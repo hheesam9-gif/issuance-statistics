@@ -7,81 +7,139 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   * { box-sizing: border-box; }
+  :root {
+    --bg1: #0b1020; --bg2: #1a1f3a; --bg3: #241a4a;
+    --card-bg: rgba(30, 35, 65, 0.55); --card-border: rgba(255, 255, 255, 0.12);
+    --text: #eef1fb; --text-dim: #9aa3c7;
+    --row-bg: rgba(255,255,255,0.04); --row-border: rgba(255,255,255,0.08);
+    --accent1: #6d5bff; --accent2: #4f7bff;
+  }
+  [data-theme="light"] {
+    --bg1: #dfe6fb; --bg2: #eef1ff; --bg3: #ffffff;
+    --card-bg: rgba(255, 255, 255, 0.55); --card-border: rgba(120, 120, 180, 0.25);
+    --text: #1b1f3a; --text-dim: #5a6088;
+    --row-bg: rgba(90,96,136,0.06); --row-border: rgba(90,96,136,0.15);
+  }
+  html, body { height: 100%; margin: 0; }
   body {
     font-family: Tahoma, Arial, sans-serif;
-    background: #0f172a;
-    color: #f1f5f9;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    margin: 0;
+    background: radial-gradient(circle at 20% 20%, var(--bg3), var(--bg2) 45%, var(--bg1) 100%);
+    color: var(--text);
+    display: flex; flex-direction: column; align-items: center;
+    min-height: 100vh; padding: 24px 16px;
+    transition: background 0.4s ease, color 0.4s ease;
   }
+  .theme-toggle {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    border-radius: 999px; padding: 6px 10px; margin-bottom: 20px;
+    backdrop-filter: blur(12px); cursor: pointer; user-select: none;
+  }
+  .switch { width: 40px; height: 20px; background: rgba(0,0,0,0.2); border-radius: 999px; position: relative; }
+  .switch .knob {
+    position: absolute; top: 1px; right: 1px; width: 16px; height: 16px;
+    border-radius: 50%; background: linear-gradient(135deg, var(--accent1), var(--accent2));
+    transition: transform 0.3s ease;
+  }
+  [data-theme="light"] .switch .knob { transform: translateX(18px); }
+
   .box {
-    background: #1e293b;
-    padding: 32px;
-    border-radius: 12px;
-    width: 100%;
-    max-width: 360px;
-    text-align: center;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    padding: 28px; border-radius: 20px; width: 100%; max-width: 420px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.35);
   }
-  h1 { font-size: 20px; margin-bottom: 8px; }
-  .username { color: #94a3b8; margin-bottom: 24px; }
-  .count {
-    font-size: 48px;
-    font-weight: bold;
-    color: #22c55e;
-    margin-bottom: 24px;
+  h1 { font-size: 19px; margin: 0 0 4px; text-align: center; }
+  .username { color: var(--text-dim); font-size: 13px; text-align: center; margin-bottom: 20px; }
+  .total {
+    text-align: center; margin-bottom: 20px; padding: 16px;
+    background: var(--row-bg); border-radius: 14px; border: 1px solid var(--row-border);
   }
-  .label { color: #94a3b8; font-size: 14px; margin-top: -18px; margin-bottom: 24px;}
-  button {
-    width: 100%;
-    padding: 10px;
-    border: none;
-    border-radius: 8px;
-    background: #334155;
-    color: #f1f5f9;
-    cursor: pointer;
+  .total .num { font-size: 34px; font-weight: bold; background: linear-gradient(135deg, var(--accent1), var(--accent2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .total .lbl { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+  .list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+  .row {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--row-bg); border: 1px solid var(--row-border);
+    border-radius: 10px; padding: 10px 14px; font-size: 14px;
+  }
+  .row .date { color: var(--text-dim); }
+  .row .count { font-weight: bold; }
+  .empty { text-align: center; color: var(--text-dim); font-size: 13px; padding: 20px 0; }
+  button.logout {
+    width: 100%; padding: 11px; border: none; border-radius: 10px;
+    background: var(--row-bg); border: 1px solid var(--row-border);
+    color: var(--text); cursor: pointer; font-size: 14px;
   }
 </style>
 </head>
 <body>
+  <div class="theme-toggle" id="themeToggle">
+    <span>☀️</span>
+    <div class="switch"><div class="knob"></div></div>
+    <span>🌙</span>
+  </div>
+
   <div class="box">
     <h1>خوش اومدید</h1>
     <div class="username" id="usernameDisplay">...</div>
-    <div class="count" id="orderCount">-</div>
-    <div class="label">تعداد سفارش‌های شما</div>
-    <button id="logoutBtn">خروج</button>
+
+    <div class="total">
+      <div class="num" id="totalCount">0</div>
+      <div class="lbl">مجموع سفارش‌ها</div>
+    </div>
+
+    <div class="list" id="list"></div>
+
+    <button class="logout" id="logoutBtn">خروج</button>
   </div>
 
 <script>
   const SUPABASE_URL = "https://jmbpskxloffcrbxiqcdy.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptYnBza3hsb2ZmY3JieGlxY2R5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MjU3MDgsImV4cCI6MjEwNTQwMTcwOH0.ZFHwX9hg7FxyjcEV4oJRpA2Rgoh0UqL2Xj7D3IO3YMU";
-
   const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const root = document.documentElement;
+  const themeToggle = document.getElementById("themeToggle");
+  const savedTheme = localStorage.getItem("site_theme") || "dark";
+  if (savedTheme === "light") root.setAttribute("data-theme", "light");
+  themeToggle.addEventListener("click", () => {
+    const isLight = root.getAttribute("data-theme") === "light";
+    if (isLight) { root.removeAttribute("data-theme"); localStorage.setItem("site_theme", "dark"); }
+    else { root.setAttribute("data-theme", "light"); localStorage.setItem("site_theme", "light"); }
+  });
 
   async function init() {
     const { data: { session } } = await supabaseClient.auth.getSession();
-    if (!session) {
-      window.location.href = "index.html";
-      return;
-    }
+    if (!session) { window.location.href = "index.html"; return; }
 
     const username = localStorage.getItem("current_username");
     document.getElementById("usernameDisplay").textContent = username || "";
 
     const { data, error } = await supabaseClient
-      .from("profiles")
-      .select("order_count")
+      .from("orders")
+      .select("order_date, order_count")
       .eq("username", username)
-      .single();
+      .order("order_date", { ascending: true });
 
-    if (!error && data) {
-      document.getElementById("orderCount").textContent = data.order_count;
-    } else {
-      document.getElementById("orderCount").textContent = "0";
+    const listEl = document.getElementById("list");
+    listEl.innerHTML = "";
+
+    if (error || !data || data.length === 0) {
+      listEl.innerHTML = '<div class="empty">هنوز سفارشی ثبت نشده</div>';
+      document.getElementById("totalCount").textContent = "0";
+      return;
     }
+
+    let total = 0;
+    data.forEach(row => {
+      total += row.order_count;
+      const div = document.createElement("div");
+      div.className = "row";
+      div.innerHTML = `<span class="date">${row.order_date}</span><span class="count">${row.order_count}</span>`;
+      listEl.appendChild(div);
+    });
+    document.getElementById("totalCount").textContent = total;
   }
 
   document.getElementById("logoutBtn").addEventListener("click", async () => {
