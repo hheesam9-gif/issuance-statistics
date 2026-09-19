@@ -1,1178 +1,757 @@
-```html
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>پنل مدیریت آمار صدور</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>پنل مدیریت</title>
+<script>
+  /* اعمال تم قبل از رسم صفحه تا موقع لود چشمک نزنه */
+  try { if (localStorage.getItem("site_theme") === "light") document.documentElement.setAttribute("data-theme", "light"); } catch (e) {}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { box-sizing: border-box; }
+  :root {
+    --page-base: #0b0e1e;
+    --blob1: rgba(109, 91, 255, 0.45);
+    --blob2: rgba(79, 123, 255, 0.34);
+    --blob3: rgba(150, 90, 230, 0.26);
+    --dot: rgba(255, 255, 255, 0.09);
+    --grain-opacity: 0.09;
+    --grain-blend: overlay;
+    --card-bg: rgba(19, 23, 46, 0.92);
+    --card-border: rgba(255, 255, 255, 0.09);
+    --card-shadow: 0 30px 80px rgba(0, 0, 0, 0.42);
+    --text: #eef1fb; --text-dim: #9aa3c7;
+    --input-bg: rgba(8, 10, 26, 0.6); --input-border: rgba(255, 255, 255, 0.13);
+    --row-bg: rgba(255, 255, 255, 0.045); --row-border: rgba(255, 255, 255, 0.08);
+    --accent1: #6d5bff; --accent2: #4f7bff;
+    --error: #ff6b7d; --ok: #4ade80; --warn: #fbbf24;
+  }
+  [data-theme="light"] {
+    --page-base: #e9ecf7;
+    --blob1: rgba(140, 125, 255, 0.42);
+    --blob2: rgba(110, 150, 255, 0.36);
+    --blob3: rgba(190, 150, 255, 0.30);
+    --dot: rgba(60, 66, 120, 0.13);
+    --grain-opacity: 0.10;
+    --grain-blend: multiply;
+    --card-bg: rgba(255, 255, 255, 0.92);
+    --card-border: rgba(110, 115, 180, 0.20);
+    --card-shadow: 0 30px 70px rgba(70, 75, 140, 0.20);
+    --text: #1b1f3a; --text-dim: #5a6088;
+    --input-bg: rgba(238, 241, 255, 0.85); --input-border: rgba(90, 96, 136, 0.25);
+    --row-bg: rgba(90, 96, 136, 0.06); --row-border: rgba(90, 96, 136, 0.15);
+    --ok: #15803d; --warn: #b45309; --error: #dc2626;
+  }
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  html { margin: 0; min-height: 100%; background: var(--page-base); }
+  body {
+    margin: 0;
+    font-family: Tahoma, Arial, sans-serif;
+    color: var(--text);
+    background: transparent;
+    min-height: 100vh; min-height: 100dvh;
+    padding: 28px 18px 48px;
+    display: flex; flex-direction: column; align-items: center;
+  }
 
-  <style>
-    * { box-sizing: border-box; }
+  /* ---------- پس‌زمینه ثابت و مات ---------- */
+  .bg { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; background: var(--page-base); }
+  .blob { position: absolute; border-radius: 50%; filter: blur(110px); will-change: transform; }
+  .b1 { width: 62vmax; height: 62vmax; top: -22vmax; right: -16vmax; background: var(--blob1); animation: drift1 34s ease-in-out infinite alternate; }
+  .b2 { width: 56vmax; height: 56vmax; bottom: -24vmax; left: -18vmax; background: var(--blob2); animation: drift2 41s ease-in-out infinite alternate; }
+  .b3 { width: 40vmax; height: 40vmax; top: 34%; left: 30%; background: var(--blob3); animation: drift3 47s ease-in-out infinite alternate; }
+  @keyframes drift1 { to { transform: translate3d(-9vmax, 11vmax, 0) scale(1.08); } }
+  @keyframes drift2 { to { transform: translate3d(12vmax, -8vmax, 0) scale(1.1); } }
+  @keyframes drift3 { to { transform: translate3d(-14vmax, -6vmax, 0) scale(0.9); } }
+  .dots {
+    position: absolute; inset: 0;
+    background-image: radial-gradient(var(--dot) 1.2px, transparent 1.3px);
+    background-size: 30px 30px;
+    -webkit-mask-image: radial-gradient(ellipse at center, #000 15%, transparent 72%);
+            mask-image: radial-gradient(ellipse at center, #000 15%, transparent 72%);
+  }
+  .grain {
+    position: absolute; inset: 0; opacity: var(--grain-opacity); mix-blend-mode: var(--grain-blend);
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
 
-    body {
-      margin: 0;
-      font-family: Tahoma, Arial, sans-serif;
-      background: #f4f6f9;
-      color: #222;
-    }
+  /* ---------- هدر ---------- */
+  .top { width: 100%; max-width: 1080px; margin-bottom: 24px; }
+  .top-main { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .mark {
+    width: 48px; height: 48px; border-radius: 14px; flex: none;
+    background: linear-gradient(140deg, var(--accent1), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 10px 26px rgba(90, 100, 255, 0.35);
+  }
+  .mark svg { width: 24px; height: 24px; stroke: #fff; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .brand h1 { font-size: 22px; margin: 0 0 4px; text-align: right; }
+  .brand p { margin: 0; font-size: 13px; color: var(--text-dim); }
 
-    /* ===== LOGIN ===== */
+  .theme-toggle {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    border-radius: 999px; padding: 6px 12px; cursor: pointer; user-select: none;
+  }
+  .theme-toggle span { font-size: 15px; }
+  .switch { width: 40px; height: 20px; background: var(--input-bg); border-radius: 999px; position: relative; border: 1px solid var(--input-border); }
+  .switch .knob {
+    position: absolute; top: 1px; right: 1px; width: 16px; height: 16px;
+    border-radius: 50%; background: linear-gradient(135deg, var(--accent1), var(--accent2));
+    transition: transform 0.3s ease;
+  }
+  [data-theme="light"] .switch .knob { transform: translateX(-20px); }
 
-    #loginBox {
-      width: 92%;
-      max-width: 420px;
-      margin: 80px auto;
-      background: white;
-      padding: 30px;
-      border-radius: 18px;
-      box-shadow: 0 8px 30px rgba(0,0,0,.10);
-    }
+  .stats { display: flex; flex-wrap: wrap; gap: 12px 0; margin-top: 22px; }
+  .stat { padding: 2px 22px 2px 0; }
+  .stat + .stat { padding-right: 22px; border-right: 1px solid var(--row-border); }
+  .stat .v { font-size: 26px; font-weight: bold; line-height: 1.2; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-dim); margin-top: 3px; }
 
-    #loginBox h1 {
-      text-align: center;
-      margin-bottom: 8px;
-    }
+  /* ---------- چیدمان دو ستونه ---------- */
+  .grid { width: 100%; max-width: 1080px; display: grid; grid-template-columns: 1fr; gap: 20px; align-items: start; }
+  @media (min-width: 920px) { .grid { grid-template-columns: 1fr 1fr; } }
 
-    .login-subtitle {
-      text-align: center;
-      color: #777;
-      margin-bottom: 25px;
-    }
+  .card {
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    padding: 26px; border-radius: 22px; box-shadow: var(--card-shadow); min-width: 0;
+  }
+  .card-head { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
+  .card-icon {
+    width: 42px; height: 42px; border-radius: 12px; flex: none;
+    background: var(--row-bg); border: 1px solid var(--row-border);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .card-icon svg { width: 21px; height: 21px; stroke: var(--accent2); fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .card-head h2 { font-size: 16px; margin: 0 0 3px; }
+  .card-head p { margin: 0; font-size: 12px; color: var(--text-dim); }
 
-    input {
-      width: 100%;
-      padding: 12px;
-      margin: 7px 0;
-      border: 1px solid #ddd;
-      border-radius: 9px;
-      font-size: 15px;
-      background: white;
-    }
+  label.field { font-size: 13px; margin-bottom: 7px; display: block; }
+  input, textarea {
+    width: 100%; padding: 12px 14px; border-radius: 12px;
+    border: 1px solid var(--input-border); background: var(--input-bg);
+    color: var(--text); font-size: 14px; outline: none; font-family: inherit;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  input::placeholder, textarea::placeholder { color: var(--text-dim); opacity: 0.75; }
+  input:focus, textarea:focus { border-color: var(--accent1); box-shadow: 0 0 0 3px rgba(109, 91, 255, 0.22); }
+  textarea { direction: ltr; text-align: left; min-height: 190px; resize: vertical; line-height: 1.7; }
 
-    button {
-      border: none;
-      border-radius: 9px;
-      padding: 11px 18px;
-      cursor: pointer;
-      font-size: 15px;
-    }
+  button {
+    padding: 12px 18px; border: none; border-radius: 12px;
+    background: linear-gradient(135deg, var(--accent1), var(--accent2));
+    color: #fff; font-weight: bold; font-size: 14px; cursor: pointer; white-space: nowrap;
+    font-family: inherit; transition: transform 0.15s ease, filter 0.2s ease;
+  }
+  button:hover { filter: brightness(1.07); }
+  button:active { transform: scale(0.985); }
+  button:focus-visible { outline: 2px solid var(--accent2); outline-offset: 3px; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  button.secondary { background: var(--row-bg); border: 1px solid var(--row-border); color: var(--text); font-weight: normal; }
+  button.chip {
+    padding: 0 14px; border-radius: 12px; background: var(--row-bg);
+    border: 1px solid var(--row-border); color: var(--text); font-weight: normal; font-size: 13px;
+  }
 
-    .login-btn {
-      width: 100%;
-      margin-top: 12px;
-      background: #2563eb;
-      color: white;
-    }
+  /* ثبت دسته‌ای */
+  .date-row { display: flex; gap: 8px; margin-bottom: 16px; }
+  .date-row input { flex: 1; direction: ltr; text-align: right; }
+  .paste-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 7px; font-size: 12px; color: var(--text-dim); min-height: 18px; }
+  .actions { display: flex; gap: 8px; margin-top: 14px; }
+  .actions button { flex: 1; }
+  #bulkPreview { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--row-border); display: none; }
+  #bulkPreview.show { display: block; }
+  .preview-head { font-size: 13px; margin-bottom: 12px; color: var(--text-dim); }
+  .preview-head b { color: var(--text); }
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .tile { background: var(--row-bg); border: 1px solid var(--row-border); border-radius: 12px; padding: 12px 8px; text-align: center; }
+  .tile .n { font-size: 22px; font-weight: bold; font-variant-numeric: tabular-nums; }
+  .tile .lb { font-size: 11px; color: var(--text-dim); margin-top: 3px; }
+  .tile.ok .n { color: var(--ok); } .tile.warn .n { color: var(--warn); } .tile.bad .n { color: var(--error); }
+  details.fold { margin-top: 10px; background: var(--row-bg); border: 1px solid var(--row-border); border-radius: 12px; padding: 10px 14px; font-size: 13px; }
+  details.fold summary { cursor: pointer; }
+  .bulk-list {
+    margin-top: 10px; max-height: 130px; overflow-y: auto; direction: ltr; text-align: left;
+    font-size: 12px; color: var(--text-dim); line-height: 1.8; word-break: break-all;
+  }
+  .note { margin-top: 10px; font-size: 12px; color: var(--warn); }
+  #bulkMsg { text-align: center; font-size: 13px; min-height: 18px; margin-top: 12px; color: var(--text-dim); }
 
-    .login-btn:hover {
-      background: #1d4ed8;
-    }
+  /* مدیریت تکی */
+  .search-box { display: flex; gap: 8px; margin-bottom: 14px; }
+  .search-box input { flex: 1; }
+  #userList { max-height: 300px; overflow-y: auto; padding-left: 4px; }
+  #userList::-webkit-scrollbar, .history::-webkit-scrollbar, .bulk-list::-webkit-scrollbar { width: 6px; }
+  #userList::-webkit-scrollbar-thumb, .history::-webkit-scrollbar-thumb, .bulk-list::-webkit-scrollbar-thumb { background: var(--row-border); border-radius: 10px; }
+  .user-row {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--row-bg); border: 1px solid var(--row-border);
+    border-radius: 12px; padding: 12px 14px; margin-bottom: 8px;
+    cursor: pointer; font-size: 14px; transition: border-color 0.2s ease;
+  }
+  .user-row:hover, .user-row.selected { border-color: var(--accent1); }
+  .user-row .name { font-weight: bold; direction: ltr; unicode-bidi: plaintext; }
+  .panel { margin-top: 14px; padding-top: 18px; border-top: 1px solid var(--row-border); display: none; }
+  .panel.show { display: block; }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .panel-head h3 { font-size: 15px; margin: 0; }
+  .panel-head h3 span { direction: ltr; unicode-bidi: plaintext; }
+  .user-total { font-size: 12px; color: var(--text-dim); background: var(--row-bg); border: 1px solid var(--row-border); border-radius: 999px; padding: 5px 12px; }
+  .user-total b { color: var(--text); font-variant-numeric: tabular-nums; }
+  .hint { font-size: 12px; color: var(--text-dim); margin-bottom: 10px; }
+  .form-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .form-row .in-date { flex: 1 1 150px; direction: ltr; text-align: right; }
+  .form-row .in-count { flex: 0 0 100px; }
+  #msg { text-align: center; color: var(--text-dim); font-size: 13px; min-height: 18px; margin-top: 10px; }
+  .error { color: var(--error); } .ok { color: var(--ok); } .warn { color: var(--warn); }
+  .history { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; max-height: 240px; overflow-y: auto; }
+  .history .row {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--row-bg); border: 1px solid var(--row-border);
+    border-radius: 10px; padding: 9px 12px; font-size: 13px;
+  }
+  .history .row .d { color: var(--text-dim); font-variant-numeric: tabular-nums; }
+  .history .row .vals { display: flex; align-items: center; gap: 10px; }
+  .history .row b { font-variant-numeric: tabular-nums; }
+  .delete-btn { background: none; border: none; padding: 2px 4px; cursor: pointer; font-size: 15px; line-height: 1; color: var(--error); }
 
-    #loginError {
-      color: #dc2626;
-      text-align: center;
-      margin-top: 15px;
-      min-height: 22px;
-    }
-
-    /* ===== ADMIN ===== */
-
-    #adminPanel {
-      display: none;
-    }
-
-    .topbar {
-      background: #1e293b;
-      color: white;
-      padding: 18px 25px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 15px;
-      flex-wrap: wrap;
-    }
-
-    .topbar h1 {
-      margin: 0;
-      font-size: 22px;
-    }
-
-    .admin-email {
-      font-size: 13px;
-      opacity: .8;
-      margin-top: 5px;
-    }
-
-    .logout-btn {
-      background: #dc2626;
-      color: white;
-    }
-
-    .container {
-      max-width: 1200px;
-      margin: 25px auto;
-      padding: 0 15px;
-    }
-
-    .card {
-      background: white;
-      border-radius: 14px;
-      padding: 20px;
-      margin-bottom: 20px;
-      box-shadow: 0 3px 15px rgba(0,0,0,.06);
-    }
-
-    .card h2 {
-      margin-top: 0;
-      font-size: 19px;
-    }
-
-    .search-row {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .search-row input {
-      margin: 0;
-      flex: 1;
-    }
-
-    .blue-btn {
-      background: #2563eb;
-      color: white;
-    }
-
-    .green-btn {
-      background: #16a34a;
-      color: white;
-    }
-
-    .gray-btn {
-      background: #64748b;
-      color: white;
-    }
-
-    .red-btn {
-      background: #dc2626;
-      color: white;
-    }
-
-    .user-item {
-      padding: 12px;
-      border: 1px solid #e5e7eb;
-      border-radius: 9px;
-      margin-bottom: 8px;
-      cursor: pointer;
-      background: #fafafa;
-    }
-
-    .user-item:hover {
-      background: #eff6ff;
-    }
-
-    .stats-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .selected-user {
-      color: #2563eb;
-      font-weight: bold;
-    }
-
-    .stats-table-wrapper {
-      overflow-x: auto;
-      margin-top: 15px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 600px;
-    }
-
-    th, td {
-      border-bottom: 1px solid #e5e7eb;
-      padding: 12px 10px;
-      text-align: center;
-    }
-
-    th {
-      background: #f8fafc;
-    }
-
-    .number-input {
-      width: 110px;
-      text-align: center;
-      margin: 0;
-    }
-
-    .action-btn {
-      margin: 2px;
-    }
-
-    #message {
-      position: fixed;
-      left: 20px;
-      bottom: 20px;
-      padding: 13px 18px;
-      background: #1e293b;
-      color: white;
-      border-radius: 10px;
-      display: none;
-      z-index: 9999;
-    }
-
-    @media (max-width: 700px) {
-      .search-row {
-        flex-direction: column;
-      }
-
-      .search-row button {
-        width: 100%;
-      }
-    }
-  </style>
+  @media (max-width: 520px) {
+    .card { padding: 20px; }
+    .stat, .stat + .stat { padding-right: 16px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .blob { animation: none; }
+    .switch .knob, input, textarea, button, .user-row { transition: none; }
+  }
+</style>
 </head>
-
 <body>
-
-<!-- =====================================================
-     LOGIN
-===================================================== -->
-
-<div id="loginBox">
-
-  <h1>🔐 ورود مدیر</h1>
-
-  <div class="login-subtitle">
-    پنل مدیریت آمار صدور
+  <div class="bg" aria-hidden="true">
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+    <div class="dots"></div>
+    <div class="grain"></div>
   </div>
 
-  <input
-    type="email"
-    id="loginEmail"
-    value="h-abbasi@gmail.com"
-    placeholder="ایمیل"
-    readonly
-  >
-
-  <input
-    type="password"
-    id="loginPassword"
-    placeholder="رمز عبور"
-    autocomplete="current-password"
-  >
-
-  <button
-    class="login-btn"
-    onclick="login()"
-  >
-    ورود به پنل
-  </button>
-
-  <div id="loginError"></div>
-
-</div>
-
-
-<!-- =====================================================
-     ADMIN PANEL
-===================================================== -->
-
-<div id="adminPanel">
-
-  <div class="topbar">
-
-    <div>
-      <h1>📊 پنل مدیریت آمار صدور</h1>
-
-      <div
-        class="admin-email"
-        id="adminEmail"
-      ></div>
-    </div>
-
-    <button
-      class="logout-btn"
-      onclick="logout()"
-    >
-      خروج از حساب
-    </button>
-
-  </div>
-
-
-  <div class="container">
-
-    <!-- SEARCH -->
-
-    <div class="card">
-
-      <h2>🔎 جستجوی کاربر</h2>
-
-      <div class="search-row">
-
-        <input
-          type="text"
-          id="usernameSearch"
-          placeholder="نام کاربری را وارد کنید..."
-          onkeydown="if(event.key === 'Enter') searchUsers()"
-        >
-
-        <button
-          class="blue-btn"
-          onclick="searchUsers()"
-        >
-          جستجو
-        </button>
-
-      </div>
-
-      <div
-        id="searchResults"
-        style="margin-top:15px;"
-      ></div>
-
-    </div>
-
-
-    <!-- STATS -->
-
-    <div
-      class="card"
-      id="statsCard"
-      style="display:none;"
-    >
-
-      <div class="stats-header">
-
+  <header class="top">
+    <div class="top-main">
+      <div class="brand">
+        <div class="mark">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg>
+        </div>
         <div>
-
-          <h2>📈 آمار صدور</h2>
-
-          <div>
-            کاربر:
-            <span
-              class="selected-user"
-              id="selectedUsername"
-            ></span>
-          </div>
-
+          <h1>پنل مدیریت</h1>
+          <p>ثبت و مدیریت آمار صدور کاربران</p>
         </div>
-
-        <button
-          class="gray-btn"
-          onclick="clearSelectedUser()"
-        >
-          انتخاب کاربر دیگر
-        </button>
-
       </div>
-
-
-      <!-- ADD -->
-
-      <div
-        style="
-          margin-top:20px;
-          padding:15px;
-          background:#f8fafc;
-          border-radius:10px;
-        "
-      >
-
-        <h3>➕ ثبت آمار جدید</h3>
-
-        <div
-          style="
-            display:flex;
-            gap:10px;
-            flex-wrap:wrap;
-          "
-        >
-
-          <input
-            type="date"
-            id="newDate"
-            style="flex:1;min-width:180px;"
-          >
-
-          <input
-            type="number"
-            id="newCount"
-            min="0"
-            placeholder="تعداد صدور"
-            style="flex:1;min-width:180px;"
-          >
-
-          <button
-            class="green-btn"
-            onclick="addStat()"
-          >
-            ثبت آمار
-          </button>
-
-        </div>
-
+      <div class="theme-toggle" id="themeToggle" role="button" tabindex="0" aria-label="تغییر تم">
+        <span>☀️</span>
+        <div class="switch"><div class="knob"></div></div>
+        <span>🌙</span>
       </div>
-
-
-      <!-- TABLE -->
-
-      <div class="stats-table-wrapper">
-
-        <table>
-
-          <thead>
-            <tr>
-              <th>تاریخ</th>
-              <th>تعداد صدور</th>
-              <th>عملیات</th>
-            </tr>
-          </thead>
-
-          <tbody id="statsBody"></tbody>
-
-        </table>
-
-      </div>
-
     </div>
 
-  </div>
+    <div class="stats">
+      <div class="stat"><div class="v" id="statUsers">—</div><div class="l">تعداد کاربران</div></div>
+      <div class="stat"><div class="v" id="statLastDate" style="direction:ltr">—</div><div class="l">آخرین تاریخ ثبت‌شده</div></div>
+      <div class="stat"><div class="v" id="statLastCount">—</div><div class="l">کاربران ثبت‌شده در آن تاریخ</div></div>
+    </div>
+  </header>
 
-</div>
+  <main class="grid">
+    <!-- ثبت دسته‌ای از اکسل -->
+    <section class="card">
+      <div class="card-head">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 10h18"/><path d="M9 4v16"/></svg>
+        </div>
+        <div>
+          <h2>ثبت دسته‌ای از اکسل</h2>
+          <p>لیست رو پیست کنید؛ فقط کاربرهای موجود در سایت ثبت می‌شن</p>
+        </div>
+      </div>
 
+      <label class="field" for="bulkDate">تاریخی که آمار برایش ثبت می‌شود</label>
+      <div class="date-row">
+        <input id="bulkDate" type="text" placeholder="مثلاً 1405/06/28" inputmode="numeric" />
+        <button type="button" class="chip" id="todayBtn">امروز</button>
+      </div>
 
-<div id="message"></div>
+      <label class="field" for="bulkText">لیست از اکسل (هر خط: نام کاربری و تعداد)</label>
+      <textarea id="bulkText" placeholder="a.alavi 323.9&#10;a.barghi 750.2&#10;a.biabani 837.3" spellcheck="false"></textarea>
+      <div class="paste-meta"><span id="lineCount"></span></div>
 
+      <div class="actions">
+        <button id="bulkCheckBtn">بررسی لیست</button>
+      </div>
+
+      <div id="bulkPreview">
+        <div class="preview-head">پیش‌نمایش برای تاریخ <b id="previewDate"></b></div>
+        <div class="tiles">
+          <div class="tile ok"><div class="n" id="tileOk">0</div><div class="lb">آماده ثبت</div></div>
+          <div class="tile warn"><div class="n" id="tileMissing">0</div><div class="lb">در سایت نیستن</div></div>
+          <div class="tile bad"><div class="n" id="tileInvalid">0</div><div class="lb">خط نامعتبر</div></div>
+        </div>
+        <div id="previewFolds"></div>
+        <div class="actions">
+          <button id="bulkSaveBtn">ثبت نهایی</button>
+          <button id="bulkCancelBtn" class="secondary">لغو</button>
+        </div>
+      </div>
+      <div id="bulkMsg" role="status" aria-live="polite"></div>
+    </section>
+
+    <!-- مدیریت تکی -->
+    <section class="card">
+      <div class="card-head">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M18 14.2a6.5 6.5 0 0 1 3.5 5.8"/></svg>
+        </div>
+        <div>
+          <h2>مدیریت تکی کاربران</h2>
+          <p>جستجو، ثبت، ویرایش و حذف آمار یک کاربر</p>
+        </div>
+      </div>
+
+      <div class="search-box">
+        <input id="searchInput" type="text" placeholder="نام کاربری رو تایپ کنید..." autocomplete="off" spellcheck="false" />
+        <button id="searchBtn">جستجو</button>
+      </div>
+
+      <div id="userList"></div>
+
+      <div class="panel" id="panel">
+        <div class="panel-head">
+          <h3>آمار <span id="selectedName"></span></h3>
+          <div class="user-total">مجموع: <b id="userTotal">0</b></div>
+        </div>
+        <div class="hint">تاریخ رو به فرمت 1405/06/28 وارد کنید. اگه برای اون تاریخ آمار باشه، جایگزین می‌شه.</div>
+        <div class="form-row">
+          <input class="in-date" id="dateInput" type="text" placeholder="تاریخ (مثلاً 1405/06/28)" inputmode="numeric" />
+          <input class="in-count" id="countInput" type="number" step="any" placeholder="تعداد" />
+          <button id="saveBtn">ثبت</button>
+        </div>
+        <div id="msg" role="status" aria-live="polite"></div>
+        <div class="history" id="history"></div>
+      </div>
+    </section>
+  </main>
 
 <script>
+  const SUPABASE_URL = "https://jmbpskxloffcrbxiqcdy.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptYnBza3hsb2ZmY3JieGlxY2R5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MjU3MDgsImV4cCI6MjEwNTQwMTcwOH0.ZFHwX9hg7FxyjcEV4oJRpA2Rgoh0UqL2Xj7D3IO3YMU";
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-/* =====================================================
-   SUPABASE
-===================================================== */
+  /* ---------- تم ---------- */
+  const root = document.documentElement;
+  const themeToggle = document.getElementById("themeToggle");
+  function toggleTheme() {
+    const isLight = root.getAttribute("data-theme") === "light";
+    if (isLight) { root.removeAttribute("data-theme"); localStorage.setItem("site_theme", "dark"); }
+    else { root.setAttribute("data-theme", "light"); localStorage.setItem("site_theme", "light"); }
+  }
+  themeToggle.addEventListener("click", toggleTheme);
+  themeToggle.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleTheme(); }
+  });
 
-const SUPABASE_URL =
-  "https://jmbpskxloffcrbxiqcdy.supabase.co";
+  /* ---------- ابزارها ---------- */
+  // گرد کردن اعداد اعشاری برای نمایش (مثلاً 1074.1000000000001 دیده نشه)
+  function fmt(n) { return String(Math.round(Number(n) * 100) / 100); }
 
-const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptYnBza3hsb2ZmY3JieGlxY2R5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MjU3MDgsImV4cCI6MjEwNTQwMTcwOH0.ZFHwX9hg7FxyjcEV4oJRpA2Rgoh0UqL2Xj7D3IO3YMU";
-
-const ADMIN_EMAIL =
-  "h-abbasi@gmail.com";
-
-const supabaseClient =
-  supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_ANON_KEY
-  );
-
-
-let selectedUsername = null;
-
-
-/* =====================================================
-   MESSAGE
-===================================================== */
-
-function showMessage(message) {
-
-  const box =
-    document.getElementById("message");
-
-  box.textContent = message;
-  box.style.display = "block";
-
-  setTimeout(() => {
-    box.style.display = "none";
-  }, 3000);
-}
-
-
-/* =====================================================
-   LOGIN
-===================================================== */
-
-async function login() {
-
-  const email =
-    document
-      .getElementById("loginEmail")
-      .value
-      .trim();
-
-  const password =
-    document
-      .getElementById("loginPassword")
-      .value;
-
-  const errorBox =
-    document.getElementById("loginError");
-
-  errorBox.textContent = "";
-
-
-  /* فقط h-abbasi */
-
-  if (email !== ADMIN_EMAIL) {
-
-    errorBox.textContent =
-      "فقط حساب h-abbasi اجازه ورود دارد.";
-
-    return;
+  // تبدیل ارقام فارسی/عربی به انگلیسی
+  function normalizeDigits(s) {
+    return String(s)
+      .replace(/[۰-۹]/g, d => String(d.charCodeAt(0) - 0x06F0))
+      .replace(/[٠-٩]/g, d => String(d.charCodeAt(0) - 0x0660))
+      .replace(/٫/g, ".");
   }
 
-
-  if (!password) {
-
-    errorBox.textContent =
-      "رمز عبور را وارد کنید.";
-
-    return;
+  // تاریخ امروز به شمسی با ارقام انگلیسی، مثل 1405/06/28
+  function todayJalali() {
+    try {
+      const parts = new Intl.DateTimeFormat("en-u-ca-persian-nu-latn", { year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
+      const g = t => parts.find(p => p.type === t).value;
+      return g("year") + "/" + g("month") + "/" + g("day");
+    } catch (e) { return ""; }
   }
 
+  /* ---------- آمار بالای صفحه ---------- */
+  async function loadStats() {
+    const usersEl = document.getElementById("statUsers");
+    const lastEl = document.getElementById("statLastDate");
+    const lastCountEl = document.getElementById("statLastCount");
+    try {
+      const { count, error } = await supabaseClient.from("profiles").select("username", { count: "exact", head: true });
+      usersEl.textContent = (error || count == null) ? "—" : count;
+    } catch (e) { usersEl.textContent = "—"; }
 
-  const { data, error } =
-    await supabaseClient.auth.signInWithPassword({
-      email: ADMIN_EMAIL,
-      password: password
+    try {
+      const { data, error } = await supabaseClient
+        .from("orders").select("order_date").order("order_date", { ascending: false }).limit(1);
+      if (error || !data || !data.length) { lastEl.textContent = "—"; lastCountEl.textContent = "—"; return; }
+      const last = data[0].order_date;
+      lastEl.textContent = last;
+      const { count } = await supabaseClient
+        .from("orders").select("username", { count: "exact", head: true }).eq("order_date", last);
+      lastCountEl.textContent = count == null ? "—" : count;
+    } catch (e) { lastEl.textContent = "—"; lastCountEl.textContent = "—"; }
+  }
+
+  /* =========================================================
+     ثبت دسته‌ای از اکسل
+     ========================================================= */
+  const bulkDateEl = document.getElementById("bulkDate");
+  const bulkTextEl = document.getElementById("bulkText");
+  const bulkCheckBtn = document.getElementById("bulkCheckBtn");
+  const bulkSaveBtn = document.getElementById("bulkSaveBtn");
+  const bulkCancelBtn = document.getElementById("bulkCancelBtn");
+  const bulkPreviewEl = document.getElementById("bulkPreview");
+  const bulkMsgEl = document.getElementById("bulkMsg");
+  const lineCountEl = document.getElementById("lineCount");
+  const foldsEl = document.getElementById("previewFolds");
+
+  let pendingRows = [];
+  let pendingDate = "";
+
+  function setBulkMsg(text, cls) { bulkMsgEl.textContent = text; bulkMsgEl.className = cls || ""; }
+
+  document.getElementById("todayBtn").addEventListener("click", () => {
+    const t = todayJalali();
+    if (t) bulkDateEl.value = t;
+    bulkDateEl.focus();
+  });
+
+  bulkTextEl.addEventListener("input", () => {
+    const n = bulkTextEl.value.split(/\r?\n/).filter(l => l.trim()).length;
+    lineCountEl.textContent = n ? n + " خط وارد شده" : "";
+  });
+
+  // گرفتن همه‌ی نام‌کاربری‌ها (صفحه‌به‌صفحه، چون سوپابیس در هر درخواست حداکثر ۱۰۰۰ ردیف می‌دهد)
+  async function fetchAllUsernames() {
+    const all = [];
+    const pageSize = 1000;
+    let from = 0;
+    while (true) {
+      const { data, error } = await supabaseClient
+        .from("profiles").select("username").range(from, from + pageSize - 1);
+      if (error) throw error;
+      all.push(...data.map(r => r.username));
+      if (data.length < pageSize) break;
+      from += pageSize;
+    }
+    return all;
+  }
+
+  function addFold(title, items) {
+    const d = document.createElement("details");
+    d.className = "fold";
+    const s = document.createElement("summary");
+    s.textContent = title;
+    d.appendChild(s);
+    const list = document.createElement("div");
+    list.className = "bulk-list";
+    list.textContent = items.join("  |  ");
+    d.appendChild(list);
+    foldsEl.appendChild(d);
+  }
+
+  bulkCheckBtn.addEventListener("click", async () => {
+    setBulkMsg("");
+    bulkPreviewEl.classList.remove("show");
+    pendingRows = [];
+
+    const date = normalizeDigits(bulkDateEl.value.trim());
+    if (!/^\d{4}\/\d{2}\/\d{2}$/.test(date)) {
+      setBulkMsg("تاریخ رو به فرمت 1405/06/28 وارد کنید", "error");
+      return;
+    }
+    const raw = normalizeDigits(bulkTextEl.value);
+    if (!raw.trim()) {
+      setBulkMsg("لیست خالیه؛ داده‌ی اکسل رو پیست کنید", "error");
+      return;
+    }
+
+    bulkCheckBtn.disabled = true;
+    setBulkMsg("در حال بررسی کاربران...");
+
+    let usernames;
+    try {
+      usernames = await fetchAllUsernames();
+    } catch (e) {
+      setBulkMsg("خواندن لیست کاربران ناموفق بود: " + (e.message || e), "error");
+      bulkCheckBtn.disabled = false;
+      return;
+    }
+    bulkCheckBtn.disabled = false;
+    setBulkMsg("");
+
+    const userMap = new Map(usernames.map(u => [String(u).toLowerCase(), u]));
+
+    const matched = new Map();
+    const notFound = [];
+    const invalid = [];
+    let duplicates = 0;
+
+    raw.split(/\r?\n/).forEach(line => {
+      const trimmed = line.trim();
+      if (!trimmed) return;
+      const parts = trimmed.split(/\s+/);
+      const name = parts[0];
+      const numStr = parts[parts.length - 1];
+
+      if (parts.length < 2 || !/^-?\d+(\.\d+)?$/.test(numStr)) { invalid.push(trimmed); return; }
+      const real = userMap.get(name.toLowerCase());
+      if (!real) { notFound.push(name); return; }
+      if (matched.has(real)) duplicates++;
+      matched.set(real, parseFloat(numStr));
     });
 
+    pendingRows = [...matched.entries()].map(([username, count]) => ({
+      username, order_date: date, order_count: count
+    }));
+    pendingDate = date;
 
-  if (error) {
+    document.getElementById("previewDate").textContent = date;
+    document.getElementById("tileOk").textContent = pendingRows.length;
+    document.getElementById("tileMissing").textContent = notFound.length;
+    document.getElementById("tileInvalid").textContent = invalid.length;
 
-    console.error(error);
+    foldsEl.innerHTML = "";
+    if (notFound.length) addFold("کاربرهایی که در سایت نیستن (ثبت نمی‌شن)", notFound);
+    if (invalid.length) addFold("خط‌های نامعتبر (نادیده گرفته شد)", invalid);
+    if (duplicates) {
+      const n = document.createElement("div");
+      n.className = "note";
+      n.textContent = duplicates + " نام تکراری بود؛ آخرین مقدار ثبت می‌شه";
+      foldsEl.appendChild(n);
+    }
 
-    errorBox.textContent =
-      "رمز عبور اشتباه است.";
+    bulkSaveBtn.textContent = "ثبت نهایی " + pendingRows.length + " نفر";
+    bulkSaveBtn.disabled = pendingRows.length === 0;
+    bulkPreviewEl.classList.add("show");
+    if (pendingRows.length === 0) setBulkMsg("هیچ کاربر معتبری پیدا نشد", "error");
+  });
 
-    return;
+  bulkCancelBtn.addEventListener("click", () => {
+    pendingRows = [];
+    bulkPreviewEl.classList.remove("show");
+    setBulkMsg("");
+  });
+
+  bulkSaveBtn.addEventListener("click", async () => {
+    if (!pendingRows.length) return;
+
+    const sure = confirm(
+      "آمار " + pendingRows.length + " نفر برای تاریخ " + pendingDate + " ثبت بشه؟\n" +
+      "اگه برای کسی قبلاً همین تاریخ ثبت شده باشه، مقدارش جایگزین می‌شه."
+    );
+    if (!sure) return;
+
+    bulkSaveBtn.disabled = true;
+    bulkCancelBtn.disabled = true;
+    bulkCheckBtn.disabled = true;
+
+    const batchSize = 200;
+    let done = 0;
+    for (let i = 0; i < pendingRows.length; i += batchSize) {
+      const batch = pendingRows.slice(i, i + batchSize);
+      setBulkMsg("در حال ذخیره... " + done + " از " + pendingRows.length);
+
+      const { error } = await supabaseClient
+        .from("orders").upsert(batch, { onConflict: "username,order_date" });
+
+      if (error) {
+        setBulkMsg("ثبت متوقف شد (" + done + " نفر ثبت شده بود): " + (error.message || "خطای نامشخص"), "error");
+        bulkSaveBtn.disabled = false;
+        bulkCancelBtn.disabled = false;
+        bulkCheckBtn.disabled = false;
+        return;
+      }
+      done += batch.length;
+    }
+
+    setBulkMsg("✔ آمار " + done + " نفر برای تاریخ " + pendingDate + " ثبت شد", "ok");
+    pendingRows = [];
+    bulkPreviewEl.classList.remove("show");
+    bulkTextEl.value = "";
+    lineCountEl.textContent = "";
+    bulkCancelBtn.disabled = false;
+    bulkCheckBtn.disabled = false;
+
+    loadStats();
+    if (selectedUsername) loadHistory(selectedUsername);
+  });
+
+  /* =========================================================
+     مدیریت تکی
+     ========================================================= */
+  const userListEl = document.getElementById("userList");
+  const panelEl = document.getElementById("panel");
+  const msgEl = document.getElementById("msg");
+  const historyEl = document.getElementById("history");
+  let selectedUsername = null;
+
+  function hintEl(text) {
+    const d = document.createElement("div");
+    d.className = "hint";
+    d.textContent = text;
+    return d;
   }
 
+  async function searchUsers() {
+    const term = document.getElementById("searchInput").value.trim();
+    userListEl.replaceChildren(hintEl("در حال جستجو..."));
 
-  const user = data.user;
+    let query = supabaseClient.from("profiles").select("username").order("username", { ascending: true });
+    if (term) query = query.ilike("username", "%" + term + "%");
 
+    const { data, error } = await query;
+    userListEl.replaceChildren();
 
-  /* بررسی دوباره ایمیل */
+    if (error || !data || data.length === 0) {
+      userListEl.appendChild(hintEl("کاربری پیدا نشد"));
+      return;
+    }
 
-  if (user.email !== ADMIN_EMAIL) {
-
-    await supabaseClient.auth.signOut();
-
-    errorBox.textContent =
-      "این حساب اجازه ورود ندارد.";
-
-    return;
+    data.forEach(user => {
+      const row = document.createElement("div");
+      row.className = "user-row";
+      if (user.username === selectedUsername) row.classList.add("selected");
+      const nameEl = document.createElement("span");
+      nameEl.className = "name";
+      nameEl.textContent = user.username;
+      row.appendChild(nameEl);
+      row.addEventListener("click", () => selectUser(user.username, row));
+      userListEl.appendChild(row);
+    });
   }
 
-
-  /* بررسی Role */
-
-  const role =
-    user.app_metadata?.role;
-
-
-  if (role !== "admin") {
-
-    await supabaseClient.auth.signOut();
-
-    errorBox.textContent =
-      "این حساب دسترسی مدیر ندارد.";
-
-    return;
+  async function selectUser(username, rowEl) {
+    document.querySelectorAll(".user-row").forEach(r => r.classList.remove("selected"));
+    rowEl.classList.add("selected");
+    selectedUsername = username;
+    document.getElementById("selectedName").textContent = username;
+    panelEl.classList.add("show");
+    document.getElementById("dateInput").value = "";
+    document.getElementById("countInput").value = "";
+    msgEl.textContent = "";
+    await loadHistory(username);
   }
 
+  async function loadHistory(username) {
+    const { data, error } = await supabaseClient
+      .from("orders")
+      .select("order_date, order_count")
+      .eq("username", username)
+      .order("order_date", { ascending: true });
 
-  showAdminPanel(user);
-}
+    historyEl.replaceChildren();
+    const totalEl = document.getElementById("userTotal");
 
+    if (error || !data || data.length === 0) {
+      totalEl.textContent = "0";
+      historyEl.appendChild(hintEl("هنوز آماری برای این کاربر ثبت نشده"));
+      return;
+    }
 
-/* =====================================================
-   SHOW ADMIN
-===================================================== */
+    let total = 0;
+    data.forEach(r => {
+      total += Number(r.order_count) || 0;
 
-function showAdminPanel(user) {
+      const div = document.createElement("div");
+      div.className = "row";
 
-  document
-    .getElementById("loginBox")
-    .style.display = "none";
+      const dateEl = document.createElement("span");
+      dateEl.className = "d";
+      dateEl.textContent = r.order_date;
 
-  document
-    .getElementById("adminPanel")
-    .style.display = "block";
+      const vals = document.createElement("span");
+      vals.className = "vals";
+      const countEl = document.createElement("b");
+      countEl.textContent = fmt(r.order_count);
+      const del = document.createElement("button");
+      del.className = "delete-btn";
+      del.title = "حذف این تاریخ";
+      del.setAttribute("aria-label", "حذف " + r.order_date);
+      del.textContent = "🗑️";
+      del.addEventListener("click", () => deleteRecord(username, r.order_date));
 
-  document
-    .getElementById("adminEmail")
-    .textContent =
-      "مدیر: " + user.email;
+      vals.appendChild(countEl);
+      vals.appendChild(del);
+      div.appendChild(dateEl);
+      div.appendChild(vals);
+      historyEl.appendChild(div);
+    });
+    totalEl.textContent = fmt(total);
+  }
+
+  async function deleteRecord(username, orderDate) {
+    if (!confirm("مطمئنید می‌خواید رکورد " + orderDate + " حذف بشه؟")) return;
+
+    const { error } = await supabaseClient
+      .from("orders").delete().eq("username", username).eq("order_date", orderDate);
+
+    if (error) {
+      msgEl.textContent = "حذف نشد، دوباره امتحان کنید";
+      msgEl.className = "error";
+      return;
+    }
+
+    msgEl.textContent = "رکورد حذف شد";
+    msgEl.className = "ok";
+    await loadHistory(username);
+    loadStats();
+  }
+
+  document.getElementById("saveBtn").addEventListener("click", async () => {
+    if (!selectedUsername) return;
+    const date = normalizeDigits(document.getElementById("dateInput").value.trim());
+    const count = parseFloat(normalizeDigits(document.getElementById("countInput").value));
+
+    if (!date || isNaN(count)) {
+      msgEl.textContent = "تاریخ و تعداد رو کامل وارد کنید";
+      msgEl.className = "error";
+      return;
+    }
+
+    msgEl.textContent = "در حال ذخیره...";
+    msgEl.className = "";
+
+    const { error } = await supabaseClient
+      .from("orders")
+      .upsert({ username: selectedUsername, order_date: date, order_count: count }, { onConflict: "username,order_date" });
+
+    if (error) {
+      msgEl.textContent = "ذخیره نشد، دوباره امتحان کنید";
+      msgEl.className = "error";
+      return;
+    }
+
+    msgEl.textContent = "با موفقیت ثبت شد";
+    msgEl.className = "ok";
+    document.getElementById("dateInput").value = "";
+    document.getElementById("countInput").value = "";
+    await loadHistory(selectedUsername);
+    loadStats();
+  });
+
+  document.getElementById("searchBtn").addEventListener("click", searchUsers);
+  let searchTimer = null;
+  document.getElementById("searchInput").addEventListener("input", () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(searchUsers, 300);
+  });
+  document.getElementById("searchInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { clearTimeout(searchTimer); searchUsers(); }
+  });
 
   searchUsers();
-}
-
-
-/* =====================================================
-   CHECK SESSION
-===================================================== */
-
-async function checkLogin() {
-
-  const { data } =
-    await supabaseClient.auth.getSession();
-
-  const session =
-    data.session;
-
-
-  if (!session) {
-    return;
-  }
-
-
-  const user =
-    session.user;
-
-
-  /* فقط h-abbasi */
-
-  if (user.email !== ADMIN_EMAIL) {
-
-    await supabaseClient.auth.signOut();
-
-    return;
-  }
-
-
-  /* فقط admin */
-
-  if (
-    user.app_metadata?.role !== "admin"
-  ) {
-
-    await supabaseClient.auth.signOut();
-
-    return;
-  }
-
-
-  showAdminPanel(user);
-}
-
-
-/* =====================================================
-   LOGOUT
-===================================================== */
-
-async function logout() {
-
-  await supabaseClient.auth.signOut();
-
-  selectedUsername = null;
-
-  document
-    .getElementById("adminPanel")
-    .style.display = "none";
-
-  document
-    .getElementById("loginBox")
-    .style.display = "block";
-
-  document
-    .getElementById("loginPassword")
-    .value = "";
-
-  document
-    .getElementById("loginError")
-    .textContent = "";
-}
-
-
-/* =====================================================
-   SEARCH USERS
-===================================================== */
-
-async function searchUsers() {
-
-  const search =
-    document
-      .getElementById("usernameSearch")
-      .value
-      .trim();
-
-  const results =
-    document.getElementById("searchResults");
-
-  results.innerHTML =
-    '<div style="padding:15px;text-align:center;">در حال جستجو...</div>';
-
-
-  let query =
-    supabaseClient
-      .from("profiles")
-      .select("username")
-      .order("username");
-
-
-  if (search) {
-
-    query =
-      query.ilike(
-        "username",
-        "%" + search + "%"
-      );
-  }
-
-
-  const { data, error } =
-    await query;
-
-
-  if (error) {
-
-    console.error(error);
-
-    results.innerHTML =
-      '<div style="color:red;">خطا در دریافت کاربران</div>';
-
-    return;
-  }
-
-
-  if (!data || data.length === 0) {
-
-    results.innerHTML =
-      '<div style="padding:15px;">کاربری پیدا نشد.</div>';
-
-    return;
-  }
-
-
-  results.innerHTML = "";
-
-
-  data.forEach(user => {
-
-    const div =
-      document.createElement("div");
-
-    div.className =
-      "user-item";
-
-    div.textContent =
-      "👤 " + user.username;
-
-    div.onclick =
-      () => selectUser(user.username);
-
-    results.appendChild(div);
-
-  });
-}
-
-
-/* =====================================================
-   SELECT USER
-===================================================== */
-
-async function selectUser(username) {
-
-  selectedUsername = username;
-
-  document
-    .getElementById("selectedUsername")
-    .textContent = username;
-
-  document
-    .getElementById("statsCard")
-    .style.display = "block";
-
-  await loadStats();
-}
-
-
-/* =====================================================
-   LOAD STATS
-===================================================== */
-
-async function loadStats() {
-
-  if (!selectedUsername) return;
-
-
-  const tbody =
-    document.getElementById("statsBody");
-
-  tbody.innerHTML =
-    '<tr><td colspan="3">در حال دریافت...</td></tr>';
-
-
-  const { data, error } =
-    await supabaseClient
-      .from("orders")
-      .select(
-        "username, order_date, order_count"
-      )
-      .eq(
-        "username",
-        selectedUsername
-      )
-      .order(
-        "order_date",
-        { ascending: false }
-      );
-
-
-  if (error) {
-
-    console.error(error);
-
-    tbody.innerHTML =
-      '<tr><td colspan="3">خطا در دریافت آمار</td></tr>';
-
-    return;
-  }
-
-
-  if (!data || data.length === 0) {
-
-    tbody.innerHTML =
-      '<tr><td colspan="3">آماری ثبت نشده است.</td></tr>';
-
-    return;
-  }
-
-
-  tbody.innerHTML = "";
-
-
-  data.forEach(order => {
-
-    const tr =
-      document.createElement("tr");
-
-
-    const dateTd =
-      document.createElement("td");
-
-    dateTd.textContent =
-      order.order_date;
-
-
-    const countTd =
-      document.createElement("td");
-
-
-    const countInput =
-      document.createElement("input");
-
-    countInput.type = "number";
-    countInput.min = "0";
-    countInput.value =
-      order.order_count ?? 0;
-
-    countInput.className =
-      "number-input";
-
-
-    countTd.appendChild(
-      countInput
-    );
-
-
-    const actionTd =
-      document.createElement("td");
-
-
-    const saveBtn =
-      document.createElement("button");
-
-    saveBtn.textContent =
-      "ذخیره";
-
-    saveBtn.className =
-      "green-btn action-btn";
-
-    saveBtn.onclick =
-      () => updateStat(
-        order.order_date,
-        countInput.value
-      );
-
-
-    const deleteBtn =
-      document.createElement("button");
-
-    deleteBtn.textContent =
-      "حذف";
-
-    deleteBtn.className =
-      "red-btn action-btn";
-
-    deleteBtn.onclick =
-      () => deleteStat(
-        order.order_date
-      );
-
-
-    actionTd.appendChild(saveBtn);
-    actionTd.appendChild(deleteBtn);
-
-
-    tr.appendChild(dateTd);
-    tr.appendChild(countTd);
-    tr.appendChild(actionTd);
-
-
-    tbody.appendChild(tr);
-
-  });
-}
-
-
-/* =====================================================
-   ADD STAT
-===================================================== */
-
-async function addStat() {
-
-  if (!selectedUsername) {
-
-    showMessage(
-      "ابتدا یک کاربر انتخاب کنید."
-    );
-
-    return;
-  }
-
-
-  const date =
-    document
-      .getElementById("newDate")
-      .value;
-
-
-  const count =
-    document
-      .getElementById("newCount")
-      .value;
-
-
-  if (!date) {
-
-    showMessage(
-      "تاریخ را انتخاب کنید."
-    );
-
-    return;
-  }
-
-
-  if (
-    count === "" ||
-    Number(count) < 0
-  ) {
-
-    showMessage(
-      "تعداد صدور صحیح نیست."
-    );
-
-    return;
-  }
-
-
-  const { error } =
-    await supabaseClient
-      .from("orders")
-      .upsert(
-        {
-          username: selectedUsername,
-          order_date: date,
-          order_count: Number(count)
-        },
-        {
-          onConflict:
-            "username,order_date"
-        }
-      );
-
-
-  if (error) {
-
-    console.error(error);
-
-    showMessage(
-      "خطا در ثبت: " +
-      error.message
-    );
-
-    return;
-  }
-
-
-  document
-    .getElementById("newDate")
-    .value = "";
-
-  document
-    .getElementById("newCount")
-    .value = "";
-
-
-  showMessage(
-    "آمار با موفقیت ثبت شد."
-  );
-
-
-  await loadStats();
-}
-
-
-/* =====================================================
-   UPDATE
-===================================================== */
-
-async function updateStat(
-  date,
-  count
-) {
-
-  if (!selectedUsername) return;
-
-
-  if (
-    count === "" ||
-    Number(count) < 0
-  ) {
-
-    showMessage(
-      "تعداد صدور صحیح نیست."
-    );
-
-    return;
-  }
-
-
-  const { error } =
-    await supabaseClient
-      .from("orders")
-      .update({
-        order_count: Number(count)
-      })
-      .eq(
-        "username",
-        selectedUsername
-      )
-      .eq(
-        "order_date",
-        date
-      );
-
-
-  if (error) {
-
-    console.error(error);
-
-    showMessage(
-      "خطا در ذخیره: " +
-      error.message
-    );
-
-    return;
-  }
-
-
-  showMessage(
-    "آمار ذخیره شد."
-  );
-
-
-  await loadStats();
-}
-
-
-/* =====================================================
-   DELETE
-===================================================== */
-
-async function deleteStat(date) {
-
-  if (!selectedUsername) return;
-
-
-  const confirmed =
-    confirm(
-      "آیا از حذف این آمار مطمئن هستید؟"
-    );
-
-
-  if (!confirmed) return;
-
-
-  const { error } =
-    await supabaseClient
-      .from("orders")
-      .delete()
-      .eq(
-        "username",
-        selectedUsername
-      )
-      .eq(
-        "order_date",
-        date
-      );
-
-
-  if (error) {
-
-    console.error(error);
-
-    showMessage(
-      "خطا در حذف: " +
-      error.message
-    );
-
-    return;
-  }
-
-
-  showMessage(
-    "آمار حذف شد."
-  );
-
-
-  await loadStats();
-}
-
-
-/* =====================================================
-   CLEAR USER
-===================================================== */
-
-function clearSelectedUser() {
-
-  selectedUsername = null;
-
-  document
-    .getElementById("statsCard")
-    .style.display = "none";
-}
-
-
-/* =====================================================
-   START
-===================================================== */
-
-checkLogin();
-
+  loadStats();
 </script>
-
 </body>
 </html>
-```
