@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>پنل مدیریت آمار صدور</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Tahoma, Arial, sans-serif;
+      background: #f4f6f9;
+      color: #222;
+    }
+
+    /* =========================
+       LOGIN
+    ========================= */
+
+    #loginBox {
+      width: 92%;
+      max-width: 420px;
+      margin: 80px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 18px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.10);
+    }
+
+    #loginBox h1 {
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    .login-subtitle {
+      text-align: center;
+      color: #777;
+      margin-bottom: 25px;
+    }
+
+    input,
+    select {
+      width: 100%;
+      padding: 12px;
+      margin: 7px 0;
+      border: 1px solid #ddd;
+      border-radius: 9px;
+      font-size: 15px;
+      background: white;
+    }
+
+    button {
+      border: none;
+      border-radius: 9px;
+      padding: 11px 18px;
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    .login-btn {
+      width: 100%;
+      margin-top: 12px;
+      background: #2563eb;
+      color: white;
+    }
+
+    .login-btn:hover {
+      background: #1d4ed8;
+    }
+
+    #loginError {
+      color: #dc2626;
+      text-align: center;
+      margin-top: 15px;
+      min-height: 22px;
+    }
+
+    /* =========================
+       ADMIN PANEL
+    ========================= */
+
+    #adminPanel {
+      display: none;
+    }
+
+    .topbar {
+      background: #1e293b;
+      color: white;
+      padding: 18px 25px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    .topbar h1 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .admin-email {
+      font-size: 13px;
+      opacity: 0.8;
+      margin-top: 5px;
+    }
+
+    .logout-btn {
+      background: #dc2626;
+      color: white;
+    }
+
+    .logout-btn:hover {
+      background: #b91c1c;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 25px auto;
+      padding: 0 15px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 3px 15px rgba(0,0,0,0.06);
+    }
+
+    .card h2 {
+      margin-top: 0;
+      font-size: 19px;
+    }
+
+    /* =========================
+       SEARCH
+    ========================= */
+
+    .search-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .search-row input {
+      margin: 0;
+      flex: 1;
+    }
+
+    .blue-btn {
+      background: #2563eb;
+      color: white;
+    }
+
+    .green-btn {
+      background: #16a34a;
+      color: white;
+    }
+
+    .gray-btn {
+      background: #64748b;
+      color: white;
+    }
+
+    .red-btn {
+      background: #dc2626;
+      color: white;
+    }
+
+    .search-results {
+      margin-top: 15px;
+    }
+
+    .user-item {
+      padding: 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 9px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      background: #fafafa;
+    }
+
+    .user-item:hover {
+      background: #eff6ff;
+    }
+
+    /* =========================
+       STATS
+    ========================= */
+
+    .stats-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .selected-user {
+      color: #2563eb;
+      font-weight: bold;
+    }
+
+    .stats-table-wrapper {
+      overflow-x: auto;
+      margin-top: 15px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 600px;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid #e5e7eb;
+      padding: 12px 10px;
+      text-align: center;
+    }
+
+    th {
+      background: #f8fafc;
+    }
+
+    tr:hover td {
+      background: #fafafa;
+    }
+
+    .number-input {
+      width: 110px;
+      text-align: center;
+      margin: 0;
+    }
+
+    .action-btn {
+      margin: 2px;
+    }
+
+    /* =========================
+       MESSAGE
+    ========================= */
+
+    #message {
+      position: fixed;
+      left: 20px;
+      bottom: 20px;
+      padding: 13px 18px;
+      background: #1e293b;
+      color: white;
+      border-radius: 10px;
+      display: none;
+      z-index: 9999;
+    }
+
+    .loading {
+      text-align: center;
+      color: #64748b;
+      padding: 20px;
+    }
+
+    .empty {
+      text-align: center;
+      color: #777;
+      padding: 20px;
+    }
+
+    /* =========================
+       MOBILE
+    ========================= */
+
+    @media (max-width: 700px) {
+
+      .topbar {
+        padding: 15px;
+      }
+
+      .topbar h1 {
+        font-size: 18px;
+      }
+
+      .search-row {
+        flex-direction: column;
+      }
+
+      .search-row button {
+        width: 100%;
+      }
+
+      .container {
+        padding: 0 10px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- =====================================================
+     LOGIN
+===================================================== -->
+
+<div id="loginBox">
+
+  <h1>🔐 ورود مدیر</h1>
+
+  <div class="login-subtitle">
+    پنل مدیریت آمار صدور
+  </div>
+
+  <input
+    type="email"
+    id="loginEmail"
+    value="h-abbasi@gmail.com"
+    placeholder="ایمیل"
+  >
+
+  <input
+    type="password"
+    id="loginPassword"
+    placeholder="رمز عبور"
+  >
+
+  <button
+    class="login-btn"
+    onclick="login()"
+  >
+    ورود به پنل
+  </button>
+
+  <div id="loginError"></div>
+
+</div>
+
+
+<!-- =====================================================
+     ADMIN PANEL
+===================================================== -->
+
+<div id="adminPanel">
+
+  <div class="topbar">
+
+    <div>
+      <h1>📊 پنل مدیریت آمار صدور</h1>
+
+      <div
+        class="admin-email"
+        id="adminEmail"
+      ></div>
+    </div>
+
+    <button
+      class="logout-btn"
+      onclick="logout()"
+    >
+      خروج از حساب
+    </button>
+
+  </div>
+
+
+  <div class="container">
+
+    <!-- SEARCH USERS -->
+
+    <div class="card">
+
+      <h2>🔎 جستجوی کاربر</h2>
+
+      <div class="search-row">
+
+        <input
+          type="text"
+          id="usernameSearch"
+          placeholder="نام کاربری را وارد کنید..."
+          onkeydown="if(event.key === 'Enter') searchUsers()"
+        >
+
+        <button
+          class="blue-btn"
+          onclick="searchUsers()"
+        >
+          جستجو
+        </button>
+
+      </div>
+
+      <div
+        id="searchResults"
+        class="search-results"
+      ></div>
+
+    </div>
+
+
+    <!-- STATS -->
+
+    <div
+      class="card"
+      id="statsCard"
+      style="display:none;"
+    >
+
+      <div class="stats-header">
+
+        <div>
+
+          <h2>📈 آمار صدور</h2>
+
+          <div>
+            کاربر انتخاب شده:
+            <span
+              class="selected-user"
+              id="selectedUsername"
+            ></span>
+          </div>
+
+        </div>
+
+        <button
+          class="gray-btn"
+          onclick="clearSelectedUser()"
+        >
+          انتخاب کاربر دیگر
+        </button>
+
+      </div>
+
+
+      <!-- ADD NEW STAT -->
+
+      <div
+        style="
+          margin-top:20px;
+          padding:15px;
+          background:#f8fafc;
+          border-radius:10px;
+        "
+      >
+
+        <h3>➕ ثبت آمار جدید</h3>
+
+        <div
+          style="
+            display:flex;
+            gap:10px;
+            flex-wrap:wrap;
+          "
+        >
+
+          <input
+            type="date"
+            id="newDate"
+            style="flex:1; min-width:180px;"
+          >
+
+          <input
+            type="number"
+            id="newCount"
+            min="0"
+            placeholder="تعداد صدور"
+            style="flex:1; min-width:180px;"
+          >
+
+          <button
+            class="green-btn"
+            onclick="addStat()"
+          >
+            ثبت آمار
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <!-- TABLE -->
+
+      <div class="stats-table-wrapper">
+
+        <table>
+
+          <thead>
+
+            <tr>
+              <th>تاریخ</th>
+              <th>تعداد صدور</th>
+              <th>عملیات</th>
+            </tr>
+
+          </thead>
+
+          <tbody id="statsBody">
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<div id="message"></div>
+
+
+<script>
+
+  /* =====================================================
+     SUPABASE
+  ===================================================== */
+
+  const SUPABASE_URL =
+    "https://jmbpskxloffcrbxiqcdy.supabase.co";
+
+  const SUPABASE_ANON_KEY =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptYnBza3hsb2ZmY3JieGlxY2R5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MjU3MDgsImV4cCI6MjEwNTQwMTcwOH0.ZFHwX9hg7FxyjcEV4oJRpA2Rgoh0UqL2Xj7D3IO3YMU";
+
+  const supabaseClient =
+    supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_ANON_KEY
+    );
+
+
+  /* =====================================================
+     VARIABLES
+  ===================================================== */
+
+  let selectedUsername = null;
+
+
+  /* =====================================================
+     MESSAGE
+  ===================================================== */
+
+  function showMessage(message) {
+
+    const box =
+      document.getElementById("message");
+
+    box.textContent = message;
+
+    box.style.display = "block";
+
+    setTimeout(() => {
+      box.style.display = "none";
+    }, 3000);
+  }
+
+
+  /* =====================================================
+     LOGIN
+  ===================================================== */
+
+  async function login() {
+
+    const email =
+      document
+        .getElementById("loginEmail")
+        .value
+        .trim();
+
+    const password =
+      document
+        .getElementById("loginPassword")
+        .value;
+
+    const errorBox =
+      document.getElementById("loginError");
+
+    errorBox.textContent = "";
+
+    if (!email || !password) {
+
+      errorBox.textContent =
+        "ایمیل و رمز عبور را وارد کنید.";
+
+      return;
+    }
+
+
+    const { data, error } =
+      await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: password
+      });
+
+
+    if (error) {
+
+      console.error(error);
+
+      errorBox.textContent =
+        "ایمیل یا رمز عبور اشتباه است.";
+
+      return;
+    }
+
+
+    const user = data.user;
+
+
+    /* بررسی نقش */
+
+    const role =
+      user.app_metadata?.role;
+
+
+    if (role !== "admin") {
+
+      await supabaseClient.auth.signOut();
+
+      errorBox.textContent =
+        "این حساب دسترسی مدیر ندارد.";
+
+      return;
+    }
+
+
+    showAdminPanel(user);
+
+  }
+
+
+  /* =====================================================
+     SHOW ADMIN
+  ===================================================== */
+
+  function showAdminPanel(user) {
+
+    document
+      .getElementById("loginBox")
+      .style.display = "none";
+
+    document
+      .getElementById("adminPanel")
+      .style.display = "block";
+
+    document
+      .getElementById("adminEmail")
+      .textContent =
+        "وارد شده با: " + user.email;
+
+
+    searchUsers();
+
+  }
+
+
+  /* =====================================================
+     CHECK EXISTING SESSION
+  ===================================================== */
+
+  async function checkLogin() {
+
+    const { data } =
+      await supabaseClient.auth.getSession();
+
+    const session =
+      data.session;
+
+
+    if (!session) {
+      return;
+    }
+
+
+    const user =
+      session.user;
+
+
+    if (
+      user.app_metadata?.role === "admin"
+    ) {
+
+      showAdminPanel(user);
+
+    }
+
+  }
+
+
+  /* =====================================================
+     LOGOUT
+  ===================================================== */
+
+  async function logout() {
+
+    await supabaseClient.auth.signOut();
+
+    selectedUsername = null;
+
+    document
+      .getElementById("adminPanel")
+      .style.display = "none";
+
+    document
+      .getElementById("loginBox")
+      .style.display = "block";
+
+    document
+      .getElementById("loginPassword")
+      .value = "";
+
+    document
+      .getElementById("loginError")
+      .textContent = "";
+
+  }
+
+
+  /* =====================================================
+     SEARCH USERS
+  ===================================================== */
+
+  async function searchUsers() {
+
+    const search =
+      document
+        .getElementById("usernameSearch")
+        .value
+        .trim();
+
+
+    const results =
+      document.getElementById("searchResults");
+
+
+    results.innerHTML =
+      '<div class="loading">در حال جستجو...</div>';
+
+
+    let query =
+      supabaseClient
+        .from("profiles")
+        .select("username")
+        .order("username");
+
+
+    if (search) {
+
+      query =
+        query.ilike(
+          "username",
+          "%" + search + "%"
+        );
+
+    }
+
+
+    const {
+      data,
+      error
+    } = await query;
+
+
+    if (error) {
+
+      console.error(error);
+
+      results.innerHTML =
+        '<div class="empty">خطا در دریافت کاربران</div>';
+
+      return;
+    }
+
+
+    if (!data || data.length === 0) {
+
+      results.innerHTML =
+        '<div class="empty">کاربری پیدا نشد.</div>';
+
+      return;
+    }
+
+
+    results.innerHTML = "";
+
+
+    data.forEach(user => {
+
+      const div =
+        document.createElement("div");
+
+      div.className =
+        "user-item";
+
+      div.textContent =
+        "👤 " + user.username;
+
+      div.onclick = () =>
+        selectUser(user.username);
+
+      results.appendChild(div);
+
+    });
+
+  }
+
+
+  /* =====================================================
+     SELECT USER
+  ===================================================== */
+
+  async function selectUser(username) {
+
+    selectedUsername = username;
+
+
+    document
+      .getElementById("selectedUsername")
+      .textContent = username;
+
+
+    document
+      .getElementById("statsCard")
+      .style.display = "block";
+
+
+    await loadStats();
+
+  }
+
+
+  /* =====================================================
+     LOAD STATS
+  ===================================================== */
+
+  async function loadStats() {
+
+    if (!selectedUsername) {
+      return;
+    }
+
+
+    const tbody =
+      document.getElementById("statsBody");
+
+
+    tbody.innerHTML =
+      '<tr><td colspan="3">در حال دریافت اطلاعات...</td></tr>';
+
+
+    const {
+      data,
+      error
+    } = await supabaseClient
+      .from("orders")
+      .select("username, order_date, order_count")
+      .eq("username", selectedUsername)
+      .order("order_date", {
+        ascending: false
+      });
+
+
+    if (error) {
+
+      console.error(error);
+
+      tbody.innerHTML =
+        '<tr><td colspan="3">خطا در دریافت آمار</td></tr>';
+
+      return;
+    }
+
+
+    if (!data || data.length === 0) {
+
+      tbody.innerHTML =
+        '<tr><td colspan="3">برای این کاربر آماری ثبت نشده است.</td></tr>';
+
+      return;
+    }
+
+
+    tbody.innerHTML = "";
+
+
+    data.forEach(order => {
+
+      const tr =
+        document.createElement("tr");
+
+
+      const dateTd =
+        document.createElement("td");
+
+      dateTd.textContent =
+        order.order_date;
+
+
+      const countTd =
+        document.createElement("td");
+
+
+      const countInput =
+        document.createElement("input");
+
+      countInput.type = "number";
+
+      countInput.min = "0";
+
+      countInput.value =
+        order.order_count ?? 0;
+
+      countInput.className =
+        "number-input";
+
+
+      countTd.appendChild(
+        countInput
+      );
+
+
+      const actionTd =
+        document.createElement("td");
+
+
+      const saveBtn =
+        document.createElement("button");
+
+      saveBtn.textContent =
+        "ذخیره";
+
+      saveBtn.className =
+        "green-btn action-btn";
+
+
+      saveBtn.onclick =
+        () =>
+          updateStat(
+            order.order_date,
+            countInput.value
+          );
+
+
+      const deleteBtn =
+        document.createElement("button");
+
+      deleteBtn.textContent =
+        "حذف";
+
+      deleteBtn.className =
+        "red-btn action-btn";
+
+
+      deleteBtn.onclick =
+        () =>
+          deleteStat(
+            order.order_date
+          );
+
+
+      actionTd.appendChild(
+        saveBtn
+      );
+
+      actionTd.appendChild(
+        deleteBtn
+      );
+
+
+      tr.appendChild(
+        dateTd
+      );
+
+      tr.appendChild(
+        countTd
+      );
+
+      tr.appendChild(
+        actionTd
+      );
+
+
+      tbody.appendChild(tr);
+
+    });
+
+  }
+
+
+  /* =====================================================
+     ADD STAT
+  ===================================================== */
+
+  async function addStat() {
+
+    if (!selectedUsername) {
+
+      showMessage(
+        "ابتدا یک کاربر انتخاب کنید."
+      );
+
+      return;
+    }
+
+
+    const date =
+      document
+        .getElementById("newDate")
+        .value;
+
+
+    const count =
+      document
+        .getElementById("newCount")
+        .value;
+
+
+    if (!date) {
+
+      showMessage(
+        "تاریخ را انتخاب کنید."
+      );
+
+      return;
+    }
+
+
+    if (
+      count === "" ||
+      Number(count) < 0
+    ) {
+
+      showMessage(
+        "تعداد صدور را صحیح وارد کنید."
+      );
+
+      return;
+    }
+
+
+    const {
+      error
+    } = await supabaseClient
+      .from("orders")
+      .upsert(
+        {
+          username: selectedUsername,
+          order_date: date,
+          order_count: Number(count)
+        },
+        {
+          onConflict:
+            "username,order_date"
+        }
+      );
+
+
+    if (error) {
+
+      console.error(error);
+
+      showMessage(
+        "خطا در ثبت آمار: " +
+        error.message
+      );
+
+      return;
+    }
+
+
+    document
+      .getElementById("newDate")
+      .value = "";
+
+
+    document
+      .getElementById("newCount")
+      .value = "";
+
+
+    showMessage(
+      "آمار با موفقیت ثبت شد."
+    );
+
+
+    await loadStats();
+
+  }
+
+
+  /* =====================================================
+     UPDATE STAT
+  ===================================================== */
+
+  async function updateStat(
+    date,
+    count
+  ) {
+
+    if (!selectedUsername) {
+      return;
+    }
+
+
+    if (
+      count === "" ||
+      Number(count) < 0
+    ) {
+
+      showMessage(
+        "تعداد صدور معتبر نیست."
+      );
+
+      return;
+    }
+
+
+    const {
+      error
+    } = await supabaseClient
+      .from("orders")
+      .update({
+        order_count: Number(count)
+      })
+      .eq(
+        "username",
+        selectedUsername
+      )
+      .eq(
+        "order_date",
+        date
+      );
+
+
+    if (error) {
+
+      console.error(error);
+
+      showMessage(
+        "خطا در ذخیره: " +
+        error.message
+      );
+
+      return;
+    }
+
+
+    showMessage(
+      "آمار با موفقیت ذخیره شد."
+    );
+
+
+    await loadStats();
+
+  }
+
+
+  /* =====================================================
+     DELETE STAT
+  ===================================================== */
+
+  async function deleteStat(date) {
+
+    if (!selectedUsername) {
+      return;
+    }
+
+
+    const confirmed =
+      confirm(
+        "آیا از حذف آمار این تاریخ مطمئن هستید؟"
+      );
+
+
+    if (!confirmed) {
+      return;
+    }
+
+
+    const {
+      error
+    } = await supabaseClient
+      .from("orders")
+      .delete()
+      .eq(
+        "username",
+        selectedUsername
+      )
+      .eq(
+        "order_date",
+        date
+      );
+
+
+    if (error) {
+
+      console.error(error);
+
+      showMessage(
+        "خطا در حذف: " +
+        error.message
+      );
+
+      return;
+    }
+
+
+    showMessage(
+      "آمار حذف شد."
+    );
+
+
+    await loadStats();
+
+  }
+
+
+  /* =====================================================
+     CLEAR SELECTED USER
+  ===================================================== */
+
+  function clearSelectedUser() {
+
+    selectedUsername = null;
+
+    document
+      .getElementById("statsCard")
+      .style.display = "none";
+
+  }
+
+
+  /* =====================================================
+     START
+  ===================================================== */
+
+  checkLogin();
+
+</script>
+
+</body>
+</html>
