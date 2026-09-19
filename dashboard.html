@@ -2,87 +2,107 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>حساب کاربری</title>
 <script>
-  /* اعمال تم قبل از رسم صفحه تا موقع لود چشمک نزنه */
   try { if (localStorage.getItem("site_theme") === "light") document.documentElement.setAttribute("data-theme", "light"); } catch (e) {}
 </script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   * { box-sizing: border-box; }
+
   :root {
-    --page-base: #0b0e1e;
-    --blob1: rgba(109, 91, 255, 0.45);
-    --blob2: rgba(79, 123, 255, 0.34);
-    --blob3: rgba(150, 90, 230, 0.26);
-    --dot: rgba(255, 255, 255, 0.09);
-    --grain-opacity: 0.09;
+    --page-base: #080a18;
+    --blob1: rgba(109, 91, 255, 0.42);
+    --blob2: rgba(79, 123, 255, 0.30);
+    --blob3: rgba(160, 90, 230, 0.22);
+    --dot: rgba(255, 255, 255, 0.07);
+    --grain-opacity: 0.085;
     --grain-blend: overlay;
-    --card-bg: rgba(19, 23, 46, 0.92);
+
+    --card-bg: rgba(17, 21, 43, 0.78);
     --card-border: rgba(255, 255, 255, 0.09);
-    --card-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+    --card-shadow: 0 40px 90px rgba(0, 0, 0, 0.55);
+    --sheen: rgba(255, 255, 255, 0.055);
+
     --text: #eef1fb;
-    --text-dim: #9aa3c7;
-    --row-bg: rgba(255, 255, 255, 0.045);
-    --row-border: rgba(255, 255, 255, 0.08);
+    --text-dim: #8b93bd;
+    --text-faint: #666e99;
+
+    --row-bg: rgba(255, 255, 255, 0.04);
+    --row-bg-hover: rgba(255, 255, 255, 0.075);
+    --row-border: rgba(255, 255, 255, 0.075);
     --input-bg: rgba(8, 10, 26, 0.6);
     --input-border: rgba(255, 255, 255, 0.13);
+
     --accent1: #6d5bff;
     --accent2: #4f7bff;
+    --mint: #2fd3a7;
+    --bar: rgba(109, 91, 255, 0.22);
+    --shimmer: rgba(255, 255, 255, 0.08);
   }
+
   [data-theme="light"] {
-    --page-base: #e9ecf7;
-    --blob1: rgba(140, 125, 255, 0.42);
-    --blob2: rgba(110, 150, 255, 0.36);
-    --blob3: rgba(190, 150, 255, 0.30);
-    --dot: rgba(60, 66, 120, 0.13);
-    --grain-opacity: 0.10;
+    --page-base: #eaedf8;
+    --blob1: rgba(140, 125, 255, 0.40);
+    --blob2: rgba(110, 150, 255, 0.34);
+    --blob3: rgba(190, 150, 255, 0.26);
+    --dot: rgba(60, 66, 120, 0.12);
+    --grain-opacity: 0.09;
     --grain-blend: multiply;
-    --card-bg: rgba(255, 255, 255, 0.92);
+
+    --card-bg: rgba(255, 255, 255, 0.82);
     --card-border: rgba(110, 115, 180, 0.20);
-    --card-shadow: 0 30px 70px rgba(70, 75, 140, 0.22);
-    --text: #1b1f3a;
+    --card-shadow: 0 34px 70px rgba(70, 75, 140, 0.20);
+    --sheen: rgba(255, 255, 255, 0.55);
+
+    --text: #161a33;
     --text-dim: #5a6088;
-    --row-bg: rgba(90, 96, 136, 0.06);
-    --row-border: rgba(90, 96, 136, 0.15);
+    --text-faint: #7c83aa;
+
+    --row-bg: rgba(90, 96, 136, 0.055);
+    --row-bg-hover: rgba(90, 96, 136, 0.10);
+    --row-border: rgba(90, 96, 136, 0.14);
     --input-bg: rgba(238, 241, 255, 0.85);
     --input-border: rgba(90, 96, 136, 0.25);
+
+    --mint: #12a883;
+    --bar: rgba(109, 91, 255, 0.16);
+    --shimmer: rgba(90, 96, 136, 0.10);
   }
 
   html { margin: 0; min-height: 100%; background: var(--page-base); }
+
   body {
     margin: 0;
-    font-family: Tahoma, Arial, sans-serif;
+    font-family: Vazirmatn, Tahoma, Arial, sans-serif;
+    font-weight: 400;
     color: var(--text);
     background: transparent;
     min-height: 100vh; min-height: 100dvh;
-    padding: 24px 16px;
+    padding: calc(22px + env(safe-area-inset-top, 0px)) 16px calc(28px + env(safe-area-inset-bottom, 0px));
     display: flex; flex-direction: column; align-items: center;
+    -webkit-font-smoothing: antialiased;
   }
 
-  /* ---------- پس‌زمینه ثابت و مات ---------- */
-  .bg {
-    position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
-    background: var(--page-base);
-  }
-  .blob {
-    position: absolute; border-radius: 50%; filter: blur(110px);
-    will-change: transform;
-  }
-  .b1 { width: 62vmax; height: 62vmax; top: -22vmax; right: -16vmax; background: var(--blob1); animation: drift1 34s ease-in-out infinite alternate; }
-  .b2 { width: 56vmax; height: 56vmax; bottom: -24vmax; left: -18vmax; background: var(--blob2); animation: drift2 41s ease-in-out infinite alternate; }
-  .b3 { width: 40vmax; height: 40vmax; top: 34%; left: 30%; background: var(--blob3); animation: drift3 47s ease-in-out infinite alternate; }
+  /* ---------- پس‌زمینه ---------- */
+  .bg { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; background: var(--page-base); }
+  .blob { position: absolute; border-radius: 50%; filter: blur(120px); will-change: transform; }
+  .b1 { width: 62vmax; height: 62vmax; top: -24vmax; right: -16vmax; background: var(--blob1); animation: drift1 34s ease-in-out infinite alternate; }
+  .b2 { width: 56vmax; height: 56vmax; bottom: -26vmax; left: -18vmax; background: var(--blob2); animation: drift2 41s ease-in-out infinite alternate; }
+  .b3 { width: 40vmax; height: 40vmax; top: 36%; left: 32%; background: var(--blob3); animation: drift3 47s ease-in-out infinite alternate; }
   @keyframes drift1 { to { transform: translate3d(-9vmax, 11vmax, 0) scale(1.08); } }
   @keyframes drift2 { to { transform: translate3d(12vmax, -8vmax, 0) scale(1.1); } }
   @keyframes drift3 { to { transform: translate3d(-14vmax, -6vmax, 0) scale(0.9); } }
-
   .dots {
     position: absolute; inset: 0;
     background-image: radial-gradient(var(--dot) 1.2px, transparent 1.3px);
     background-size: 30px 30px;
-    -webkit-mask-image: radial-gradient(ellipse at center, #000 15%, transparent 72%);
-            mask-image: radial-gradient(ellipse at center, #000 15%, transparent 72%);
+    -webkit-mask-image: radial-gradient(ellipse at center, #000 12%, transparent 70%);
+            mask-image: radial-gradient(ellipse at center, #000 12%, transparent 70%);
   }
   .grain {
     position: absolute; inset: 0; opacity: var(--grain-opacity); mix-blend-mode: var(--grain-blend);
@@ -91,75 +111,181 @@
 
   /* ---------- سوییچ تم ---------- */
   .theme-toggle {
-    display: flex; align-items: center; gap: 8px;
+    display: flex; align-items: center; gap: 9px;
     background: var(--card-bg); border: 1px solid var(--card-border);
-    border-radius: 999px; padding: 6px 12px; margin-bottom: 22px;
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border-radius: 999px; padding: 6px 13px; margin-bottom: 20px;
     cursor: pointer; user-select: none;
+    opacity: 0; transform: translateY(-8px);
+    animation: fadeDown 0.6s cubic-bezier(.2,.7,.3,1) 0.05s forwards;
   }
-  .theme-toggle span { font-size: 15px; }
-  .switch {
-    width: 40px; height: 20px; background: var(--input-bg);
-    border-radius: 999px; position: relative; border: 1px solid var(--input-border);
-  }
+  .theme-toggle span { font-size: 14px; line-height: 1; }
+  .switch { width: 40px; height: 20px; background: var(--input-bg); border-radius: 999px; position: relative; border: 1px solid var(--input-border); }
   .switch .knob {
-    position: absolute; top: 1px; right: 1px; width: 16px; height: 16px;
-    border-radius: 50%; background: linear-gradient(135deg, var(--accent1), var(--accent2));
-    transition: transform 0.3s ease;
+    position: absolute; top: 1px; right: 1px; width: 16px; height: 16px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent1), var(--accent2));
+    box-shadow: 0 0 12px rgba(109, 91, 255, 0.55);
+    transition: transform 0.35s cubic-bezier(.6,-0.3,.3,1.3);
   }
   [data-theme="light"] .switch .knob { transform: translateX(-20px); }
+  @keyframes fadeDown { to { opacity: 1; transform: translateY(0); } }
 
   /* ---------- کارت ---------- */
   .box {
-    background: var(--card-bg); border: 1px solid var(--card-border);
-    padding: 30px 28px 26px; border-radius: 22px; width: 100%; max-width: 430px;
+    position: relative;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    backdrop-filter: blur(26px) saturate(140%);
+    -webkit-backdrop-filter: blur(26px) saturate(140%);
+    padding: 26px 24px 22px;
+    border-radius: 26px; width: 100%; max-width: 440px;
     box-shadow: var(--card-shadow);
+    overflow: hidden;
+    opacity: 0; transform: translateY(26px) scale(0.985);
+    animation: cardIn 0.85s cubic-bezier(.16,.84,.3,1) 0.1s forwards;
   }
-  h1 { font-size: 20px; margin: 0 0 6px; text-align: center; }
+  @keyframes cardIn { to { opacity: 1; transform: translateY(0) scale(1); } }
+
+  /* نوار نور بالای کارت */
+  .box::before {
+    content: ""; position: absolute; top: 0; right: 12%; left: 12%; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--sheen), transparent);
+  }
+
+  /* ---------- سربرگ ---------- */
+  .head { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
+  .avatar {
+    width: 46px; height: 46px; border-radius: 15px; flex-shrink: 0;
+    display: grid; place-items: center;
+    font-size: 17px; font-weight: 700; color: #fff; letter-spacing: 0.5px;
+    background: linear-gradient(140deg, var(--accent1), var(--accent2));
+    box-shadow: 0 10px 24px rgba(79, 110, 255, 0.35);
+    direction: ltr;
+  }
+  .head-txt { min-width: 0; }
+  .greet { font-size: 16px; font-weight: 700; margin: 0 0 3px; letter-spacing: -0.2px; }
   .username {
-    color: var(--text-dim); font-size: 13px; text-align: center; margin-bottom: 22px;
-    direction: ltr; unicode-bidi: plaintext; min-height: 18px;
+    color: var(--text-dim); font-size: 12.5px; direction: ltr; unicode-bidi: plaintext;
+    min-height: 16px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
+
+  /* ---------- هیرو ---------- */
   .total {
-    text-align: center; margin-bottom: 20px; padding: 20px 16px 18px;
-    background: var(--row-bg); border-radius: 16px; border: 1px solid var(--row-border);
+    position: relative; overflow: hidden;
+    padding: 22px 18px 0;
+    background: var(--row-bg); border-radius: 20px; border: 1px solid var(--row-border);
+    margin-bottom: 12px;
   }
   .total .num {
-    font-size: 40px; font-weight: bold; line-height: 1.2;
-    background: linear-gradient(135deg, var(--accent1), var(--accent2));
+    font-size: 52px; font-weight: 900; line-height: 1; text-align: center;
+    background: linear-gradient(135deg, var(--accent1), var(--accent2) 60%, var(--mint));
     -webkit-background-clip: text; background-clip: text; color: transparent;
-    font-variant-numeric: tabular-nums;
+    font-variant-numeric: tabular-nums; letter-spacing: -1.5px;
   }
-  .total .lbl { font-size: 12px; color: var(--text-dim); margin-top: 6px; }
+  .total .lbl { font-size: 11.5px; color: var(--text-dim); margin-top: 7px; text-align: center; }
+  .spark { display: block; width: 100%; height: 66px; margin-top: 10px; }
+  .spark .line { fill: none; stroke: url(#sparkGrad); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .spark .area { fill: url(#areaGrad); opacity: 0; transition: opacity 0.8s ease 0.6s; }
+  .spark.drawn .area { opacity: 1; }
+  .spark .pt { fill: var(--mint); opacity: 0; transition: opacity 0.4s ease 1.1s; }
+  .spark.drawn .pt { opacity: 1; }
 
-  .list-title { font-size: 12px; color: var(--text-dim); margin: 0 2px 8px; }
-  .list {
-    display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px;
-    max-height: 340px; overflow-y: auto; padding-left: 4px;
+  /* ---------- آمار ---------- */
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
+  .stat {
+    background: var(--row-bg); border: 1px solid var(--row-border);
+    border-radius: 14px; padding: 12px 8px; text-align: center;
   }
-  .list::-webkit-scrollbar { width: 6px; }
+  .stat b { display: block; font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.3px; }
+  .stat span { display: block; font-size: 10.5px; color: var(--text-faint); margin-top: 4px; }
+
+  /* ---------- لیست ---------- */
+  .list-head { display: flex; justify-content: space-between; align-items: baseline; margin: 0 3px 9px; }
+  .list-head h2 { font-size: 12.5px; font-weight: 500; color: var(--text-dim); margin: 0; }
+  .list-head em { font-style: normal; font-size: 11px; color: var(--text-faint); font-variant-numeric: tabular-nums; }
+
+  .list-wrap {
+    position: relative; margin-bottom: 18px;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
+            mask-image: linear-gradient(to bottom, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
+  }
+  .list {
+    display: flex; flex-direction: column; gap: 8px;
+    max-height: 296px; overflow-y: auto; overscroll-behavior: contain;
+    padding: 6px 4px 6px 6px;
+    perspective: 900px;
+    scrollbar-width: thin; scrollbar-color: var(--row-border) transparent;
+  }
+  .list::-webkit-scrollbar { width: 5px; }
+  .list::-webkit-scrollbar-track { background: transparent; }
   .list::-webkit-scrollbar-thumb { background: var(--row-border); border-radius: 10px; }
+
   .row {
+    position: relative; overflow: hidden; flex-shrink: 0;
     display: flex; justify-content: space-between; align-items: center;
     background: var(--row-bg); border: 1px solid var(--row-border);
-    border-radius: 11px; padding: 11px 14px; font-size: 14px;
+    border-radius: 13px; padding: 12px 14px; font-size: 14px;
+    transform-origin: center center;
+    will-change: transform, opacity;
+    transition: background 0.25s ease, border-color 0.25s ease;
   }
-  .row .date { color: var(--text-dim); font-variant-numeric: tabular-nums; }
-  .row .count { font-weight: bold; font-variant-numeric: tabular-nums; }
-  .empty { text-align: center; color: var(--text-dim); font-size: 13px; padding: 20px 0; }
+  .row:hover { background: var(--row-bg-hover); }
+  /* نوار سهم هر روز */
+  .row .fill {
+    position: absolute; inset: 0 0 0 auto; width: 0;
+    background: linear-gradient(270deg, var(--bar), transparent);
+    transform-origin: right center;
+    transition: width 0.9s cubic-bezier(.16,.84,.3,1);
+  }
+  .row > * { position: relative; }
+  .row .date { color: var(--text-dim); font-variant-numeric: tabular-nums; font-size: 13px; letter-spacing: 0.2px; direction: ltr; }
+  .row .count { font-weight: 700; font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 7px; }
+  .row.peak .count { color: var(--mint); }
+  .row.peak .tag {
+    font-size: 9.5px; font-weight: 500; color: var(--mint);
+    border: 1px solid currentColor; border-radius: 6px; padding: 2px 5px; opacity: 0.85;
+  }
 
-  button.logout {
-    width: 100%; padding: 12px; border-radius: 11px;
-    background: var(--row-bg); border: 1px solid var(--row-border);
-    color: var(--text); cursor: pointer; font-size: 14px; font-family: inherit;
-    transition: border-color 0.2s ease, transform 0.15s ease;
+  /* ورود پلکانی ردیف‌ها */
+  .row.enter { opacity: 0; transform: translateY(14px); }
+  .row.entered { animation: rowIn 0.55s cubic-bezier(.16,.84,.3,1) forwards; }
+  @keyframes rowIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+
+  .empty { text-align: center; color: var(--text-dim); font-size: 13px; padding: 26px 10px; line-height: 1.9; }
+  .empty b { display: block; color: var(--text); font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+
+  /* اسکلت بارگذاری */
+  .skel { height: 45px; border-radius: 13px; background: var(--row-bg); position: relative; overflow: hidden; flex-shrink: 0; }
+  .skel::after {
+    content: ""; position: absolute; inset: 0; transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, var(--shimmer), transparent);
+    animation: sweep 1.3s infinite;
   }
-  button.logout:hover { border-color: var(--accent1); }
+  @keyframes sweep { to { transform: translateX(100%); } }
+
+  /* ---------- خروج ---------- */
+  button.logout {
+    width: 100%; padding: 13px; border-radius: 14px;
+    background: var(--row-bg); border: 1px solid var(--row-border);
+    color: var(--text-dim); cursor: pointer; font-size: 13.5px; font-family: inherit; font-weight: 500;
+    transition: color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+  }
+  button.logout:hover { color: var(--text); border-color: var(--accent1); }
   button.logout:active { transform: scale(0.985); }
   button.logout:focus-visible { outline: 2px solid var(--accent2); outline-offset: 3px; }
+  .theme-toggle:focus-visible { outline: 2px solid var(--accent2); outline-offset: 3px; }
+
+  @media (max-width: 400px) {
+    .total .num { font-size: 44px; }
+    .box { padding: 22px 18px 20px; border-radius: 22px; }
+  }
 
   @media (prefers-reduced-motion: reduce) {
     .blob { animation: none; }
-    .switch .knob, button.logout { transition: none; }
+    .box, .theme-toggle { animation: none; opacity: 1; transform: none; }
+    .row.entered { animation: none; opacity: 1; transform: none; }
+    .switch .knob, button.logout, .row, .row .fill { transition: none; }
+    .skel::after { animation: none; }
   }
 </style>
 </head>
@@ -178,49 +304,90 @@
     <span>🌙</span>
   </div>
 
-  <div class="box">
-    <h1>خوش اومدید</h1>
-    <div class="username" id="usernameDisplay"></div>
+  <main class="box">
+    <div class="head">
+      <div class="avatar" id="avatar">—</div>
+      <div class="head-txt">
+        <p class="greet">خوش اومدید</p>
+        <div class="username" id="usernameDisplay"></div>
+      </div>
+    </div>
 
     <div class="total">
       <div class="num" id="totalCount">0</div>
       <div class="lbl">مجموع سفارش‌ها</div>
+      <svg class="spark" id="spark" viewBox="0 0 300 70" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="sparkGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#4f7bff"/>
+            <stop offset="55%" stop-color="#6d5bff"/>
+            <stop offset="100%" stop-color="#2fd3a7"/>
+          </linearGradient>
+          <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#6d5bff" stop-opacity="0.32"/>
+            <stop offset="100%" stop-color="#6d5bff" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path class="area" id="sparkArea" d=""></path>
+        <path class="line" id="sparkLine" d=""></path>
+        <circle class="pt" id="sparkDot" r="3.4" cx="0" cy="0"></circle>
+      </svg>
     </div>
 
-    <div class="list-title" id="listTitle" style="display:none">سابقه ثبت</div>
-    <div class="list" id="list"></div>
+    <div class="stats" id="stats" hidden>
+      <div class="stat"><b id="stDays">0</b><span>روز ثبت‌شده</span></div>
+      <div class="stat"><b id="stAvg">0</b><span>میانگین هر روز</span></div>
+      <div class="stat"><b id="stMax">0</b><span>بیشترین در یک روز</span></div>
+    </div>
 
-    <button class="logout" id="logoutBtn">خروج</button>
-  </div>
+    <div class="list-head" id="listHead" hidden>
+      <h2>سابقه ثبت</h2>
+      <em id="listMeta"></em>
+    </div>
+
+    <div class="list-wrap">
+      <div class="list" id="list">
+        <div class="skel"></div>
+        <div class="skel"></div>
+        <div class="skel"></div>
+      </div>
+    </div>
+
+    <button class="logout" id="logoutBtn">خروج از حساب</button>
+  </main>
 
 <script>
   const SUPABASE_URL = "https://jmbpskxloffcrbxiqcdy.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptYnBza3hsb2ZmY3JieGlxY2R5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MjU3MDgsImV4cCI6MjEwNTQwMTcwOH0.ZFHwX9hg7FxyjcEV4oJRpA2Rgoh0UqL2Xj7D3IO3YMU";
   const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+  const REDUCE = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
   /* ---------- تم ---------- */
   const root = document.documentElement;
   const themeToggle = document.getElementById("themeToggle");
   function toggleTheme() {
     const isLight = root.getAttribute("data-theme") === "light";
-    if (isLight) { root.removeAttribute("data-theme"); localStorage.setItem("site_theme", "dark"); }
-    else { root.setAttribute("data-theme", "light"); localStorage.setItem("site_theme", "light"); }
+    if (isLight) { root.removeAttribute("data-theme"); try { localStorage.setItem("site_theme", "dark"); } catch (e) {} }
+    else { root.setAttribute("data-theme", "light"); try { localStorage.setItem("site_theme", "light"); } catch (e) {} }
   }
   themeToggle.addEventListener("click", toggleTheme);
   themeToggle.addEventListener("keydown", (e) => {
     if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleTheme(); }
   });
 
-  /* اعداد اعشاری: گرد کردن تا ۲ رقم تا خطای جمع اعشار (مثل 1074.1000000000001) دیده نشه */
-  function fmt(n) {
-    return String(Math.round(Number(n) * 100) / 100);
+  /* ---------- کمکی‌ها ---------- */
+  function fmt(n) { return String(Math.round(Number(n) * 100) / 100); }
+
+  function initials(name) {
+    if (!name) return "—";
+    const parts = String(name).replace(/[_.]/g, "-").split(/[-\s]+/).filter(Boolean);
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return String(name).slice(0, 2).toUpperCase();
   }
 
-  /* شمارش تدریجی عدد مجموع (با احترام به تنظیم «کاهش حرکت») */
-  function animateTotal(el, target) {
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduce || target === 0) { el.textContent = fmt(target); return; }
-    const duration = 800;
+  function animateNumber(el, target, duration) {
+    if (REDUCE || target === 0) { el.textContent = fmt(target); return; }
     const start = performance.now();
     function frame(now) {
       const t = Math.min((now - start) / duration, 1);
@@ -232,12 +399,149 @@
     requestAnimationFrame(frame);
   }
 
+  /* ---------- نمودار روند ---------- */
+  function drawSpark(values) {
+    const svg = document.getElementById("spark");
+    const line = document.getElementById("sparkLine");
+    const area = document.getElementById("sparkArea");
+    const dot = document.getElementById("sparkDot");
+    if (!values.length) { svg.style.display = "none"; return; }
+
+    const W = 300, H = 70, padY = 10, padX = 6;
+    const vals = values.length === 1 ? [values[0], values[0]] : values;
+    const max = Math.max(...vals), min = Math.min(...vals);
+    const span = max - min || 1;
+
+    const pts = vals.map((v, i) => {
+      const x = padX + (i / (vals.length - 1)) * (W - padX * 2);
+      const y = H - padY - ((v - min) / span) * (H - padY * 2);
+      return [x, y];
+    });
+
+    // منحنی نرم (Catmull-Rom → Bezier)
+    let d = `M ${pts[0][0]} ${pts[0][1]}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+      const c1x = p1[0] + (p2[0] - p0[0]) / 6, c1y = p1[1] + (p2[1] - p0[1]) / 6;
+      const c2x = p2[0] - (p3[0] - p1[0]) / 6, c2y = p2[1] - (p3[1] - p1[1]) / 6;
+      d += ` C ${c1x} ${c1y}, ${c2x} ${c2y}, ${p2[0]} ${p2[1]}`;
+    }
+
+    line.setAttribute("d", d);
+    area.setAttribute("d", `${d} L ${pts[pts.length - 1][0]} ${H} L ${pts[0][0]} ${H} Z`);
+    const last = pts[pts.length - 1];
+    dot.setAttribute("cx", last[0]);
+    dot.setAttribute("cy", last[1]);
+
+    if (REDUCE) { svg.classList.add("drawn"); return; }
+    const len = line.getTotalLength();
+    line.style.strokeDasharray = len;
+    line.style.strokeDashoffset = len;
+    line.getBoundingClientRect();
+    line.style.transition = "stroke-dashoffset 1.25s cubic-bezier(.3,.8,.3,1) 0.25s";
+    line.style.strokeDashoffset = "0";
+    setTimeout(() => svg.classList.add("drawn"), 120);
+  }
+
+  /* ---------- عمق سه‌بعدی هنگام اسکرول لیست ---------- */
+  function bindScrollDepth(listEl) {
+    if (REDUCE) return;
+    let ticking = false;
+    function update() {
+      const box = listEl.getBoundingClientRect();
+      const center = box.top + box.height / 2;
+      const reach = box.height / 2 + 40;
+      for (const row of listEl.querySelectorAll(".row")) {
+        const r = row.getBoundingClientRect();
+        const dist = (r.top + r.height / 2 - center) / reach;      // -1 .. 1
+        const k = Math.min(Math.abs(dist), 1);
+        const scale = 1 - k * 0.085;
+        const rotate = dist * 9;                                    // چرخش نرم مثل چرخ‌دنده
+        const shift = dist * 5;
+        row.style.transform = `translateZ(${-k * 55}px) translateY(${shift}px) rotateX(${rotate}deg) scale(${scale})`;
+        row.style.opacity = String(1 - k * 0.55);
+      }
+      ticking = false;
+    }
+    function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(update); } }
+    listEl.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+    listEl._depthUpdate = update;
+    update();
+  }
+
+  /* ---------- ساخت لیست ---------- */
+  function renderRows(listEl, rows, max) {
+    listEl.innerHTML = "";
+    rows.forEach((row, i) => {
+      const count = Number(row.order_count) || 0;
+
+      const div = document.createElement("div");
+      div.className = "row enter";
+      if (count === max && max > 0) div.classList.add("peak");
+
+      const fill = document.createElement("span");
+      fill.className = "fill";
+
+      const dateEl = document.createElement("span");
+      dateEl.className = "date";
+      dateEl.textContent = row.order_date;
+
+      const countEl = document.createElement("span");
+      countEl.className = "count";
+      const numSpan = document.createElement("span");
+      numSpan.textContent = fmt(count);
+      if (count === max && max > 0 && rows.length > 1) {
+        const tag = document.createElement("span");
+        tag.className = "tag";
+        tag.textContent = "بیشترین";
+        countEl.appendChild(tag);
+      }
+      countEl.appendChild(numSpan);
+
+      div.appendChild(fill);
+      div.appendChild(dateEl);
+      div.appendChild(countEl);
+      listEl.appendChild(div);
+
+      const delay = Math.min(i, 8) * 60;
+      setTimeout(() => {
+        div.classList.remove("enter");
+        div.classList.add("entered");
+        fill.style.width = max > 0 ? Math.max(6, (count / max) * 100) + "%" : "0";
+      }, 260 + delay);
+    });
+
+    setTimeout(() => {
+      // بعد از پایان ورود، کنترل ترنسفورم به اسکرول سپرده می‌شود
+      listEl.querySelectorAll(".row").forEach(r => r.classList.remove("entered"));
+      bindScrollDepth(listEl);
+    }, 300 + Math.min(rows.length, 9) * 60 + 560);
+  }
+
+  function showEmpty(listEl) {
+    listEl.innerHTML = "";
+    const empty = document.createElement("div");
+    empty.className = "empty";
+    const b = document.createElement("b");
+    b.textContent = "هنوز سفارشی ثبت نشده";
+    const p = document.createElement("span");
+    p.textContent = "به‌محض ثبت اولین سفارش، همین‌جا نمایش داده می‌شود.";
+    empty.appendChild(b);
+    empty.appendChild(p);
+    listEl.appendChild(empty);
+    document.getElementById("spark").style.display = "none";
+    document.getElementById("totalCount").textContent = "0";
+  }
+
+  /* ---------- شروع ---------- */
   async function init() {
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session) { window.location.href = "index.html"; return; }
 
     const username = localStorage.getItem("current_username");
     document.getElementById("usernameDisplay").textContent = username || "";
+    document.getElementById("avatar").textContent = initials(username);
 
     const { data, error } = await supabaseClient
       .from("orders")
@@ -246,44 +550,31 @@
       .order("order_date", { ascending: true });
 
     const listEl = document.getElementById("list");
-    listEl.innerHTML = "";
 
-    if (error || !data || data.length === 0) {
-      const empty = document.createElement("div");
-      empty.className = "empty";
-      empty.textContent = "هنوز سفارشی ثبت نشده";
-      listEl.appendChild(empty);
-      document.getElementById("totalCount").textContent = "0";
-      return;
-    }
+    if (error || !data || data.length === 0) { showEmpty(listEl); return; }
 
-    document.getElementById("listTitle").style.display = "block";
+    const counts = data.map(r => Number(r.order_count) || 0);
+    const total = counts.reduce((a, b) => a + b, 0);
+    const max = Math.max(...counts);
+    const avg = total / counts.length;
 
-    let total = 0;
-    data.forEach(row => {
-      const count = Number(row.order_count) || 0;
-      total += count;
+    document.getElementById("stats").hidden = false;
+    document.getElementById("listHead").hidden = false;
+    document.getElementById("listMeta").textContent = data.length + " رکورد";
 
-      const div = document.createElement("div");
-      div.className = "row";
+    animateNumber(document.getElementById("totalCount"), total, 900);
+    animateNumber(document.getElementById("stDays"), data.length, 700);
+    animateNumber(document.getElementById("stAvg"), Math.round(avg * 10) / 10, 700);
+    animateNumber(document.getElementById("stMax"), max, 700);
 
-      const dateEl = document.createElement("span");
-      dateEl.className = "date";
-      dateEl.textContent = row.order_date;
-
-      const countEl = document.createElement("span");
-      countEl.className = "count";
-      countEl.textContent = fmt(count);
-
-      div.appendChild(dateEl);
-      div.appendChild(countEl);
-      listEl.appendChild(div);
-    });
-
-    animateTotal(document.getElementById("totalCount"), total);
+    drawSpark(counts);
+    renderRows(listEl, data, max);
   }
 
-  document.getElementById("logoutBtn").addEventListener("click", async () => {
+  document.getElementById("logoutBtn").addEventListener("click", async (e) => {
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    btn.textContent = "در حال خروج…";
     await supabaseClient.auth.signOut();
     localStorage.removeItem("current_username");
     window.location.href = "index.html";
