@@ -292,7 +292,34 @@
 <script>
   const SUPABASE_URL = "https://jmbpskxloffcrbxiqcdy.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptYnBza3hsb2ZmY3JieGlxY2R5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MjU3MDgsImV4cCI6MjEwNTQwMTcwOH0.ZFHwX9hg7FxyjcEV4oJRpA2Rgoh0UqL2Xj7D3IO3YMU";
-  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  /* ---------- ذخیره‌سازی سشن بر اساس تیک «مرا به خاطر بسپار» ----------
+     پیش‌فرض Supabase همیشه سشن رو در localStorage (دائمی) نگه می‌داره،
+     مستقل از این‌که کاربر تیک را زده باشد یا نه. اینجا یک آداپتور
+     می‌سازیم: اگر تیک زده شده، localStorage (تا وقتی خودش خارج نشود)؛
+     اگر تیک زده نشده، sessionStorage (با بستن تب/مرورگر پاک می‌شود). */
+  const dynamicStorage = {
+    getItem: (key) => {
+      try { return sessionStorage.getItem(key) || localStorage.getItem(key); }
+      catch (e) { return null; }
+    },
+    setItem: (key, value) => {
+      let remember = "false";
+      try { remember = localStorage.getItem("remember_pref") || "false"; } catch (e) {}
+      try {
+        if (remember === "true") { localStorage.setItem(key, value); sessionStorage.removeItem(key); }
+        else { sessionStorage.setItem(key, value); localStorage.removeItem(key); }
+      } catch (e) {}
+    },
+    removeItem: (key) => {
+      try { localStorage.removeItem(key); } catch (e) {}
+      try { sessionStorage.removeItem(key); } catch (e) {}
+    }
+  };
+
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { storage: dynamicStorage, persistSession: true, autoRefreshToken: true }
+  });
 
   /* ---------- تم ---------- */
   const root = document.documentElement;
@@ -372,6 +399,9 @@
     loginBtn.disabled = true;
     msg.textContent = "در حال بررسی…";
     msg.className = "";
+
+    const remember = document.getElementById("remember").checked;
+    try { localStorage.setItem("remember_pref", remember ? "true" : "false"); } catch (e) {}
 
     const fakeEmail = username + "@yourapp.local";
 
