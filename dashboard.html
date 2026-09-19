@@ -381,7 +381,31 @@
 <script>
   const SUPABASE_URL = "https://jmbpskxloffcrbxiqcdy.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptYnBza3hsb2ZmY3JieGlxY2R5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MjU3MDgsImV4cCI6MjEwNTQwMTcwOH0.ZFHwX9hg7FxyjcEV4oJRpA2Rgoh0UqL2Xj7D3IO3YMU";
-  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  /* همان آداپتور صفحه‌ی ورود، تا سشن را از همان محلی بخواند که آنجا ذخیره شده
+     (localStorage اگر «مرا به خاطر بسپار» زده شده بود، وگرنه sessionStorage). */
+  const dynamicStorage = {
+    getItem: (key) => {
+      try { return sessionStorage.getItem(key) || localStorage.getItem(key); }
+      catch (e) { return null; }
+    },
+    setItem: (key, value) => {
+      let remember = "false";
+      try { remember = localStorage.getItem("remember_pref") || "false"; } catch (e) {}
+      try {
+        if (remember === "true") { localStorage.setItem(key, value); sessionStorage.removeItem(key); }
+        else { sessionStorage.setItem(key, value); localStorage.removeItem(key); }
+      } catch (e) {}
+    },
+    removeItem: (key) => {
+      try { localStorage.removeItem(key); } catch (e) {}
+      try { sessionStorage.removeItem(key); } catch (e) {}
+    }
+  };
+
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { storage: dynamicStorage, persistSession: true, autoRefreshToken: true }
+  });
 
   const REDUCE = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -602,6 +626,7 @@
     btn.textContent = "در حال خروج…";
     await supabaseClient.auth.signOut();
     localStorage.removeItem("current_username");
+    try { localStorage.removeItem("remember_pref"); } catch (e) {}
     window.location.replace("index.html");
   });
 
