@@ -3,80 +3,128 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>پنل مدیریت</title>
+<title>ورود به سایت</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   * { box-sizing: border-box; }
+  :root {
+    --bg1: #0b1020;
+    --bg2: #1a1f3a;
+    --bg3: #241a4a;
+    --card-bg: rgba(30, 35, 65, 0.55);
+    --card-border: rgba(255, 255, 255, 0.12);
+    --text: #eef1fb;
+    --text-dim: #9aa3c7;
+    --input-bg: rgba(15, 18, 40, 0.55);
+    --input-border: rgba(255, 255, 255, 0.15);
+    --accent1: #6d5bff;
+    --accent2: #4f7bff;
+    --error: #ff6b7d;
+    --ok: #4ade80;
+  }
+  [data-theme="light"] {
+    --bg1: #dfe6fb;
+    --bg2: #eef1ff;
+    --bg3: #ffffff;
+    --card-bg: rgba(255, 255, 255, 0.55);
+    --card-border: rgba(120, 120, 180, 0.25);
+    --text: #1b1f3a;
+    --text-dim: #5a6088;
+    --input-bg: rgba(255, 255, 255, 0.6);
+    --input-border: rgba(90, 96, 136, 0.25);
+  }
+  html, body { height: 100%; margin: 0; }
   body {
     font-family: Tahoma, Arial, sans-serif;
-    background: #0f172a;
-    color: #f1f5f9;
+    background: radial-gradient(circle at 20% 20%, var(--bg3), var(--bg2) 45%, var(--bg1) 100%);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     min-height: 100vh;
-    margin: 0;
-    padding: 32px 16px;
+    transition: background 0.4s ease, color 0.4s ease;
   }
-  .wrap { max-width: 480px; margin: 0 auto; }
-  h1 { font-size: 20px; margin-bottom: 24px; text-align: center; }
-  .search-box {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 20px;
+  .theme-toggle {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    border-radius: 999px; padding: 6px 10px; margin-bottom: 24px;
+    backdrop-filter: blur(12px); cursor: pointer; user-select: none;
   }
+  .theme-toggle span { font-size: 16px; }
+  .switch {
+    width: 40px; height: 20px; background: var(--input-bg);
+    border-radius: 999px; position: relative; border: 1px solid var(--input-border);
+  }
+  .switch .knob {
+    position: absolute; top: 1px; right: 1px; width: 16px; height: 16px;
+    border-radius: 50%; background: linear-gradient(135deg, var(--accent1), var(--accent2));
+    transition: transform 0.3s ease;
+  }
+  [data-theme="light"] .switch .knob { transform: translateX(18px); }
+  .box {
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    padding: 36px 32px; border-radius: 20px; width: 100%; max-width: 380px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
+    text-align: center;
+  }
+  .logo {
+    width: 52px; height: 52px; margin: 0 auto 14px; border-radius: 14px;
+    background: linear-gradient(135deg, var(--accent1), var(--accent2));
+    display: flex; align-items: center; justify-content: center; font-size: 24px;
+    box-shadow: 0 8px 24px rgba(109, 91, 255, 0.4);
+  }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .subtitle { color: var(--text-dim); font-size: 13px; margin-bottom: 24px; }
+  label { display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-dim); text-align: right; }
+  .input-wrap { position: relative; margin-bottom: 16px; }
   input {
-    flex: 1;
-    padding: 10px;
-    border-radius: 8px;
-    border: 1px solid #334155;
-    background: #1e293b;
-    color: #f1f5f9;
-    font-size: 15px;
+    width: 100%; padding: 12px 40px 12px 14px; border-radius: 12px;
+    border: 1px solid var(--input-border); background: var(--input-bg);
+    color: var(--text); font-size: 15px; outline: none;
   }
+  input:focus { border-color: var(--accent1); }
+  .icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--text-dim); font-size: 15px; }
   button {
-    padding: 10px 16px;
-    border: none;
-    border-radius: 8px;
-    background: #22c55e;
-    color: #052e16;
-    font-weight: bold;
-    cursor: pointer;
+    width: 100%; padding: 13px; border: none; border-radius: 12px;
+    background: linear-gradient(135deg, var(--accent1), var(--accent2));
+    color: #fff; font-weight: bold; font-size: 15px; cursor: pointer;
+    box-shadow: 0 10px 24px rgba(79, 123, 255, 0.35);
   }
-  .card {
-    background: #1e293b;
-    border-radius: 10px;
-    padding: 16px;
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .card .name { font-weight: bold; }
-  .counter {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .counter button {
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    font-size: 18px;
-    background: #334155;
-    color: #f1f5f9;
-  }
-  .counter .val { min-width: 24px; text-align: center; font-size: 17px; }
-  #msg { text-align: center; color: #94a3b8; margin-top: 10px; }
+  button:disabled { opacity: 0.6; cursor: not-allowed; }
+  #msg { margin-top: 14px; text-align: center; font-size: 13px; min-height: 18px; }
+  .error { color: var(--error); }
+  .ok { color: var(--ok); }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>پنل مدیریت سفارش‌ها</h1>
-  <div class="search-box">
-    <input id="searchInput" type="text" placeholder="نام کاربری رو تایپ کنید..." />
-    <button id="searchBtn">جستجو</button>
+  <div class="theme-toggle" id="themeToggle">
+    <span>☀️</span>
+    <div class="switch"><div class="knob"></div></div>
+    <span>🌙</span>
   </div>
-  <div id="results"></div>
-  <div id="msg"></div>
-</div>
+
+  <div class="box">
+    <div class="logo">🔐</div>
+    <h1>ورود به حساب کاربری</h1>
+    <div class="subtitle">به پنل کاربری خود خوش آمدید</div>
+
+    <label for="username">نام کاربری</label>
+    <div class="input-wrap">
+      <input id="username" type="text" placeholder="نام کاربری" />
+      <span class="icon">👤</span>
+    </div>
+
+    <label for="password">رمز عبور</label>
+    <div class="input-wrap">
+      <input id="password" type="password" placeholder="رمز عبور" />
+      <span class="icon">🔒</span>
+    </div>
+
+    <button id="loginBtn">ورود</button>
+    <div id="msg"></div>
+  </div>
 
 <script>
   const SUPABASE_URL = "https://jmbpskxloffcrbxiqcdy.supabase.co";
@@ -84,74 +132,62 @@
 
   const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  const resultsEl = document.getElementById("results");
-  const msgEl = document.getElementById("msg");
+  const root = document.documentElement;
+  const themeToggle = document.getElementById("themeToggle");
+  const savedTheme = localStorage.getItem("site_theme") || "dark";
+  if (savedTheme === "light") root.setAttribute("data-theme", "light");
 
-  async function search() {
-    const term = document.getElementById("searchInput").value.trim();
-    resultsEl.innerHTML = "";
-    msgEl.textContent = "در حال جستجو...";
-
-    let query = supabaseClient.from("profiles").select("username, order_count");
-    if (term) {
-      query = query.ilike("username", "%" + term + "%");
+  themeToggle.addEventListener("click", () => {
+    const isLight = root.getAttribute("data-theme") === "light";
+    if (isLight) {
+      root.removeAttribute("data-theme");
+      localStorage.setItem("site_theme", "dark");
+    } else {
+      root.setAttribute("data-theme", "light");
+      localStorage.setItem("site_theme", "light");
     }
-
-    const { data, error } = await query;
-
-    if (error) {
-      msgEl.textContent = "خطا در جستجو";
-      return;
-    }
-    if (!data || data.length === 0) {
-      msgEl.textContent = "کاربری پیدا نشد";
-      return;
-    }
-    msgEl.textContent = "";
-    data.forEach(renderCard);
-  }
-
-  function renderCard(user) {
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = `
-      <div class="name">${user.username}</div>
-      <div class="counter">
-        <button class="minus">-</button>
-        <div class="val">${user.order_count}</div>
-        <button class="plus">+</button>
-      </div>
-    `;
-    const valEl = card.querySelector(".val");
-
-    card.querySelector(".plus").addEventListener("click", () => updateCount(user.username, 1, valEl));
-    card.querySelector(".minus").addEventListener("click", () => updateCount(user.username, -1, valEl));
-
-    resultsEl.appendChild(card);
-  }
-
-  async function updateCount(username, delta, valEl) {
-    const current = parseInt(valEl.textContent, 10) || 0;
-    const next = Math.max(0, current + delta);
-    valEl.textContent = next;
-
-    const { error } = await supabaseClient
-      .from("profiles")
-      .update({ order_count: next })
-      .eq("username", username);
-
-    if (error) {
-      msgEl.textContent = "ذخیره نشد، دوباره امتحان کنید";
-    }
-  }
-
-  document.getElementById("searchBtn").addEventListener("click", search);
-  document.getElementById("searchInput").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") search();
   });
 
-  // اول یه لیست خالی از کل کاربرا نشون بده
-  search();
+  const loginBtn = document.getElementById("loginBtn");
+  const msg = document.getElementById("msg");
+
+  loginBtn.addEventListener("click", async () => {
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value;
+
+    if (!username || !password) {
+      msg.textContent = "لطفاً نام کاربری و رمز عبور رو وارد کنید";
+      msg.className = "error";
+      return;
+    }
+
+    loginBtn.disabled = true;
+    msg.textContent = "در حال بررسی...";
+    msg.className = "";
+
+    const fakeEmail = username + "@yourapp.local";
+
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+      email: fakeEmail,
+      password: password
+    });
+
+    if (error) {
+      msg.textContent = "نام کاربری یا رمز عبور اشتباهه";
+      msg.className = "error";
+      loginBtn.disabled = false;
+      return;
+    }
+
+    localStorage.setItem("current_username", username);
+    msg.textContent = "ورود موفق! در حال انتقال...";
+    msg.className = "ok";
+    window.location.href = "dashboard.html";
+  });
+
+  document.getElementById("password").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") loginBtn.click();
+  });
 </script>
 </body>
 </html>
