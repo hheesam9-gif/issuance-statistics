@@ -9,7 +9,8 @@
   * { box-sizing: border-box; }
   :root {
     --bg1: #0b1020; --bg2: #1a1f3a; --bg3: #241a4a;
-    --card-bg: rgba(30, 35, 65, 0.55); --card-border: rgba(255, 255, 255, 0.12);
+    --page-base: #0d1022; --glow1: rgba(109, 91, 255, 0.20); --glow2: rgba(79, 123, 255, 0.14);
+    --card-bg: rgba(24, 28, 54, 0.88); --card-border: rgba(255, 255, 255, 0.08);
     --text: #eef1fb; --text-dim: #9aa3c7;
     --input-bg: rgba(15, 18, 40, 0.55); --input-border: rgba(255, 255, 255, 0.15);
     --row-bg: rgba(255,255,255,0.04); --row-border: rgba(255,255,255,0.08);
@@ -18,20 +19,30 @@
   }
   [data-theme="light"] {
     --bg1: #dfe6fb; --bg2: #eef1ff; --bg3: #ffffff;
-    --card-bg: rgba(255, 255, 255, 0.55); --card-border: rgba(120, 120, 180, 0.25);
+    --page-base: #e8ebf6; --glow1: rgba(140, 125, 255, 0.22); --glow2: rgba(110, 150, 255, 0.20);
+    --card-bg: rgba(255, 255, 255, 0.88); --card-border: rgba(120, 120, 180, 0.20);
     --text: #1b1f3a; --text-dim: #5a6088;
     --input-bg: rgba(255, 255, 255, 0.6); --input-border: rgba(90, 96, 136, 0.25);
     --row-bg: rgba(90,96,136,0.06); --row-border: rgba(90,96,136,0.15);
     --warn: #b45309;
   }
-  html, body { height: 100%; margin: 0; }
+  html { margin: 0; min-height: 100%; background: var(--page-base); }
   body {
+    margin: 0;
     font-family: Tahoma, Arial, sans-serif;
-    background: radial-gradient(circle at 20% 20%, var(--bg3), var(--bg2) 45%, var(--bg1) 100%);
+    background: transparent;
     color: var(--text);
     min-height: 100vh; padding: 24px 16px;
     display: flex; flex-direction: column; align-items: center;
-    transition: background 0.4s ease, color 0.4s ease;
+    transition: color 0.4s ease;
+  }
+  /* پس‌زمینه ثابت: با اسکرول تکه‌تکه نمی‌شه و همیشه کل صفحه رو می‌پوشونه */
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background:
+      radial-gradient(65% 55% at 88% 0%, var(--glow1), transparent 70%),
+      radial-gradient(60% 55% at 0% 100%, var(--glow2), transparent 70%),
+      var(--page-base);
   }
   .theme-toggle {
     display: flex; align-items: center; gap: 8px;
@@ -49,9 +60,8 @@
 
   .box {
     background: var(--card-bg); border: 1px solid var(--card-border);
-    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
     padding: 28px; border-radius: 20px; width: 100%; max-width: 460px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.22);
   }
   .box + .box { margin-top: 20px; }
   h1 { font-size: 19px; margin: 0 0 20px; text-align: center; }
