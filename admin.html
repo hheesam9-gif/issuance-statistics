@@ -87,9 +87,14 @@
   .ok { color: var(--ok); }
   .history { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
   .history .row {
-    display: flex; justify-content: space-between;
+    display: flex; justify-content: space-between; align-items: center;
     background: var(--row-bg); border: 1px solid var(--row-border);
     border-radius: 8px; padding: 8px 12px; font-size: 13px;
+  }
+  .history .row .vals { display: flex; align-items: center; gap: 10px; }
+  .delete-btn {
+    background: none; border: none; padding: 2px 4px; cursor: pointer;
+    font-size: 15px; line-height: 1; color: var(--error); box-shadow: none;
   }
   .hint { font-size: 11px; color: var(--text-dim); margin-bottom: 10px; }
 </style>
@@ -196,9 +201,34 @@
     data.forEach(r => {
       const div = document.createElement("div");
       div.className = "row";
-      div.innerHTML = `<span>${r.order_date}</span><span><b>${r.order_count}</b></span>`;
+      div.innerHTML = `
+        <span>${r.order_date}</span>
+        <span class="vals"><b>${r.order_count}</b><button class="delete-btn" title="حذف این تاریخ">🗑️</button></span>
+      `;
+      div.querySelector(".delete-btn").addEventListener("click", () => deleteRecord(username, r.order_date));
       historyEl.appendChild(div);
     });
+  }
+
+  async function deleteRecord(username, orderDate) {
+    const confirmed = confirm("مطمئنید می‌خواید رکورد " + orderDate + " حذف بشه؟");
+    if (!confirmed) return;
+
+    const { error } = await supabaseClient
+      .from("orders")
+      .delete()
+      .eq("username", username)
+      .eq("order_date", orderDate);
+
+    if (error) {
+      msgEl.textContent = "حذف نشد، دوباره امتحان کنید";
+      msgEl.className = "error";
+      return;
+    }
+
+    msgEl.textContent = "رکورد حذف شد";
+    msgEl.className = "ok";
+    await loadHistory(username);
   }
 
   document.getElementById("saveBtn").addEventListener("click", async () => {
