@@ -13,6 +13,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
 
   :root {
     --page-base: #080a18;
@@ -42,6 +43,9 @@
     --accent1: #6d5bff;
     --accent2: #4f7bff;
     --mint: #2fd3a7;
+    --ok: #4ade80;
+    --warn: #fbbf24;
+    --error: #ff6b7d;
     --bar: rgba(109, 91, 255, 0.22);
     --shimmer: rgba(255, 255, 255, 0.08);
   }
@@ -72,6 +76,9 @@
     --input-border: rgba(90, 96, 136, 0.25);
 
     --mint: #12a883;
+    --ok: #15803d;
+    --warn: #b45309;
+    --error: #dc2626;
     --bar: rgba(109, 91, 255, 0.16);
     --shimmer: rgba(90, 96, 136, 0.10);
   }
@@ -86,7 +93,7 @@
     background: transparent;
     min-height: 100vh; min-height: 100dvh;
     padding: calc(20px + env(safe-area-inset-top, 0px)) 20px calc(26px + env(safe-area-inset-bottom, 0px));
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    display: flex; flex-direction: column; align-items: center;
     -webkit-font-smoothing: antialiased;
   }
 
@@ -111,15 +118,21 @@
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
   }
 
-  /* ---------- سوییچ تم ---------- */
+  /* ---------- قاب صفحه (وسط‌چین عمودی؛ اگه بلند شد از بالا شروع می‌شه) ---------- */
+  .page { width: 100%; max-width: 1000px; margin: auto; display: flex; flex-direction: column; align-items: center; }
+
+  /* ---------- نوار ابزار: تم + زنگ ---------- */
+  .toolbar {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 18px;
+    opacity: 0; transform: translateY(-8px);
+    animation: fadeDown 0.6s cubic-bezier(.2,.7,.3,1) 0.05s forwards;
+  }
+  @keyframes fadeDown { to { opacity: 1; transform: translateY(0); } }
   .theme-toggle {
     display: flex; align-items: center; gap: 9px;
     background: var(--card-bg); border: 1px solid var(--card-border);
     backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-    border-radius: 999px; padding: 6px 13px; margin-bottom: 18px;
-    cursor: pointer; user-select: none;
-    opacity: 0; transform: translateY(-8px);
-    animation: fadeDown 0.6s cubic-bezier(.2,.7,.3,1) 0.05s forwards;
+    border-radius: 999px; padding: 6px 13px; cursor: pointer; user-select: none;
   }
   .theme-toggle span { font-size: 14px; line-height: 1; }
   .switch { width: 40px; height: 20px; background: var(--input-bg); border-radius: 999px; position: relative; border: 1px solid var(--input-border); }
@@ -130,7 +143,63 @@
     transition: transform 0.35s cubic-bezier(.6,-0.3,.3,1.3);
   }
   [data-theme="light"] .switch .knob { transform: translateX(-20px); }
-  @keyframes fadeDown { to { opacity: 1; transform: translateY(0); } }
+
+  .bell {
+    position: relative; width: 38px; height: 38px; display: grid; place-items: center; padding: 0;
+    border-radius: 50%; background: var(--card-bg); border: 1px solid var(--card-border);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    color: var(--text); cursor: pointer; transition: border-color 0.2s ease, transform 0.15s ease;
+  }
+  .bell svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .bell:hover { border-color: var(--accent1); }
+  .bell:active { transform: scale(0.94); }
+  .bell.ring svg { animation: ring 1.2s ease 0.9s 2; transform-origin: 50% 0; }
+  @keyframes ring { 0%, 100% { transform: rotate(0); } 15% { transform: rotate(14deg); } 30% { transform: rotate(-12deg); } 45% { transform: rotate(8deg); } 60% { transform: rotate(-5deg); } }
+  .badge {
+    position: absolute; top: -5px; left: -5px; min-width: 19px; height: 19px; padding: 0 5px; border-radius: 10px;
+    background: var(--error); color: #fff; font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 3px var(--page-base);
+  }
+
+  /* ---------- اعلان‌ها و مغایرت‌ها ---------- */
+  .notices { width: 100%; display: flex; flex-direction: column; gap: 14px; margin-bottom: 18px; }
+  .notices:empty { display: none; }
+  .notice {
+    position: relative; background: var(--card-bg); border: 1px solid var(--card-border);
+    backdrop-filter: blur(26px) saturate(140%); -webkit-backdrop-filter: blur(26px) saturate(140%);
+    border-radius: 22px; box-shadow: var(--card-shadow); padding: 18px 22px;
+    animation: rise 0.65s cubic-bezier(.16,.84,.3,1) both;
+  }
+  @keyframes rise { from { opacity: 0; transform: translate3d(0, 16px, 0); } to { opacity: 1; transform: none; } }
+  .notice.leaving { opacity: 0; transform: translate3d(28px, 0, 0); transition: opacity 0.3s ease, transform 0.3s ease; }
+  .banner { display: flex; align-items: flex-start; gap: 14px; border-right: 4px solid var(--accent2); }
+  .n-icon { width: 42px; height: 42px; flex: none; border-radius: 13px; display: grid; place-items: center; background: var(--row-bg); border: 1px solid var(--row-border); }
+  .n-icon svg { width: 21px; height: 21px; stroke: var(--accent2); fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .n-body { flex: 1; min-width: 0; }
+  .n-title { font-size: 12px; color: var(--text-dim); margin-bottom: 4px; display: flex; justify-content: space-between; gap: 8px; font-variant-numeric: tabular-nums; }
+  .n-text { font-size: 14px; line-height: 2; white-space: pre-wrap; word-break: break-word; }
+  .n-actions { margin-top: 10px; }
+  button.n-btn {
+    padding: 8px 15px; border-radius: 10px; background: var(--row-bg); border: 1px solid var(--row-border);
+    color: var(--text); cursor: pointer; font-family: inherit; font-size: 12px; font-weight: 500; transition: border-color 0.2s ease;
+  }
+  button.n-btn:hover { border-color: var(--accent1); }
+
+  .err-card { border-right: 4px solid var(--warn); }
+  .err-card .n-icon svg { stroke: var(--warn); }
+  .e-head { display: flex; align-items: center; gap: 13px; }
+  .e-head h3 { margin: 0; font-size: 15px; font-weight: 700; }
+  .e-head p { margin: 3px 0 0; font-size: 12px; color: var(--text-dim); line-height: 1.9; }
+  .e-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; margin-top: 15px; }
+  .e-row { background: var(--row-bg); border: 1px solid var(--row-border); border-radius: 14px; padding: 13px 15px; }
+  .e-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .e-order { font-size: 13px; color: var(--text-dim); }
+  .e-order span { direction: ltr; unicode-bidi: isolate; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+  .e-amount { font-size: 17px; font-weight: 700; color: var(--warn); font-variant-numeric: tabular-nums; }
+  .e-reason { margin-top: 8px; font-size: 13px; line-height: 1.9; word-break: break-word; white-space: pre-wrap; }
+  .e-date { margin-top: 7px; font-size: 11px; color: var(--text-faint); font-variant-numeric: tabular-nums; }
+  .e-total { margin-top: 13px; font-size: 12px; color: var(--text-dim); }
+  .e-total b { color: var(--warn); font-variant-numeric: tabular-nums; }
 
   /* ---------- کارت پهن ---------- */
   .box {
@@ -185,15 +254,31 @@
     font-size: 58px; font-weight: 900; line-height: 1; text-align: center;
     background: linear-gradient(135deg, var(--accent1), var(--accent2) 60%, var(--mint));
     -webkit-background-clip: text; background-clip: text; color: transparent;
-    font-variant-numeric: tabular-nums; letter-spacing: -2px;
+    font-variant-numeric: tabular-nums; letter-spacing: -2px; direction: ltr;
   }
-  .total .lbl { font-size: 12px; color: var(--text-dim); margin-top: 8px; text-align: center; }
-  .spark { display: block; width: 100%; height: 96px; margin-top: 14px; }
+  .total .lbl { font-size: 12px; color: var(--text-dim); margin-top: 8px; text-align: center; min-height: 18px; font-variant-numeric: tabular-nums; transition: color 0.2s ease; }
+  .total .lbl.live { color: var(--text); font-weight: 500; }
+
+  .spark-wrap { position: relative; margin-top: 14px; touch-action: pan-y; cursor: crosshair; }
+  .spark { display: block; width: 100%; height: 96px; }
   .spark .line { fill: none; stroke: url(#sparkGrad); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
   .spark .area { fill: url(#areaGrad); opacity: 0; transition: opacity 0.8s ease 0.6s; }
   .spark.drawn .area { opacity: 1; }
-  .spark .pt { fill: var(--mint); opacity: 0; transition: opacity 0.4s ease 1.1s; }
-  .spark.drawn .pt { opacity: 1; }
+  .sdot {
+    position: absolute; width: 11px; height: 11px; border-radius: 50%;
+    background: var(--mint); border: 2px solid var(--card-bg);
+    box-shadow: 0 0 0 4px rgba(47, 211, 167, 0.22), 0 0 16px rgba(47, 211, 167, 0.6);
+    transform: translate(-50%, -50%); opacity: 0;
+    transition: opacity 0.4s ease 1.1s, left 0.16s ease, top 0.16s ease;
+    pointer-events: none;
+  }
+  .spark-wrap.ready .sdot { opacity: 1; }
+  .spark-wrap.scrub .sdot { transition: opacity 0.2s ease, left 0.06s linear, top 0.06s linear; }
+  .sguide {
+    position: absolute; top: 0; bottom: 0; width: 1px; background: var(--divider);
+    opacity: 0; transition: opacity 0.2s ease; pointer-events: none;
+  }
+  .spark-wrap.scrub .sguide { opacity: 1; }
 
   /* ---------- آمار ---------- */
   .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
@@ -235,7 +320,8 @@
     will-change: transform, opacity;
     transition: background 0.25s ease, border-color 0.25s ease;
   }
-  .row:hover { background: var(--row-bg-hover); }
+  .row:hover, .row.hl { background: var(--row-bg-hover); }
+  .row.hl { border-color: var(--accent1); }
   .row .fill {
     position: absolute; inset: 0 0 0 auto; width: 0;
     background: linear-gradient(270deg, var(--bar), transparent);
@@ -249,6 +335,9 @@
     font-size: 10px; font-weight: 500; color: var(--mint);
     border: 1px solid currentColor; border-radius: 6px; padding: 2px 6px; opacity: 0.85;
   }
+  .delta { font-size: 10.5px; font-weight: 500; padding: 2px 6px; border-radius: 6px; direction: ltr; font-variant-numeric: tabular-nums; }
+  .delta.up { color: var(--ok); background: rgba(74, 222, 128, 0.12); }
+  .delta.down { color: var(--warn); background: rgba(251, 191, 36, 0.12); }
 
   .row.enter { opacity: 0; transform: translateY(14px); }
   .row.entered { animation: rowIn 0.55s cubic-bezier(.16,.84,.3,1) forwards; }
@@ -274,13 +363,31 @@
   }
   button.logout:hover { color: var(--text); border-color: var(--accent1); }
   button.logout:active { transform: scale(0.99); }
-  button.logout:focus-visible { outline: 2px solid var(--accent2); outline-offset: 3px; }
-  .theme-toggle:focus-visible { outline: 2px solid var(--accent2); outline-offset: 3px; }
+  button.logout:focus-visible, .theme-toggle:focus-visible, .bell:focus-visible, button.n-btn:focus-visible { outline: 2px solid var(--accent2); outline-offset: 3px; }
+
+  /* ---------- پنجره اعلان‌ها ---------- */
+  .modal { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; padding: 18px; background: rgba(4, 6, 16, 0.66); }
+  .modal.show { display: flex; }
+  .modal-box {
+    width: 100%; max-width: 480px; max-height: 86vh; overflow-y: auto;
+    background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 24px; padding: 22px;
+    backdrop-filter: blur(26px); -webkit-backdrop-filter: blur(26px); box-shadow: var(--card-shadow);
+    animation: rise 0.4s cubic-bezier(.16,.84,.3,1) both;
+  }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .modal-head h3 { margin: 0; font-size: 17px; font-weight: 700; }
+  button.close {
+    width: 34px; height: 34px; border-radius: 10px; background: var(--row-bg); border: 1px solid var(--row-border);
+    color: var(--text); cursor: pointer; font-size: 14px; font-family: inherit;
+  }
+  .a-item { padding: 14px 15px; border-radius: 14px; background: var(--row-bg); border: 1px solid var(--row-border); margin-bottom: 8px; }
+  .a-item.new { border-color: var(--accent1); }
+  .a-date { font-size: 11px; color: var(--text-faint); margin-top: 7px; font-variant-numeric: tabular-nums; }
 
   /* ---------- واکنش‌گرا ---------- */
   @media (max-width: 880px) {
-    body { justify-content: flex-start; }
     .box { grid-template-columns: 1fr; max-width: 460px; }
+    .notices { max-width: 460px; }
     .pane { padding: 24px 22px 18px; }
     .pane-side { border-left: none; border-top: 1px solid var(--divider); padding-top: 22px; }
     .pane-main { padding-bottom: 6px; }
@@ -292,13 +399,17 @@
     .total .num { font-size: 46px; }
     .box { border-radius: 22px; }
     .pane { padding: 20px 17px 16px; }
+    .notice { padding: 16px; }
+    .e-list { grid-template-columns: 1fr; }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .blob { animation: none; }
-    .box, .theme-toggle { animation: none; opacity: 1; transform: none; }
+    .box, .toolbar { animation: none; opacity: 1; transform: none; }
+    .notice, .modal-box { animation: none; }
+    .bell.ring svg { animation: none; }
     .row.entered { animation: none; opacity: 1; transform: none; }
-    .switch .knob, button.logout, .row, .row .fill { transition: none; }
+    .switch .knob, button.logout, .row, .row .fill, .sdot { transition: none; }
     .skel::after { animation: none; }
   }
 </style>
@@ -312,71 +423,95 @@
     <div class="grain"></div>
   </div>
 
-  <div class="theme-toggle" id="themeToggle" role="button" tabindex="0" aria-label="تغییر تم">
-    <span>☀️</span>
-    <div class="switch"><div class="knob"></div></div>
-    <span>🌙</span>
+  <div class="page">
+    <div class="toolbar">
+      <div class="theme-toggle" id="themeToggle" role="button" tabindex="0" aria-label="تغییر تم">
+        <span>☀️</span>
+        <div class="switch"><div class="knob"></div></div>
+        <span>🌙</span>
+      </div>
+      <button class="bell" id="bellBtn" type="button" aria-label="اعلان‌ها">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+        <span class="badge" id="bellBadge" hidden>0</span>
+      </button>
+    </div>
+
+    <!-- مغایرت‌ها و اعلان‌های جدید -->
+    <section class="notices" id="notices" aria-live="polite"></section>
+
+    <main class="box">
+      <!-- ستون راست: هویت و خلاصه -->
+      <section class="pane pane-main">
+        <div class="head">
+          <div class="avatar" id="avatar">—</div>
+          <div class="head-txt">
+            <p class="greet">خوش اومدید</p>
+            <div class="username" id="usernameDisplay"></div>
+          </div>
+        </div>
+
+        <div class="total">
+          <div class="num" id="totalCount">0</div>
+          <div class="lbl" id="totalLbl">مجموع صدورها</div>
+          <div class="spark-wrap" id="sparkWrap">
+            <svg class="spark" id="spark" viewBox="0 0 320 90" preserveAspectRatio="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="sparkGrad" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#4f7bff"/>
+                  <stop offset="55%" stop-color="#6d5bff"/>
+                  <stop offset="100%" stop-color="#2fd3a7"/>
+                </linearGradient>
+                <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#6d5bff" stop-opacity="0.32"/>
+                  <stop offset="100%" stop-color="#6d5bff" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <path class="area" id="sparkArea" d=""></path>
+              <path class="line" id="sparkLine" d=""></path>
+            </svg>
+            <div class="sguide" id="sparkGuide"></div>
+            <div class="sdot" id="sparkDot"></div>
+          </div>
+        </div>
+
+        <div class="stats" id="stats" hidden>
+          <div class="stat"><b id="stDays">0</b><span>روز ثبت‌شده</span></div>
+          <div class="stat"><b id="stAvg">0</b><span>میانگین هر روز</span></div>
+          <div class="stat"><b id="stMax">0</b><span>بیشترین در یک روز</span></div>
+        </div>
+      </section>
+
+      <!-- ستون چپ: سابقه -->
+      <section class="pane pane-side">
+        <div class="list-head" id="listHead">
+          <h2>سابقه ثبت</h2>
+          <em id="listMeta"></em>
+        </div>
+
+        <div class="list-wrap">
+          <div class="list" id="list">
+            <div class="skel"></div>
+            <div class="skel"></div>
+            <div class="skel"></div>
+            <div class="skel"></div>
+            <div class="skel"></div>
+          </div>
+        </div>
+
+        <button class="logout" id="logoutBtn">خروج از حساب</button>
+      </section>
+    </main>
   </div>
 
-  <main class="box">
-    <!-- ستون راست: هویت و خلاصه -->
-    <section class="pane pane-main">
-      <div class="head">
-        <div class="avatar" id="avatar">—</div>
-        <div class="head-txt">
-          <p class="greet">خوش اومدید</p>
-          <div class="username" id="usernameDisplay"></div>
-        </div>
+  <div class="modal" id="annModal" role="dialog" aria-modal="true" aria-labelledby="annTitle">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3 id="annTitle">اعلان‌ها</h3>
+        <button class="close" id="annClose" type="button" aria-label="بستن">✕</button>
       </div>
-
-      <div class="total">
-        <div class="num" id="totalCount">0</div>
-        <div class="lbl">مجموع سفارش‌ها</div>
-        <svg class="spark" id="spark" viewBox="0 0 320 90" preserveAspectRatio="none" aria-hidden="true">
-          <defs>
-            <linearGradient id="sparkGrad" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stop-color="#4f7bff"/>
-              <stop offset="55%" stop-color="#6d5bff"/>
-              <stop offset="100%" stop-color="#2fd3a7"/>
-            </linearGradient>
-            <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#6d5bff" stop-opacity="0.32"/>
-              <stop offset="100%" stop-color="#6d5bff" stop-opacity="0"/>
-            </linearGradient>
-          </defs>
-          <path class="area" id="sparkArea" d=""></path>
-          <path class="line" id="sparkLine" d=""></path>
-          <circle class="pt" id="sparkDot" r="3.6" cx="0" cy="0"></circle>
-        </svg>
-      </div>
-
-      <div class="stats" id="stats" hidden>
-        <div class="stat"><b id="stDays">0</b><span>روز ثبت‌شده</span></div>
-        <div class="stat"><b id="stAvg">0</b><span>میانگین هر روز</span></div>
-        <div class="stat"><b id="stMax">0</b><span>بیشترین در یک روز</span></div>
-      </div>
-    </section>
-
-    <!-- ستون چپ: سابقه -->
-    <section class="pane pane-side">
-      <div class="list-head" id="listHead">
-        <h2>سابقه ثبت</h2>
-        <em id="listMeta"></em>
-      </div>
-
-      <div class="list-wrap">
-        <div class="list" id="list">
-          <div class="skel"></div>
-          <div class="skel"></div>
-          <div class="skel"></div>
-          <div class="skel"></div>
-          <div class="skel"></div>
-        </div>
-      </div>
-
-      <button class="logout" id="logoutBtn">خروج از حساب</button>
-    </section>
-  </main>
+      <div id="annList"></div>
+    </div>
+  </div>
 
 <script>
   const SUPABASE_URL = "https://jmbpskxloffcrbxiqcdy.supabase.co";
@@ -408,10 +543,11 @@
   });
 
   const REDUCE = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const $ = id => document.getElementById(id);
 
   /* ---------- تم ---------- */
   const root = document.documentElement;
-  const themeToggle = document.getElementById("themeToggle");
+  const themeToggle = $("themeToggle");
   function toggleTheme() {
     const isLight = root.getAttribute("data-theme") === "light";
     if (isLight) { root.removeAttribute("data-theme"); try { localStorage.setItem("site_theme", "dark"); } catch (e) {} }
@@ -424,6 +560,32 @@
 
   /* ---------- کمکی‌ها ---------- */
   function fmt(n) { return String(Math.round(Number(n) * 100) / 100); }
+  function fmtMoney(n) { return Number(n).toLocaleString("en-US"); }
+
+  function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+
+  function normalizeDigits(s) {
+    return String(s)
+      .replace(/[۰-۹]/g, d => String(d.charCodeAt(0) - 0x06F0))
+      .replace(/[٠-٩]/g, d => String(d.charCodeAt(0) - 0x0660))
+      .replace(/٫/g, ".");
+  }
+  function dateKey(s) {
+    const m = /^(\d{4})\/(\d{1,2})\/(\d{1,2})$/.exec(normalizeDigits(String(s).trim()));
+    return m ? (+m[1]) * 10000 + (+m[2]) * 100 + (+m[3]) : Infinity;
+  }
+  function jalaliOf(d) {
+    try {
+      const parts = new Intl.DateTimeFormat("en-u-ca-persian-nu-latn", { year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(d);
+      const g = t => parts.find(p => p.type === t).value;
+      return g("year") + "/" + g("month") + "/" + g("day");
+    } catch (e) { return ""; }
+  }
 
   function initials(name) {
     if (!name) return "—";
@@ -432,27 +594,30 @@
     return String(name).slice(0, 2).toUpperCase();
   }
 
-  function animateNumber(el, target, duration) {
-    if (REDUCE || target === 0) { el.textContent = fmt(target); return; }
+  function animateNumber(node, target, duration) {
+    if (REDUCE || target === 0) { node.textContent = fmt(target); return; }
     const start = performance.now();
     function frame(now) {
       const t = Math.min((now - start) / duration, 1);
       const eased = 1 - Math.pow(1 - t, 3);
-      el.textContent = fmt(target * eased);
+      node.textContent = fmt(target * eased);
       if (t < 1) requestAnimationFrame(frame);
-      else el.textContent = fmt(target);
+      else node.textContent = fmt(target);
     }
     requestAnimationFrame(frame);
   }
 
-  /* ---------- نمودار روند ---------- */
-  function drawSpark(values) {
-    const svg = document.getElementById("spark");
-    const line = document.getElementById("sparkLine");
-    const area = document.getElementById("sparkArea");
-    const dot = document.getElementById("sparkDot");
-    if (!values.length) { svg.style.display = "none"; return; }
+  /* ---------- نمودار روند (با نشانگر تعاملی) ---------- */
+  function drawSpark(asc) {
+    const svg = $("spark");
+    const wrap = $("sparkWrap");
+    const line = $("sparkLine");
+    const area = $("sparkArea");
+    const dot = $("sparkDot");
+    const guide = $("sparkGuide");
+    if (!asc.length) { wrap.style.display = "none"; return; }
 
+    const values = asc.map(r => Number(r.order_count) || 0);
     const W = 320, H = 90, padY = 12, padX = 8;
     const vals = values.length === 1 ? [values[0], values[0]] : values;
     const max = Math.max(...vals), min = Math.min(...vals);
@@ -464,28 +629,63 @@
       return [x, y];
     });
 
-    let d = `M ${pts[0][0]} ${pts[0][1]}`;
+    let d = "M " + pts[0][0] + " " + pts[0][1];
     for (let i = 0; i < pts.length - 1; i++) {
       const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
       const c1x = p1[0] + (p2[0] - p0[0]) / 6, c1y = p1[1] + (p2[1] - p0[1]) / 6;
       const c2x = p2[0] - (p3[0] - p1[0]) / 6, c2y = p2[1] - (p3[1] - p1[1]) / 6;
-      d += ` C ${c1x} ${c1y}, ${c2x} ${c2y}, ${p2[0]} ${p2[1]}`;
+      d += " C " + c1x + " " + c1y + ", " + c2x + " " + c2y + ", " + p2[0] + " " + p2[1];
+    }
+    line.setAttribute("d", d);
+    area.setAttribute("d", d + " L " + pts[pts.length - 1][0] + " " + H + " L " + pts[0][0] + " " + H + " Z");
+
+    function placeDot(i) {
+      const p = pts[Math.min(i, pts.length - 1)];
+      const left = (p[0] / W * 100) + "%";
+      dot.style.left = left;
+      dot.style.top = (p[1] / H * 100) + "%";
+      guide.style.left = left;
+    }
+    placeDot(pts.length - 1);
+
+    if (REDUCE) { svg.classList.add("drawn"); wrap.classList.add("ready"); }
+    else {
+      const len = line.getTotalLength();
+      line.style.strokeDasharray = len;
+      line.style.strokeDashoffset = len;
+      line.getBoundingClientRect();
+      line.style.transition = "stroke-dashoffset 1.25s cubic-bezier(.3,.8,.3,1) 0.25s";
+      line.style.strokeDashoffset = "0";
+      setTimeout(() => { svg.classList.add("drawn"); wrap.classList.add("ready"); }, 120);
     }
 
-    line.setAttribute("d", d);
-    area.setAttribute("d", `${d} L ${pts[pts.length - 1][0]} ${H} L ${pts[0][0]} ${H} Z`);
-    const last = pts[pts.length - 1];
-    dot.setAttribute("cx", last[0]);
-    dot.setAttribute("cy", last[1]);
-
-    if (REDUCE) { svg.classList.add("drawn"); return; }
-    const len = line.getTotalLength();
-    line.style.strokeDasharray = len;
-    line.style.strokeDashoffset = len;
-    line.getBoundingClientRect();
-    line.style.transition = "stroke-dashoffset 1.25s cubic-bezier(.3,.8,.3,1) 0.25s";
-    line.style.strokeDashoffset = "0";
-    setTimeout(() => svg.classList.add("drawn"), 120);
+    /* لمس/موس روی نمودار: نمایش تاریخ و مقدار + هایلایت ردیف مربوطه */
+    const lbl = $("totalLbl");
+    const baseText = lbl.textContent;
+    let lastHl = null;
+    function scrubTo(clientX) {
+      const r = wrap.getBoundingClientRect();
+      const f = Math.min(Math.max((clientX - r.left) / r.width, 0), 1);
+      const i = Math.round(f * (asc.length - 1));
+      placeDot(values.length === 1 ? 0 : i);
+      lbl.textContent = asc[i].order_date + "  ·  " + fmt(values[i]);
+      lbl.classList.add("live");
+      wrap.classList.add("scrub");
+      if (lastHl) lastHl.classList.remove("hl");
+      lastHl = document.querySelector('.row[data-date="' + asc[i].order_date + '"]');
+      if (lastHl) lastHl.classList.add("hl");
+    }
+    function leave() {
+      wrap.classList.remove("scrub");
+      lbl.textContent = baseText;
+      lbl.classList.remove("live");
+      placeDot(pts.length - 1);
+      if (lastHl) { lastHl.classList.remove("hl"); lastHl = null; }
+    }
+    wrap.addEventListener("pointermove", (e) => scrubTo(e.clientX));
+    wrap.addEventListener("pointerdown", (e) => scrubTo(e.clientX));
+    wrap.addEventListener("pointerleave", leave);
+    wrap.addEventListener("pointercancel", leave);
   }
 
   /* ---------- عمق سه‌بعدی هنگام اسکرول لیست ---------- */
@@ -503,7 +703,7 @@
         const scale = 1 - k * 0.08;
         const rotate = dist * 8;
         const shift = dist * 4;
-        row.style.transform = `translateZ(${-k * 55}px) translateY(${shift}px) rotateX(${rotate}deg) scale(${scale})`;
+        row.style.transform = "translateZ(" + (-k * 55) + "px) translateY(" + shift + "px) rotateX(" + rotate + "deg) scale(" + scale + ")";
         row.style.opacity = String(1 - k * 0.5);
       }
       ticking = false;
@@ -514,34 +714,25 @@
     update();
   }
 
-  /* ---------- ساخت لیست ---------- */
-  function renderRows(listEl, rows, max) {
+  /* ---------- ساخت لیست (جدیدترین بالا) ---------- */
+  function renderRows(listEl, items, max) {
     listEl.innerHTML = "";
-    rows.forEach((row, i) => {
-      const count = Number(row.order_count) || 0;
+    items.forEach((it, i) => {
+      const div = el("div", "row enter");
+      div.dataset.date = it.date;
+      if (it.count === max && max > 0) div.classList.add("peak");
 
-      const div = document.createElement("div");
-      div.className = "row enter";
-      if (count === max && max > 0) div.classList.add("peak");
+      const fill = el("span", "fill");
+      const dateEl = el("span", "date", it.date);
 
-      const fill = document.createElement("span");
-      fill.className = "fill";
-
-      const dateEl = document.createElement("span");
-      dateEl.className = "date";
-      dateEl.textContent = row.order_date;
-
-      const countEl = document.createElement("span");
-      countEl.className = "count";
-      const numSpan = document.createElement("span");
-      numSpan.textContent = fmt(count);
-      if (count === max && max > 0 && rows.length > 1) {
-        const tag = document.createElement("span");
-        tag.className = "tag";
-        tag.textContent = "بیشترین";
-        countEl.appendChild(tag);
+      const countEl = el("span", "count");
+      if (it.count === max && max > 0 && items.length > 1) countEl.appendChild(el("span", "tag", "بیشترین"));
+      if (it.delta !== null && it.delta !== 0) {
+        const dl = el("span", "delta " + (it.delta > 0 ? "up" : "down"), (it.delta > 0 ? "▲ +" : "▼ ") + fmt(it.delta));
+        dl.title = "نسبت به ثبت قبلی";
+        countEl.appendChild(dl);
       }
-      countEl.appendChild(numSpan);
+      countEl.appendChild(el("span", null, fmt(it.count)));
 
       div.appendChild(fill);
       div.appendChild(dateEl);
@@ -552,30 +743,154 @@
       setTimeout(() => {
         div.classList.remove("enter");
         div.classList.add("entered");
-        fill.style.width = max > 0 ? Math.max(6, (count / max) * 100) + "%" : "0";
+        fill.style.width = max > 0 ? Math.max(6, (it.count / max) * 100) + "%" : "0";
       }, 260 + delay);
     });
 
     setTimeout(() => {
       listEl.querySelectorAll(".row").forEach(r => r.classList.remove("entered"));
       bindScrollDepth(listEl);
-    }, 300 + Math.min(rows.length, 9) * 60 + 560);
+    }, 300 + Math.min(items.length, 9) * 60 + 560);
   }
 
   function showEmpty(listEl) {
     listEl.innerHTML = "";
-    const empty = document.createElement("div");
-    empty.className = "empty";
-    const b = document.createElement("b");
-    b.textContent = "هنوز سفارشی ثبت نشده";
-    const p = document.createElement("span");
-    p.textContent = "به‌محض ثبت اولین سفارش، همین‌جا نمایش داده می‌شود.";
-    empty.appendChild(b);
-    empty.appendChild(p);
+    const empty = el("div", "empty");
+    empty.appendChild(el("b", null, "هنوز آماری برای شما ثبت نشده"));
+    empty.appendChild(el("span", null, "به‌محض ثبت آمار، همین‌جا نمایش داده می‌شه."));
     listEl.appendChild(empty);
-    document.getElementById("spark").style.display = "none";
-    document.getElementById("totalCount").textContent = "0";
+    $("sparkWrap").style.display = "none";
+    $("totalCount").textContent = "0";
   }
+
+  /* =========================================================
+     اعلان‌ها و مغایرت‌ها
+     ========================================================= */
+  let currentUsername = "";
+  let ANN = [], ERRS = [];
+  const noticesEl = $("notices");
+  const bellBtn = $("bellBtn");
+  const bellBadge = $("bellBadge");
+  const annModal = $("annModal");
+  const annList = $("annList");
+
+  const ICON_MEGA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15 9a4 4 0 0 1 0 6"/><path d="M18 6a8 8 0 0 1 0 12"/></svg>';
+  const ICON_WARN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>';
+
+  function seenKey() { return "seen_ann_" + currentUsername; }
+  function getSeen() { try { return JSON.parse(localStorage.getItem(seenKey()) || "[]"); } catch (e) { return []; } }
+  function setSeen(ids) { try { localStorage.setItem(seenKey(), JSON.stringify(ids)); } catch (e) {} }
+  function markRead(ids) {
+    const set = new Set(getSeen());
+    ids.forEach(id => set.add(id));
+    setSeen([...set]);
+    renderNotices();
+  }
+
+  function buildBanner(a) {
+    const box = el("div", "notice banner");
+    const ic = el("div", "n-icon");
+    ic.innerHTML = ICON_MEGA;
+    const body = el("div", "n-body");
+    const title = el("div", "n-title");
+    title.appendChild(el("span", null, "اعلان جدید"));
+    title.appendChild(el("span", null, jalaliOf(new Date(a.created_at))));
+    body.appendChild(title);
+    body.appendChild(el("div", "n-text", a.message));
+    const act = el("div", "n-actions");
+    const btn = el("button", "n-btn", "متوجه شدم");
+    btn.type = "button";
+    btn.addEventListener("click", () => {
+      box.classList.add("leaving");
+      setTimeout(() => markRead([a.id]), 300);
+    });
+    act.appendChild(btn);
+    body.appendChild(act);
+    box.appendChild(ic);
+    box.appendChild(body);
+    return box;
+  }
+
+  function buildErrCard() {
+    const card = el("section", "notice err-card");
+    const head = el("div", "e-head");
+    const ic = el("div", "n-icon");
+    ic.innerHTML = ICON_WARN;
+    const t = el("div");
+    t.appendChild(el("h3", null, "مغایرت‌های ثبت‌شده برای شما (" + ERRS.length + ")"));
+    t.appendChild(el("p", null, "لطفاً موارد زیر رو با سرپرست خودتون بررسی کنید. بعد از رفع مغایرت، از اینجا برداشته می‌شه."));
+    head.appendChild(ic);
+    head.appendChild(t);
+    card.appendChild(head);
+
+    const list = el("div", "e-list");
+    let total = 0;
+    ERRS.forEach(e => {
+      total += Number(e.amount) || 0;
+      const row = el("div", "e-row");
+      const top = el("div", "e-top");
+      const ord = el("div", "e-order", "سفارش ");
+      ord.appendChild(el("span", null, e.order_number));
+      top.appendChild(ord);
+      top.appendChild(el("div", "e-amount", fmtMoney(e.amount)));
+      row.appendChild(top);
+      row.appendChild(el("div", "e-reason", e.reason));
+      row.appendChild(el("div", "e-date", "ثبت‌شده در " + jalaliOf(new Date(e.created_at))));
+      list.appendChild(row);
+    });
+    card.appendChild(list);
+
+    if (ERRS.length > 1) {
+      const tot = el("div", "e-total", "مجموع مبلغ مغایرت‌ها: ");
+      tot.appendChild(el("b", null, fmtMoney(Math.round(total * 100) / 100)));
+      card.appendChild(tot);
+    }
+    return card;
+  }
+
+  function renderNotices() {
+    noticesEl.replaceChildren();
+    if (ERRS.length) noticesEl.appendChild(buildErrCard());
+
+    const seen = new Set(getSeen());
+    const unread = ANN.filter(a => !seen.has(a.id));
+    unread.forEach(a => noticesEl.appendChild(buildBanner(a)));
+
+    bellBadge.hidden = unread.length === 0;
+    bellBadge.textContent = unread.length;
+    bellBtn.classList.toggle("ring", unread.length > 0);
+  }
+
+  async function loadNotices() {
+    if (!currentUsername) return;
+    const [a, e] = await Promise.all([
+      supabaseClient.from("announcements").select("id, message, created_at").order("created_at", { ascending: false }).limit(30),
+      supabaseClient.from("errors").select("id, order_number, amount, reason, created_at").ilike("username", currentUsername).order("created_at", { ascending: false })
+    ]);
+    ANN = a.error ? [] : (a.data || []);
+    ERRS = e.error ? [] : (e.data || []);
+    renderNotices();
+  }
+
+  function openAnn() {
+    const seen = new Set(getSeen());
+    annList.replaceChildren();
+    if (!ANN.length) annList.appendChild(el("div", "empty", "اعلانی وجود نداره"));
+    ANN.forEach(a => {
+      const it = el("div", "a-item" + (seen.has(a.id) ? "" : " new"));
+      it.appendChild(el("div", "n-text", a.message));
+      it.appendChild(el("div", "a-date", jalaliOf(new Date(a.created_at))));
+      annList.appendChild(it);
+    });
+    annModal.classList.add("show");
+    markRead(ANN.map(a => a.id));
+  }
+  function closeAnn() { annModal.classList.remove("show"); }
+  bellBtn.addEventListener("click", openAnn);
+  $("annClose").addEventListener("click", closeAnn);
+  annModal.addEventListener("click", (e) => { if (e.target === annModal) closeAnn(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAnn(); });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) loadNotices(); });
 
   /* ---------- شروع ---------- */
   async function init() {
@@ -589,44 +904,56 @@
     }
     if (!session) { window.location.replace("index.html"); return; }
 
-    const username = localStorage.getItem("current_username");
-    document.getElementById("usernameDisplay").textContent = username || "";
-    document.getElementById("avatar").textContent = initials(username);
+    let username = localStorage.getItem("current_username");
+    if (!username && session.user && session.user.email) username = session.user.email.split("@")[0];
+    username = username || "";
+    $("usernameDisplay").textContent = username;
+    $("avatar").textContent = initials(username);
+
+    currentUsername = username;
+    loadNotices();
 
     const { data, error } = await supabaseClient
       .from("orders")
       .select("order_date, order_count")
-      .eq("username", username)
-      .order("order_date", { ascending: true });
+      .eq("username", username);
 
-    const listEl = document.getElementById("list");
-
+    const listEl = $("list");
     if (error || !data || data.length === 0) { showEmpty(listEl); return; }
 
-    const counts = data.map(r => Number(r.order_count) || 0);
+    const asc = data.slice().sort((a, b) =>
+      (dateKey(a.order_date) - dateKey(b.order_date)) || String(a.order_date).localeCompare(String(b.order_date))
+    );
+    const counts = asc.map(r => Number(r.order_count) || 0);
     const total = counts.reduce((a, b) => a + b, 0);
     const max = Math.max(...counts);
     const avg = total / counts.length;
 
-    document.getElementById("stats").hidden = false;
-    document.getElementById("listMeta").textContent = data.length + " رکورد";
+    $("stats").hidden = false;
+    $("listMeta").textContent = asc.length + " ثبت";
 
-    animateNumber(document.getElementById("totalCount"), total, 900);
-    animateNumber(document.getElementById("stDays"), data.length, 700);
-    animateNumber(document.getElementById("stAvg"), Math.round(avg * 10) / 10, 700);
-    animateNumber(document.getElementById("stMax"), max, 700);
+    animateNumber($("totalCount"), Math.round(total * 100) / 100, 900);
+    animateNumber($("stDays"), asc.length, 700);
+    animateNumber($("stAvg"), Math.round(avg * 10) / 10, 700);
+    animateNumber($("stMax"), max, 700);
 
-    drawSpark(counts);
-    renderRows(listEl, data, max);
+    drawSpark(asc);
+
+    const items = asc.map((r, i) => ({
+      date: r.order_date,
+      count: counts[i],
+      delta: i > 0 ? Math.round((counts[i] - counts[i - 1]) * 100) / 100 : null
+    })).reverse();
+    renderRows(listEl, items, max);
   }
 
-  document.getElementById("logoutBtn").addEventListener("click", async (e) => {
+  $("logoutBtn").addEventListener("click", async (e) => {
     const btn = e.currentTarget;
     btn.disabled = true;
     btn.textContent = "در حال خروج…";
     await supabaseClient.auth.signOut();
     localStorage.removeItem("current_username");
-    try { localStorage.removeItem("remember_pref"); } catch (e) {}
+    try { localStorage.removeItem("remember_pref"); } catch (err) {}
     window.location.replace("index.html");
   });
 
