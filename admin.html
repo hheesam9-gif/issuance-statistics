@@ -282,7 +282,8 @@
   #wipeMsg { text-align: center; font-size: 13px; min-height: 18px; margin-top: 12px; color: var(--text-dim); }
   .toast {
     position: fixed; bottom: 26px; left: 50%; transform: translate(-50%, 20px); opacity: 0; pointer-events: none; z-index: 200;
-    padding: 11px 20px; border-radius: 999px; background: var(--card-bg); border: 1px solid var(--card-border);
+    padding: 11px 20px; border-radius: 18px; max-width: min(92vw, 560px); text-align: center; line-height: 1.9;
+    background: var(--card-bg); border: 1px solid var(--card-border);
     box-shadow: var(--card-shadow); font-size: 13px; transition: opacity 0.25s ease, transform 0.25s ease;
   }
   .toast.show { opacity: 1; transform: translate(-50%, 0); }
@@ -945,7 +946,20 @@
     t.textContent = text;
     t.className = "toast show " + (cls || "");
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => t.classList.remove("show"), 3200);
+    toastTimer = setTimeout(() => t.classList.remove("show"), cls === "error" ? 9000 : 3200);
+  }
+
+  // تبدیل خطای Supabase به پیام قابل‌فهم
+  function explainError(error) {
+    const m = String((error && error.message) || "").toLowerCase();
+    const c = error && error.code;
+    if (c === "42P01" || c === "PGRST205" || m.includes("could not find the table") || m.includes("does not exist")) {
+      return "جدول هنوز ساخته نشده؛ فایل supabase-setup.sql رو توی Supabase اجرا کنید.";
+    }
+    if (c === "42501" || m.includes("row-level security") || m.includes("permission denied")) {
+      return "دسترسی نوشتن روی این جدول بسته‌ست؛ نسخه‌ی جدید supabase-setup.sql رو توی Supabase اجرا کنید.";
+    }
+    return (error && error.message) ? error.message : "خطای نامشخص";
   }
 
   /* ---------- تب‌های پنل کاربر ---------- */
@@ -997,7 +1011,7 @@
       .from("errors").select("*").eq("username", username).order("created_at", { ascending: false });
     if (username !== selectedUsername) return;
     list.replaceChildren();
-    if (error) { cnt.textContent = ""; list.appendChild(hintEl(NEED_SQL)); return; }
+    if (error) { cnt.textContent = ""; list.appendChild(hintEl(explainError(error))); return; }
     cnt.textContent = data.length ? data.length : "";
     if (!data.length) { list.appendChild(hintEl("مغایرتی برای این کاربر ثبت نشده")); return; }
     data.forEach(e => list.appendChild(errItemEl(e, false)));
@@ -1010,7 +1024,7 @@
     list.replaceChildren();
     if (error) {
       $("errSumCount").textContent = "—"; $("errSumTotal").textContent = "—";
-      list.appendChild(hintEl(NEED_SQL));
+      list.appendChild(hintEl(explainError(error)));
       return;
     }
     let total = 0;
@@ -1039,7 +1053,7 @@
   async function resolveError(e) {
     if (!confirm("مغایرت سفارش " + e.order_number + " رفع شده و از پنل نماینده برداشته بشه؟")) return;
     const { error } = await supabaseClient.from("errors").delete().eq("id", e.id);
-    if (error) { toast("حذف نشد: " + (error.message || "خطای نامشخص"), "error"); return; }
+    if (error) { toast("حذف نشد: " + explainError(error), "error"); return; }
     toast("مغایرت از پنل نماینده برداشته شد", "ok");
     refreshErrors();
   }
@@ -1058,7 +1072,7 @@
     const { error } = await supabaseClient
       .from("errors").insert({ username: selectedUsername, order_number: order, amount: amount, reason: reason });
     btn.disabled = false;
-    if (error) { toast("ثبت نشد: " + (error.message || "خطای نامشخص"), "error"); return; }
+    if (error) { toast("مغایرت ثبت نشد: " + explainError(error), "error"); return; }
     $("errOrder").value = ""; $("errAmount").value = ""; $("errReason").value = "";
     toast("مغایرت ثبت شد و توی پنل نماینده نمایش داده می‌شه", "ok");
     refreshErrors();
@@ -1070,7 +1084,7 @@
     const { data, error } = await supabaseClient
       .from("announcements").select("*").order("created_at", { ascending: false }).limit(50);
     list.replaceChildren();
-    if (error) { $("annCount").textContent = ""; list.appendChild(hintEl(NEED_SQL)); return; }
+    if (error) { $("annCount").textContent = ""; list.appendChild(hintEl(explainError(error))); return; }
     $("annCount").textContent = data.length ? data.length + " مورد" : "";
     if (!data.length) { list.appendChild(hintEl("اعلان فعالی وجود نداره")); return; }
     data.forEach(a => {
@@ -1083,7 +1097,7 @@
       del.addEventListener("click", async () => {
         if (!confirm("این اعلان از پنل همه‌ی نماینده‌ها برداشته بشه؟")) return;
         const { error } = await supabaseClient.from("announcements").delete().eq("id", a.id);
-        if (error) { toast("حذف نشد: " + (error.message || ""), "error"); return; }
+        if (error) { toast("حذف نشد: " + explainError(error), "error"); return; }
         toast("اعلان حذف شد", "ok");
         loadAnnouncements();
       });
@@ -1111,7 +1125,7 @@
     btn.disabled = true;
     const { error } = await supabaseClient.from("announcements").insert({ message: message });
     btn.disabled = false;
-    if (error) { toast("ارسال نشد: " + (error.message || "خطای نامشخص"), "error"); return; }
+    if (error) { toast("اعلان ارسال نشد: " + explainError(error), "error"); return; }
     $("annText").value = "";
     toast("اعلان برای همه‌ی نماینده‌ها ارسال شد", "ok");
     loadAnnouncements();
