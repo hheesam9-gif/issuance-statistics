@@ -218,8 +218,80 @@
   .history .row b { font-variant-numeric: tabular-nums; }
   .delete-btn { background: none; border: none; padding: 2px 4px; cursor: pointer; font-size: 15px; line-height: 1; color: var(--error); }
 
+  [hidden] { display: none !important; }
+  .tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  button.btn-danger {
+    display: flex; align-items: center; gap: 7px; padding: 9px 14px; border-radius: 999px;
+    background: rgba(255, 90, 110, 0.10); border: 1px solid rgba(255, 90, 110, 0.38);
+    color: var(--error); font-weight: normal; font-size: 13px;
+  }
+  button.btn-danger:hover { filter: none; background: rgba(255, 90, 110, 0.18); }
+  button.btn-danger svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  button.danger-btn { background: linear-gradient(135deg, #f0506e, #dc2626); }
+
+  .tabs { display: flex; gap: 4px; padding: 4px; margin-bottom: 16px; background: var(--row-bg); border: 1px solid var(--row-border); border-radius: 13px; }
+  button.tab { flex: 1; padding: 9px 10px; border-radius: 10px; background: transparent; color: var(--text-dim); font-weight: normal; font-size: 13px; }
+  button.tab:hover { filter: none; color: var(--text); }
+  button.tab.active { background: linear-gradient(135deg, var(--accent1), var(--accent2)); color: #fff; font-weight: bold; }
+  .tab-count:not(:empty) { display: inline-block; min-width: 18px; padding: 0 5px; margin-right: 4px; border-radius: 9px; background: rgba(255, 255, 255, 0.24); font-size: 11px; line-height: 18px; }
+
+  .err-form { display: flex; flex-direction: column; gap: 8px; }
+  .err-form .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .ltr { direction: ltr; text-align: right; }
+  textarea.reason { direction: rtl; text-align: right; min-height: 84px; }
+  .err-list { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; max-height: 360px; overflow-y: auto; }
+  .err-list::-webkit-scrollbar, .ann-list::-webkit-scrollbar { width: 6px; }
+  .err-list::-webkit-scrollbar-thumb, .ann-list::-webkit-scrollbar-thumb { background: var(--row-border); border-radius: 10px; }
+  .err-item { background: var(--row-bg); border: 1px solid var(--row-border); border-right: 3px solid var(--warn); border-radius: 12px; padding: 12px 14px; }
+  .err-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .err-id { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; }
+  .err-user { font-weight: bold; direction: ltr; unicode-bidi: plaintext; cursor: pointer; color: var(--accent2); }
+  .err-user:hover { text-decoration: underline; }
+  .ltr-num { direction: ltr; unicode-bidi: isolate; font-variant-numeric: tabular-nums; font-weight: bold; }
+  .err-amount { font-size: 16px; font-variant-numeric: tabular-nums; color: var(--warn); }
+  .err-reason { margin-top: 8px; font-size: 13px; line-height: 1.9; white-space: pre-wrap; word-break: break-word; }
+  .err-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+  .err-date { font-size: 11px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+  button.resolve-btn { padding: 6px 12px; border-radius: 9px; font-size: 12px; background: rgba(74, 222, 128, 0.12); border: 1px solid rgba(74, 222, 128, 0.38); color: var(--ok); font-weight: bold; }
+  button.resolve-btn:hover { filter: none; background: rgba(74, 222, 128, 0.22); }
+  button.del-btn { padding: 6px 12px; border-radius: 9px; font-size: 12px; background: rgba(255, 90, 110, 0.10); border: 1px solid rgba(255, 90, 110, 0.35); color: var(--error); font-weight: normal; }
+  button.del-btn:hover { filter: none; background: rgba(255, 90, 110, 0.18); }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  button.chip-btn { padding: 7px 12px; border-radius: 999px; font-size: 12px; background: var(--row-bg); border: 1px solid var(--row-border); color: var(--text); font-weight: normal; }
+  button.chip-btn:hover { filter: none; border-color: var(--accent1); }
+  .sub-title { display: flex; align-items: center; justify-content: space-between; margin: 22px 0 10px; padding-top: 18px; border-top: 1px solid var(--row-border); font-size: 13px; color: var(--text-dim); }
+  .ann-list { display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; }
+  .ann-item { background: var(--row-bg); border: 1px solid var(--row-border); border-radius: 12px; padding: 12px 14px; }
+  .ann-text { font-size: 13px; line-height: 1.9; white-space: pre-wrap; word-break: break-word; }
+  .sum-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .sum-chip { font-size: 12px; color: var(--text-dim); background: var(--row-bg); border: 1px solid var(--row-border); border-radius: 999px; padding: 5px 12px; }
+  .sum-chip b { color: var(--text); font-variant-numeric: tabular-nums; }
+
+  .modal { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; padding: 18px; background: rgba(4, 6, 16, 0.66); }
+  .modal.show { display: flex; }
+  .modal-box { width: 100%; max-width: 470px; max-height: 92vh; overflow-y: auto; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 22px; padding: 26px; box-shadow: var(--card-shadow); }
+  .modal-icon { width: 52px; height: 52px; border-radius: 15px; margin: 0 auto 14px; display: flex; align-items: center; justify-content: center; background: rgba(255, 90, 110, 0.12); border: 1px solid rgba(255, 90, 110, 0.35); }
+  .modal-icon svg { width: 26px; height: 26px; stroke: var(--error); fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .modal-box h3 { text-align: center; margin: 0 0 10px; font-size: 18px; }
+  .modal-text { font-size: 13px; line-height: 2; color: var(--text-dim); text-align: center; margin: 0 0 16px; }
+  .modal-text b { color: var(--text); font-variant-numeric: tabular-nums; }
+  button.full { width: 100%; }
+  .check { display: flex; align-items: center; gap: 9px; font-size: 13px; margin: 16px 0; cursor: pointer; }
+  input[type="checkbox"] { width: 17px; height: 17px; padding: 0; accent-color: var(--accent1); box-shadow: none; }
+  #wipeMsg { text-align: center; font-size: 13px; min-height: 18px; margin-top: 12px; color: var(--text-dim); }
+  .toast {
+    position: fixed; bottom: 26px; left: 50%; transform: translate(-50%, 20px); opacity: 0; pointer-events: none; z-index: 200;
+    padding: 11px 20px; border-radius: 999px; background: var(--card-bg); border: 1px solid var(--card-border);
+    box-shadow: var(--card-shadow); font-size: 13px; transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
   @media (max-width: 520px) {
     .card { padding: 20px; }
+    .err-form .two { grid-template-columns: 1fr; }
+    button.btn-danger span { display: none; }
+    button.btn-danger { padding: 9px 11px; }
     .stat, .stat + .stat { padding-right: 16px; }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -248,10 +320,16 @@
           <p>ثبت و مدیریت آمار صدور کاربران</p>
         </div>
       </div>
-      <div class="theme-toggle" id="themeToggle" role="button" tabindex="0" aria-label="تغییر تم">
-        <span>☀️</span>
-        <div class="switch"><div class="knob"></div></div>
-        <span>🌙</span>
+      <div class="tools">
+        <button type="button" class="btn-danger" id="wipeOpen" title="حذف آمار همه‌ی کاربران (پایان دوره)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+          <span>پایان دوره</span>
+        </button>
+        <div class="theme-toggle" id="themeToggle" role="button" tabindex="0" aria-label="تغییر تم">
+          <span>☀️</span>
+          <div class="switch"><div class="knob"></div></div>
+          <span>🌙</span>
+        </div>
       </div>
     </div>
 
@@ -329,17 +407,101 @@
           <h3>آمار <span id="selectedName"></span></h3>
           <div class="user-total">مجموع: <b id="userTotal">0</b></div>
         </div>
-        <div class="hint">تاریخ رو به فرمت 1405/06/28 وارد کنید. اگه برای اون تاریخ آمار باشه، جایگزین می‌شه.</div>
-        <div class="form-row">
-          <input class="in-date" id="dateInput" type="text" placeholder="تاریخ (مثلاً 1405/06/28)" inputmode="numeric" />
-          <input class="in-count" id="countInput" type="number" step="any" placeholder="تعداد" />
-          <button id="saveBtn">ثبت</button>
+        <div class="tabs" role="tablist">
+          <button type="button" class="tab active" id="tabStats" role="tab">آمار</button>
+          <button type="button" class="tab" id="tabErrors" role="tab">مغایرت‌ها <span class="tab-count" id="errTabCount"></span></button>
         </div>
-        <div id="msg" role="status" aria-live="polite"></div>
-        <div class="history" id="history"></div>
+
+        <div id="paneStats">
+          <div class="hint">تاریخ رو به فرمت 1405/06/28 وارد کنید. اگه برای اون تاریخ آمار باشه، جایگزین می‌شه.</div>
+          <div class="form-row">
+            <input class="in-date" id="dateInput" type="text" placeholder="تاریخ (مثلاً 1405/06/28)" inputmode="numeric" />
+            <input class="in-count" id="countInput" type="number" step="any" placeholder="تعداد" />
+            <button id="saveBtn">ثبت</button>
+          </div>
+          <div id="msg" role="status" aria-live="polite"></div>
+          <div class="history" id="history"></div>
+        </div>
+
+        <div id="paneErrors" hidden>
+          <div class="hint">اگه نماینده توی سفارشی خطا داشته، اینجا ثبت کنید تا توی پنلش نمایش داده بشه. بعد از رفع مغایرت با سرپرستش، دکمه‌ی «رفع شد» رو بزنید تا از پنلش برداشته بشه.</div>
+          <div class="err-form">
+            <div class="two">
+              <input class="ltr" id="errOrder" type="text" placeholder="شماره سفارش" autocomplete="off" />
+              <input id="errAmount" type="text" inputmode="decimal" placeholder="مبلغ خطا" autocomplete="off" />
+            </div>
+            <textarea class="reason" id="errReason" placeholder="دلیل مغایرت رو بنویسید..."></textarea>
+            <button type="button" id="errSaveBtn">ثبت مغایرت</button>
+          </div>
+          <div class="err-list" id="userErrList"></div>
+        </div>
       </div>
     </section>
+
+    <!-- اعلان به نماینده‌ها -->
+    <section class="card">
+      <div class="card-head">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15 9a4 4 0 0 1 0 6"/><path d="M18 6a8 8 0 0 1 0 12"/></svg>
+        </div>
+        <div>
+          <h2>اعلان به نماینده‌ها</h2>
+          <p>پیام شما توی پنل همه‌ی نماینده‌ها نمایش داده می‌شه</p>
+        </div>
+      </div>
+
+      <label class="field" for="annText">متن اعلان</label>
+      <textarea class="reason" id="annText" placeholder="مثلاً: سفارش در تاریخ 1405/06/28 سینک نبوده؛ به‌محض سینک شدن، آمار به‌روزرسانی می‌شه."></textarea>
+      <div class="chips">
+        <button type="button" class="chip-btn" data-tpl="sync">آمار سینک نیست</button>
+        <button type="button" class="chip-btn" data-tpl="done">آمار به‌روز شد</button>
+      </div>
+      <div class="actions"><button type="button" id="annSendBtn">ارسال اعلان</button></div>
+
+      <div class="sub-title"><span>اعلان‌های فعال</span><span id="annCount"></span></div>
+      <div class="ann-list" id="annAdminList"></div>
+    </section>
+
+    <!-- مغایرت‌های باز -->
+    <section class="card">
+      <div class="card-head">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+        </div>
+        <div>
+          <h2>مغایرت‌های باز</h2>
+          <p>همه‌ی مغایرت‌هایی که هنوز رفع نشدن؛ با کلیک روی اسم به کاربر برید</p>
+        </div>
+      </div>
+      <div class="sum-row">
+        <span class="sum-chip">تعداد: <b id="errSumCount">—</b></span>
+        <span class="sum-chip">مجموع مبلغ: <b id="errSumTotal">—</b></span>
+      </div>
+      <div class="err-list" id="allErrList"></div>
+    </section>
   </main>
+
+  <div class="modal" id="wipeModal" role="dialog" aria-modal="true" aria-labelledby="wipeTitle">
+    <div class="modal-box">
+      <div class="modal-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></div>
+      <h3 id="wipeTitle">حذف آمار همه‌ی کاربران</h3>
+      <p class="modal-text">
+        با این کار <b id="wipeCount">…</b> رکورد آمار مربوط به <b>همه‌ی نماینده‌ها</b> پاک می‌شه و برگشتی نداره.
+        معمولاً آخر هر دوره (مثلاً روز ۳۱) استفاده می‌شه. پیشنهاد می‌کنم اول پشتیبان بگیرید.
+      </p>
+      <button type="button" class="secondary full" id="backupBtn">دانلود پشتیبان (CSV) قبل از حذف</button>
+      <label class="check"><input type="checkbox" id="wipeErrors" /> مغایرت‌های باز هم پاک بشن (<span id="wipeErrCount">…</span> مورد)</label>
+      <label class="field" for="wipeConfirm">برای تأیید، کلمه‌ی «حذف» رو تایپ کنید</label>
+      <input id="wipeConfirm" type="text" autocomplete="off" placeholder="حذف" />
+      <div class="actions">
+        <button type="button" class="danger-btn" id="wipeGo" disabled>حذف همه</button>
+        <button type="button" class="secondary" id="wipeCancel">انصراف</button>
+      </div>
+      <div id="wipeMsg" role="status" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
   const SUPABASE_URL = "https://jmbpskxloffcrbxiqcdy.supabase.co";
@@ -640,6 +802,8 @@
     document.getElementById("dateInput").value = "";
     document.getElementById("countInput").value = "";
     msgEl.textContent = "";
+    switchTab("stats");
+    loadUserErrors(username);
     await loadHistory(username);
   }
 
@@ -752,6 +916,316 @@
 
   searchUsers();
   loadStats();
+
+  /* =========================================================
+     مغایرت‌ها، اعلان‌ها و حذف پایان دوره
+     ========================================================= */
+  const $ = id => document.getElementById(id);
+  const NEED_SQL = "جدول هنوز ساخته نشده؛ فایل supabase-setup.sql رو توی Supabase اجرا کنید";
+
+  function mk(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function jalaliOf(d) {
+    try {
+      const parts = new Intl.DateTimeFormat("en-u-ca-persian-nu-latn", { year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(d);
+      const g = t => parts.find(p => p.type === t).value;
+      return g("year") + "/" + g("month") + "/" + g("day");
+    } catch (e) { return ""; }
+  }
+  function fmtMoney(n) { return Number(n).toLocaleString("en-US"); }
+  function parseAmount(s) { return parseFloat(normalizeDigits(s).replace(/[,،\s]/g, "")); }
+
+  let toastTimer = null;
+  function toast(text, cls) {
+    const t = $("toast");
+    t.textContent = text;
+    t.className = "toast show " + (cls || "");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove("show"), 3200);
+  }
+
+  /* ---------- تب‌های پنل کاربر ---------- */
+  function switchTab(name) {
+    const isStats = name === "stats";
+    $("paneStats").hidden = !isStats;
+    $("paneErrors").hidden = isStats;
+    $("tabStats").classList.toggle("active", isStats);
+    $("tabErrors").classList.toggle("active", !isStats);
+  }
+  $("tabStats").addEventListener("click", () => switchTab("stats"));
+  $("tabErrors").addEventListener("click", () => switchTab("errors"));
+
+  /* ---------- مغایرت‌ها ---------- */
+  function errItemEl(e, showUser) {
+    const box = mk("div", "err-item");
+    const top = mk("div", "err-top");
+    const id = mk("div", "err-id");
+    if (showUser) {
+      const u = mk("span", "err-user", e.username);
+      u.tabIndex = 0;
+      u.setAttribute("role", "button");
+      u.title = "رفتن به این کاربر";
+      u.addEventListener("click", () => openUser(e.username));
+      u.addEventListener("keydown", (ev) => { if (ev.key === "Enter") openUser(e.username); });
+      id.appendChild(u);
+    }
+    id.appendChild(mk("span", null, "سفارش"));
+    id.appendChild(mk("span", "ltr-num", e.order_number));
+    top.appendChild(id);
+    top.appendChild(mk("b", "err-amount", fmtMoney(e.amount)));
+    box.appendChild(top);
+    box.appendChild(mk("div", "err-reason", e.reason));
+
+    const foot = mk("div", "err-foot");
+    foot.appendChild(mk("span", "err-date", jalaliOf(new Date(e.created_at))));
+    const btn = mk("button", "resolve-btn", "رفع شد ✓");
+    btn.type = "button";
+    btn.addEventListener("click", () => resolveError(e));
+    foot.appendChild(btn);
+    box.appendChild(foot);
+    return box;
+  }
+
+  async function loadUserErrors(username) {
+    const list = $("userErrList");
+    const cnt = $("errTabCount");
+    const { data, error } = await supabaseClient
+      .from("errors").select("*").eq("username", username).order("created_at", { ascending: false });
+    if (username !== selectedUsername) return;
+    list.replaceChildren();
+    if (error) { cnt.textContent = ""; list.appendChild(hintEl(NEED_SQL)); return; }
+    cnt.textContent = data.length ? data.length : "";
+    if (!data.length) { list.appendChild(hintEl("مغایرتی برای این کاربر ثبت نشده")); return; }
+    data.forEach(e => list.appendChild(errItemEl(e, false)));
+  }
+
+  async function loadAllErrors() {
+    const list = $("allErrList");
+    const { data, error } = await supabaseClient
+      .from("errors").select("*").order("created_at", { ascending: false }).limit(300);
+    list.replaceChildren();
+    if (error) {
+      $("errSumCount").textContent = "—"; $("errSumTotal").textContent = "—";
+      list.appendChild(hintEl(NEED_SQL));
+      return;
+    }
+    let total = 0;
+    data.forEach(e => { total += Number(e.amount) || 0; });
+    $("errSumCount").textContent = data.length;
+    $("errSumTotal").textContent = fmtMoney(Math.round(total * 100) / 100);
+    if (!data.length) { list.appendChild(hintEl("الان مغایرت بازی وجود نداره")); return; }
+    data.forEach(e => list.appendChild(errItemEl(e, true)));
+  }
+
+  function refreshErrors() {
+    if (selectedUsername) loadUserErrors(selectedUsername);
+    loadAllErrors();
+  }
+
+  async function openUser(name) {
+    $("searchInput").value = name;
+    await searchUsers();
+    const row = [...document.querySelectorAll(".user-row")].find(r => r.querySelector(".name").textContent === name);
+    if (!row) return;
+    row.click();
+    switchTab("errors");
+    $("panel").scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  async function resolveError(e) {
+    if (!confirm("مغایرت سفارش " + e.order_number + " رفع شده و از پنل نماینده برداشته بشه؟")) return;
+    const { error } = await supabaseClient.from("errors").delete().eq("id", e.id);
+    if (error) { toast("حذف نشد: " + (error.message || "خطای نامشخص"), "error"); return; }
+    toast("مغایرت از پنل نماینده برداشته شد", "ok");
+    refreshErrors();
+  }
+
+  $("errSaveBtn").addEventListener("click", async () => {
+    if (!selectedUsername) return;
+    const order = normalizeDigits($("errOrder").value.trim());
+    const amount = parseAmount($("errAmount").value);
+    const reason = $("errReason").value.trim();
+    if (!order || isNaN(amount) || !reason) {
+      toast("شماره سفارش، مبلغ و دلیل رو کامل وارد کنید", "error");
+      return;
+    }
+    const btn = $("errSaveBtn");
+    btn.disabled = true;
+    const { error } = await supabaseClient
+      .from("errors").insert({ username: selectedUsername, order_number: order, amount: amount, reason: reason });
+    btn.disabled = false;
+    if (error) { toast("ثبت نشد: " + (error.message || "خطای نامشخص"), "error"); return; }
+    $("errOrder").value = ""; $("errAmount").value = ""; $("errReason").value = "";
+    toast("مغایرت ثبت شد و توی پنل نماینده نمایش داده می‌شه", "ok");
+    refreshErrors();
+  });
+
+  /* ---------- اعلان‌ها ---------- */
+  async function loadAnnouncements() {
+    const list = $("annAdminList");
+    const { data, error } = await supabaseClient
+      .from("announcements").select("*").order("created_at", { ascending: false }).limit(50);
+    list.replaceChildren();
+    if (error) { $("annCount").textContent = ""; list.appendChild(hintEl(NEED_SQL)); return; }
+    $("annCount").textContent = data.length ? data.length + " مورد" : "";
+    if (!data.length) { list.appendChild(hintEl("اعلان فعالی وجود نداره")); return; }
+    data.forEach(a => {
+      const box = mk("div", "ann-item");
+      box.appendChild(mk("div", "ann-text", a.message));
+      const foot = mk("div", "err-foot");
+      foot.appendChild(mk("span", "err-date", jalaliOf(new Date(a.created_at))));
+      const del = mk("button", "del-btn", "حذف اعلان");
+      del.type = "button";
+      del.addEventListener("click", async () => {
+        if (!confirm("این اعلان از پنل همه‌ی نماینده‌ها برداشته بشه؟")) return;
+        const { error } = await supabaseClient.from("announcements").delete().eq("id", a.id);
+        if (error) { toast("حذف نشد: " + (error.message || ""), "error"); return; }
+        toast("اعلان حذف شد", "ok");
+        loadAnnouncements();
+      });
+      foot.appendChild(del);
+      box.appendChild(foot);
+      list.appendChild(box);
+    });
+  }
+
+  document.querySelectorAll("[data-tpl]").forEach(b => b.addEventListener("click", () => {
+    const d = normalizeDigits(bulkDateEl.value.trim());
+    const date = /^\d{4}\/\d{2}\/\d{2}$/.test(d) ? d : "____/__/__";
+    const T = {
+      sync: "سفارش در تاریخ " + date + " سینک نبوده؛ به‌محض سینک شدن، آمار به‌روزرسانی می‌شه.",
+      done: "آمار تاریخ " + date + " به‌روزرسانی شد."
+    };
+    $("annText").value = T[b.dataset.tpl];
+    $("annText").focus();
+  }));
+
+  $("annSendBtn").addEventListener("click", async () => {
+    const message = $("annText").value.trim();
+    if (!message) { toast("متن اعلان رو بنویسید", "error"); return; }
+    const btn = $("annSendBtn");
+    btn.disabled = true;
+    const { error } = await supabaseClient.from("announcements").insert({ message: message });
+    btn.disabled = false;
+    if (error) { toast("ارسال نشد: " + (error.message || "خطای نامشخص"), "error"); return; }
+    $("annText").value = "";
+    toast("اعلان برای همه‌ی نماینده‌ها ارسال شد", "ok");
+    loadAnnouncements();
+  });
+
+  /* ---------- حذف آمار همه (پایان دوره) ---------- */
+  const wipeModal = $("wipeModal");
+  const wipeConfirm = $("wipeConfirm");
+  const wipeGo = $("wipeGo");
+  const wipeMsg = $("wipeMsg");
+
+  async function openWipe() {
+    wipeModal.classList.add("show");
+    wipeConfirm.value = "";
+    wipeGo.disabled = true;
+    $("wipeErrors").checked = false;
+    wipeMsg.textContent = ""; wipeMsg.className = "";
+    $("wipeCount").textContent = "…";
+    $("wipeErrCount").textContent = "…";
+    setTimeout(() => wipeConfirm.focus(), 60);
+    try {
+      const { count } = await supabaseClient.from("orders").select("username", { count: "exact", head: true });
+      $("wipeCount").textContent = count == null ? "؟" : count;
+    } catch (e) { $("wipeCount").textContent = "؟"; }
+    try {
+      const { count } = await supabaseClient.from("errors").select("id", { count: "exact", head: true });
+      $("wipeErrCount").textContent = count == null ? "0" : count;
+    } catch (e) { $("wipeErrCount").textContent = "0"; }
+  }
+  function closeWipe() { wipeModal.classList.remove("show"); }
+
+  $("wipeOpen").addEventListener("click", openWipe);
+  $("wipeCancel").addEventListener("click", closeWipe);
+  wipeModal.addEventListener("click", (e) => { if (e.target === wipeModal) closeWipe(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeWipe(); });
+  wipeConfirm.addEventListener("input", () => { wipeGo.disabled = wipeConfirm.value.trim() !== "حذف"; });
+
+  function csvCell(v) { return '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"'; }
+  async function downloadBackup() {
+    const rows = [];
+    const size = 1000;
+    let from = 0;
+    while (true) {
+      const { data, error } = await supabaseClient
+        .from("orders").select("username, order_date, order_count")
+        .order("username", { ascending: true }).order("order_date", { ascending: true })
+        .range(from, from + size - 1);
+      if (error) throw error;
+      rows.push(...data);
+      if (data.length < size) break;
+      from += size;
+    }
+    const csv = "\ufeffusername,order_date,order_count\n" +
+      rows.map(r => [r.username, r.order_date, r.order_count].map(csvCell).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "orders-backup-" + (jalaliOf(new Date()).replace(/\//g, "-") || "date") + ".csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    return rows.length;
+  }
+
+  $("backupBtn").addEventListener("click", async () => {
+    const btn = $("backupBtn");
+    btn.disabled = true;
+    wipeMsg.className = "";
+    wipeMsg.textContent = "در حال آماده‌سازی پشتیبان...";
+    try {
+      const n = await downloadBackup();
+      wipeMsg.className = "ok";
+      wipeMsg.textContent = "✔ پشتیبان " + n + " رکورد دانلود شد";
+    } catch (e) {
+      wipeMsg.className = "error";
+      wipeMsg.textContent = "پشتیبان‌گیری ناموفق بود: " + (e.message || e);
+    }
+    btn.disabled = false;
+  });
+
+  wipeGo.addEventListener("click", async () => {
+    wipeGo.disabled = true;
+    $("wipeCancel").disabled = true;
+    wipeMsg.className = "";
+    wipeMsg.textContent = "در حال حذف...";
+
+    const { error, count } = await supabaseClient
+      .from("orders").delete({ count: "exact" }).not("username", "is", null);
+    if (error) {
+      wipeMsg.className = "error";
+      wipeMsg.textContent = "حذف انجام نشد: " + (error.message || "خطای نامشخص");
+      wipeGo.disabled = false;
+      $("wipeCancel").disabled = false;
+      return;
+    }
+
+    const alsoErrors = $("wipeErrors").checked;
+    if (alsoErrors) {
+      const r = await supabaseClient.from("errors").delete().not("id", "is", null);
+      if (r.error) toast("آمار پاک شد، ولی حذف مغایرت‌ها ناموفق بود", "error");
+    }
+
+    $("wipeCancel").disabled = false;
+    closeWipe();
+    toast(count == null ? "آمار همه‌ی کاربران حذف شد" : "آمار همه‌ی کاربران حذف شد (" + count + " رکورد)", "ok");
+    loadStats();
+    if (selectedUsername) loadHistory(selectedUsername);
+    if (alsoErrors) refreshErrors();
+  });
+
+  loadAllErrors();
+  loadAnnouncements();
 </script>
 </body>
 </html>
