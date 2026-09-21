@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0b0e1e">
 <title>پنل مدیریت</title>
 <script>
   /* اعمال تم قبل از رسم صفحه تا موقع لود چشمک نزنه */
@@ -288,8 +293,35 @@
   }
   .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
+  #app { width: 100%; display: flex; flex-direction: column; align-items: center; }
+  button.pill-btn {
+    display: flex; align-items: center; gap: 7px; padding: 8px 14px; border-radius: 999px;
+    background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text);
+    font-weight: normal; font-size: 13px;
+  }
+  button.pill-btn:hover { filter: none; border-color: var(--accent1); }
+  button.pill-btn svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+
+  .gate { width: 100%; max-width: 400px; margin: auto; }
+  .gate-box {
+    background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 24px;
+    padding: 34px 30px 28px; box-shadow: var(--card-shadow); text-align: center;
+  }
+  .gate-logo {
+    width: 54px; height: 54px; margin: 0 auto 16px; border-radius: 16px;
+    background: linear-gradient(140deg, var(--accent1), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 10px 26px rgba(90, 100, 255, 0.35);
+  }
+  .gate-logo svg { width: 26px; height: 26px; stroke: #fff; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .gate-box h1 { font-size: 20px; margin: 0 0 6px; }
+  .gate-sub { margin: 0 0 24px; font-size: 13px; color: var(--text-dim); }
+  .gate-box label.field { text-align: right; }
+  #gMsg { min-height: 18px; margin-top: 14px; font-size: 13px; color: var(--text-dim); }
+
   @media (max-width: 520px) {
     .card { padding: 20px; }
+    .gate-box { padding: 28px 22px 24px; }
     .err-form .two { grid-template-columns: 1fr; }
     button.btn-danger span { display: none; }
     button.btn-danger { padding: 9px 11px; }
@@ -310,6 +342,27 @@
     <div class="grain"></div>
   </div>
 
+  <!-- ورود مدیر -->
+  <div class="gate" id="gate" hidden>
+    <div class="gate-box">
+      <div class="gate-logo">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="3"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+      </div>
+      <h1>ورود مدیر</h1>
+      <p class="gate-sub">این بخش فقط برای مدیر سایت در دسترسه</p>
+
+      <label class="field" for="gUser">نام کاربری</label>
+      <input class="ltr" id="gUser" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" />
+
+      <label class="field" for="gPass" style="margin-top:14px">رمز عبور</label>
+      <input class="ltr" id="gPass" type="password" autocomplete="current-password" />
+
+      <button type="button" class="full" id="gLogin" style="margin-top:20px">ورود</button>
+      <div id="gMsg" role="status" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <div id="app" hidden>
   <header class="top">
     <div class="top-main">
       <div class="brand">
@@ -331,6 +384,10 @@
           <div class="switch"><div class="knob"></div></div>
           <span>🌙</span>
         </div>
+        <button type="button" class="pill-btn" id="logoutBtn" title="خروج از پنل مدیریت">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+          <span>خروج</span>
+        </button>
       </div>
     </div>
 
@@ -481,6 +538,7 @@
       <div class="err-list" id="allErrList"></div>
     </section>
   </main>
+  </div>
 
   <div class="modal" id="wipeModal" role="dialog" aria-modal="true" aria-labelledby="wipeTitle">
     <div class="modal-box">
@@ -507,7 +565,10 @@
 <script>
   const SUPABASE_URL = "https://jmbpskxloffcrbxiqcdy.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptYnBza3hsb2ZmY3JieGlxY2R5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MjU3MDgsImV4cCI6MjEwNTQwMTcwOH0.ZFHwX9hg7FxyjcEV4oJRpA2Rgoh0UqL2Xj7D3IO3YMU";
-  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // نشست مدیر جدا از نشست نماینده‌ها ذخیره می‌شه (کلید جدا)، تا ورود/خروج نماینده‌ها روش اثر نذاره
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { storageKey: "sb-admin-auth", persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
+  });
 
   /* ---------- تم ---------- */
   const root = document.documentElement;
@@ -915,9 +976,6 @@
     if (e.key === "Enter") { clearTimeout(searchTimer); searchUsers(); }
   });
 
-  searchUsers();
-  loadStats();
-
   /* =========================================================
      مغایرت‌ها، اعلان‌ها و حذف پایان دوره
      ========================================================= */
@@ -955,6 +1013,9 @@
     const c = error && error.code;
     if (c === "42P01" || c === "PGRST205" || m.includes("could not find the table") || m.includes("does not exist")) {
       return "جدول هنوز ساخته نشده؛ فایل supabase-setup.sql رو توی Supabase اجرا کنید.";
+    }
+    if (m.includes("jwt expired") || m.includes("invalid jwt")) {
+      return "نشست ورود منقضی شده؛ صفحه رو رفرش کنید و دوباره وارد بشید.";
     }
     if (c === "42501" || m.includes("row-level security") || m.includes("permission denied")) {
       return "دسترسی نوشتن روی این جدول بسته‌ست؛ نسخه‌ی جدید supabase-setup.sql رو توی Supabase اجرا کنید.";
@@ -1238,8 +1299,95 @@
     if (alsoErrors) refreshErrors();
   });
 
-  loadAllErrors();
-  loadAnnouncements();
+  /* =========================================================
+     ورود مدیر (فقط h-abbasi)
+     ========================================================= */
+  const ADMIN_USERNAME = "h-abbasi";
+  const ADMIN_EMAIL = ADMIN_USERNAME + "@yourapp.local";
+  let appStarted = false;
+
+  function isAdminSession(session) {
+    return !!(session && session.user && String(session.user.email || "").toLowerCase() === ADMIN_EMAIL);
+  }
+
+  function startApp() {
+    searchUsers();
+    loadStats();
+    loadAllErrors();
+    loadAnnouncements();
+  }
+  function showApp() {
+    $("gate").hidden = true;
+    $("app").hidden = false;
+    if (!appStarted) { appStarted = true; startApp(); }
+  }
+  function showGate() {
+    appStarted = false;
+    selectedUsername = null;
+    $("app").hidden = true;
+    $("gate").hidden = false;
+    $("gLogin").disabled = false;
+    setTimeout(() => $("gUser").focus(), 60);
+  }
+
+  async function doLogin() {
+    const msg = $("gMsg");
+    const btn = $("gLogin");
+    const username = $("gUser").value.trim().toLowerCase();
+    const password = $("gPass").value;
+
+    if (!username || !password) {
+      msg.className = "error";
+      msg.textContent = "نام کاربری و رمز عبور رو وارد کنید";
+      return;
+    }
+    btn.disabled = true;
+    msg.className = "";
+    msg.textContent = "در حال بررسی...";
+
+    const fail = () => {
+      msg.className = "error";
+      msg.textContent = "نام کاربری یا رمز عبور اشتباهه";
+      btn.disabled = false;
+    };
+
+    // فقط حساب مدیر اجازه‌ی ورود به این صفحه داره
+    if (username !== ADMIN_USERNAME) { setTimeout(fail, 700); return; }
+
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email: ADMIN_EMAIL, password: password });
+    if (error || !data || !isAdminSession(data.session)) {
+      if (data && data.session) await supabaseClient.auth.signOut();
+      fail();
+      return;
+    }
+    $("gPass").value = "";
+    msg.textContent = "";
+    btn.disabled = false;
+    showApp();
+  }
+
+  $("gLogin").addEventListener("click", doLogin);
+  $("gPass").addEventListener("keydown", (e) => { if (e.key === "Enter") doLogin(); });
+  $("gUser").addEventListener("keydown", (e) => { if (e.key === "Enter") $("gPass").focus(); });
+  $("logoutBtn").addEventListener("click", async () => { await supabaseClient.auth.signOut(); });
+
+  // خروج (یا منقضی شدن نشست) => برگشت به صفحه ورود
+  supabaseClient.auth.onAuthStateChange((event) => {
+    if (event === "SIGNED_OUT") showGate();
+  });
+
+  (async function checkAuth() {
+    let session = null;
+    try {
+      const res = await supabaseClient.auth.getSession();
+      session = res.data.session;
+    } catch (e) {}
+    if (isAdminSession(session)) showApp();
+    else {
+      if (session) { try { await supabaseClient.auth.signOut(); } catch (e) {} }
+      showGate();
+    }
+  })();
 </script>
 </body>
 </html>
