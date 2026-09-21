@@ -292,6 +292,52 @@
   .stat b { display: block; font-size: 19px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.3px; }
   .stat span { display: block; font-size: 11px; color: var(--text-faint); margin-top: 5px; }
 
+  /* ---------- رتبه‌ی ناشناس ---------- */
+  .rank {
+    --medal: var(--accent2); --medal2: var(--accent1); --on-medal: #fff;
+    position: relative; overflow: hidden; margin-bottom: 12px; padding: 16px 16px 14px;
+    background: var(--row-bg); border: 1px solid var(--row-border); border-radius: 18px;
+  }
+  .rank.gold   { --medal: #f5c542; --medal2: #d8912a; --on-medal: #3b2a05; }
+  .rank.silver { --medal: #d5dbee; --medal2: #8c95b5; --on-medal: #23273d; }
+  .rank.bronze { --medal: #e6a071; --medal2: #b0683a; --on-medal: #ffffff; }
+  .rank::after {
+    content: ""; position: absolute; inset: 0 auto auto 0; width: 60%; height: 100%; pointer-events: none;
+    background: radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--medal) 16%, transparent), transparent 70%);
+  }
+  .rank > * { position: relative; z-index: 1; }
+  .rank-top { display: flex; align-items: center; gap: 13px; }
+  .rank-badge {
+    width: 54px; height: 54px; flex-shrink: 0; border-radius: 17px; display: grid; place-items: center;
+    font-size: 23px; font-weight: 900; direction: ltr; font-variant-numeric: tabular-nums;
+    color: var(--on-medal); background: linear-gradient(140deg, var(--medal), var(--medal2));
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  }
+  .rank-txt { min-width: 0; }
+  .rank-txt b { display: block; font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+  .rank-txt span { display: block; font-size: 12px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+  .rank-pct {
+    margin-inline-start: auto; white-space: nowrap; font-size: 12px; font-weight: 500;
+    color: var(--mint); background: rgba(47, 211, 167, 0.12); padding: 6px 11px; border-radius: 999px;
+    font-variant-numeric: tabular-nums;
+  }
+  .track {
+    position: relative; height: 8px; margin: 20px 3px 8px; border-radius: 8px;
+    background: linear-gradient(270deg, var(--mint), var(--accent2) 55%, var(--accent1));
+    opacity: 0.55;
+  }
+  .pin {
+    position: absolute; top: 50%; right: 0; width: 20px; height: 20px; border-radius: 50%;
+    background: #fff; border: 4px solid var(--medal); transform: translate(50%, -50%);
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--medal) 25%, transparent), 0 6px 16px rgba(0, 0, 0, 0.4);
+    transition: right 1.3s cubic-bezier(.16,.84,.3,1) 0.5s;
+  }
+  .track-labels { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--text-faint); }
+  .rank-note { margin-top: 12px; font-size: 12.5px; line-height: 1.9; color: var(--text-dim); }
+  .rank-note b { color: var(--text); font-variant-numeric: tabular-nums; }
+  .rank-priv { margin-top: 8px; font-size: 10.5px; color: var(--text-faint); }
+  @media (prefers-reduced-motion: reduce) { .pin { transition: none; } }
+
   /* ---------- لیست ---------- */
   .list-head { display: flex; justify-content: space-between; align-items: baseline; margin: 0 3px 11px; }
   .list-head h2 { font-size: 13px; font-weight: 500; color: var(--text-dim); margin: 0; }
@@ -475,6 +521,18 @@
             <div class="sguide" id="sparkGuide"></div>
             <div class="sdot" id="sparkDot"></div>
           </div>
+        </div>
+
+        <div class="rank" id="rankCard" hidden>
+          <div class="rank-top">
+            <div class="rank-badge"><span id="rankNum">0</span></div>
+            <div class="rank-txt"><b id="rankTitle"></b><span id="rankSub"></span></div>
+            <div class="rank-pct" id="rankPct" hidden></div>
+          </div>
+          <div class="track"><i class="pin" id="rankPin"></i></div>
+          <div class="track-labels"><span>نفر اول</span><span>نفر آخر</span></div>
+          <div class="rank-note" id="rankNote"></div>
+          <div class="rank-priv">رتبه‌ها کاملاً ناشناس هستن؛ هیچ اسمی نمایش داده نمی‌شه.</div>
         </div>
 
         <div class="stats" id="stats" hidden>
@@ -893,7 +951,58 @@
   $("annClose").addEventListener("click", closeAnn);
   annModal.addEventListener("click", (e) => { if (e.target === annModal) closeAnn(); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAnn(); });
-  document.addEventListener("visibilitychange", () => { if (!document.hidden) loadNotices(); });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) { loadNotices(); loadRank(); } });
+
+  /* =========================================================
+     رتبه‌ی ناشناس در بین نماینده‌ها
+     ========================================================= */
+  async function loadRank() {
+    const card = $("rankCard");
+    let res;
+    try { res = await supabaseClient.rpc("get_my_rank"); } catch (e) { return; }
+    if (!res || res.error || !res.data) { card.hidden = true; return; }
+    const r = Array.isArray(res.data) ? res.data[0] : res.data;
+    if (!r) { card.hidden = true; return; }
+
+    const rank = Number(r.my_rank), n = Number(r.participants);
+    if (!rank || !n) { card.hidden = true; return; }
+    const tied = Number(r.tied) || 0;
+    const gap = r.next_gap == null ? null : Number(r.next_gap);
+
+    card.classList.remove("gold", "silver", "bronze");
+    if (rank === 1) card.classList.add("gold");
+    else if (rank === 2) card.classList.add("silver");
+    else if (rank === 3) card.classList.add("bronze");
+
+    $("rankTitle").textContent = rank === 1 ? "شما نفر اول هستید" : rank === 2 ? "نفر دوم" : rank === 3 ? "نفر سوم" : "رتبه‌ی شما";
+    $("rankSub").textContent = "از " + n + " نماینده" + (tied ? " · هم‌رتبه با " + tied + " نفر" : "");
+
+    const pct = n > 1 ? Math.floor((n - rank) / n * 100) : 0;
+    const pctEl = $("rankPct");
+    if (pct > 0) { pctEl.textContent = "بهتر از " + pct + "٪ همکاران"; pctEl.hidden = false; }
+    else pctEl.hidden = true;
+
+    const note = $("rankNote");
+    note.replaceChildren();
+    if (rank === 1) {
+      note.appendChild(document.createTextNode("عالیه! همین روند رو ادامه بدید تا جایگاهتون رو حفظ کنید."));
+    } else if (gap != null && gap > 0) {
+      note.appendChild(document.createTextNode("تا رتبه‌ی بعدی فقط "));
+      note.appendChild(el("b", null, fmt(gap)));
+      note.appendChild(document.createTextNode(" صدور فاصله دارید."));
+    }
+
+    card.hidden = false;
+    animateNumber($("rankNum"), rank, 800);
+
+    const pos = n > 1 ? (rank - 1) / (n - 1) : 0;
+    const pin = $("rankPin");
+    if (REDUCE) { pin.style.right = (pos * 100) + "%"; }
+    else {
+      pin.style.right = "0%";
+      requestAnimationFrame(() => requestAnimationFrame(() => { pin.style.right = (pos * 100) + "%"; }));
+    }
+  }
 
   /* ---------- شروع ---------- */
   async function init() {
@@ -915,6 +1024,7 @@
 
     currentUsername = username;
     loadNotices();
+    loadRank();
 
     const { data, error } = await supabaseClient
       .from("orders")
