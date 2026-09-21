@@ -853,20 +853,31 @@
     });
   }
 
-  async function selectUser(username, rowEl) {
-    document.querySelectorAll(".user-row").forEach(r => r.classList.remove("selected"));
-    rowEl.classList.add("selected");
-    selectedUsername = username;
-    document.getElementById("selectedName").textContent = username;
-    panelEl.classList.add("show");
-    document.getElementById("dateInput").value = "";
-    document.getElementById("countInput").value = "";
-    msgEl.textContent = "";
-    switchTab("stats");
-    loadUserErrors(username);
-    await loadHistory(username);
+ function closePanel() {
+  panelEl.classList.remove("show");
+  document.querySelectorAll(".user-row").forEach(r => r.classList.remove("selected"));
+  selectedUsername = null;
+}
+
+async function selectUser(username, rowEl, forceOpen) {
+  // کلیک دوباره روی همان کاربر => بستن پنل
+  if (!forceOpen && selectedUsername === username && panelEl.classList.contains("show")) {
+    closePanel();
+    return;
   }
 
+  document.querySelectorAll(".user-row").forEach(r => r.classList.remove("selected"));
+  rowEl.classList.add("selected");
+  selectedUsername = username;
+  document.getElementById("selectedName").textContent = username;
+  panelEl.classList.add("show");
+  document.getElementById("dateInput").value = "";
+  document.getElementById("countInput").value = "";
+  msgEl.textContent = "";
+  switchTab("stats");
+  loadUserErrors(username);
+  await loadHistory(username);
+}
   async function loadHistory(username) {
     const { data, error } = await supabaseClient
       .from("orders")
