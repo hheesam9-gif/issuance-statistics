@@ -167,6 +167,8 @@
   .actions button { flex: 1; }
   #bulkPreview { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--row-border); display: none; }
   #bulkPreview.show { display: block; }
+  #archPreview { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--row-border); display: none; }
+  #archPreview.show { display: block; }
   .preview-head { font-size: 13px; margin-bottom: 12px; color: var(--text-dim); }
   .preview-head b { color: var(--text); }
   .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
@@ -182,6 +184,7 @@
   }
   .note { margin-top: 10px; font-size: 12px; color: var(--warn); }
   #bulkMsg { text-align: center; font-size: 13px; min-height: 18px; margin-top: 12px; color: var(--text-dim); }
+  #archMsg { text-align: center; font-size: 13px; min-height: 18px; margin-top: 12px; color: var(--text-dim); }
 
   /* مدیریت تکی */
   .search-box { display: flex; gap: 8px; margin-bottom: 14px; }
@@ -439,10 +442,59 @@
       <div id="bulkMsg" role="status" aria-live="polite"></div>
     </section>
 
+    <!-- بایگانی دوره‌ای برای پنل نماینده -->
+    <section class="card" id="archiveCard">
+      <div class="card-head">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 9h18"/><path d="M8 4v3"/><path d="M16 4v3"/></svg>
+        </div>
+        <div>
+          <h2>بایگانی دوره‌ای (قبل از پایان دوره)</h2>
+          <p>مجموع سفارش هر نفر رو برای یک بازه‌ی زمانی ثبت کن تا تو پنلش بمونه، حتی بعد از پاک شدن آمار روزانه</p>
+        </div>
+      </div>
 
+      <div class="form-row">
+        <div style="flex:1 1 140px">
+          <label class="field" for="archStart">از تاریخ</label>
+          <input class="ltr" id="archStart" type="text" placeholder="1405/06/23" inputmode="numeric" />
+        </div>
+        <div style="flex:1 1 140px">
+          <label class="field" for="archEnd">تا تاریخ</label>
+          <input class="ltr" id="archEnd" type="text" placeholder="1405/07/22" inputmode="numeric" />
+        </div>
+      </div>
 
+      <label class="field" for="archLabel" style="margin-top:14px">عنوان دوره (اختیاری)</label>
+      <input id="archLabel" type="text" placeholder="مثلاً دور شهریور - مهر" />
 
-    
+      <label class="field" for="archText" style="margin-top:14px">لیست از اکسل (هر خط: نام کاربری و مجموع کل دوره)</label>
+      <textarea id="archText" placeholder="a.alavi 1240&#10;a.barghi 980.5&#10;a.biabani 1510" spellcheck="false"></textarea>
+      <div class="paste-meta"><span id="archLineCount"></span></div>
+
+      <div class="actions">
+        <button id="archCheckBtn">بررسی لیست</button>
+      </div>
+
+      <div id="archPreview">
+        <div class="preview-head">پیش‌نمایش برای دوره‌ی <b id="archPreviewLabel"></b></div>
+        <div class="tiles">
+          <div class="tile ok"><div class="n" id="archTileOk">0</div><div class="lb">آماده ثبت</div></div>
+          <div class="tile warn"><div class="n" id="archTileMissing">0</div><div class="lb">در سایت نیستن</div></div>
+          <div class="tile bad"><div class="n" id="archTileInvalid">0</div><div class="lb">خط نامعتبر</div></div>
+        </div>
+        <div id="archFolds"></div>
+        <div class="actions">
+          <button id="archSaveBtn">ثبت نهایی</button>
+          <button id="archCancelBtn" class="secondary">لغو</button>
+        </div>
+      </div>
+      <div id="archMsg" role="status" aria-live="polite"></div>
+
+      <div class="sub-title"><span>دوره‌های آرشیو شده</span><span id="archPeriodCount"></span></div>
+      <div class="ann-list" id="archPeriodList"></div>
+    </section>
+
     <!-- مدیریت تکی -->
     <section class="card">
       <div class="card-head">
@@ -548,8 +600,9 @@
       <h3 id="wipeTitle">حذف آمار همه‌ی کاربران</h3>
       <p class="modal-text">
         با این کار <b id="wipeCount">…</b> رکورد آمار مربوط به <b>همه‌ی نماینده‌ها</b> پاک می‌شه و برگشتی نداره.
-        معمولاً آخر هر دوره (مثلاً روز ۳۱) استفاده می‌شه. پیشنهاد می‌کنم اول پشتیبان بگیرید.
+        معمولاً آخر هر دوره (مثلاً روز ۳۱) استفاده می‌شه. پیشنهاد می‌کنم اول پشتیبان بگیرید و آرشیو دوره رو هم ثبت کنید.
       </p>
+      <button type="button" class="secondary full" id="goArchiveBtn" style="margin-bottom:10px">📦 اول آرشیو دوره رو ثبت کن</button>
       <button type="button" class="secondary full" id="backupBtn">دانلود پشتیبان (CSV) قبل از حذف</button>
       <label class="check"><input type="checkbox" id="wipeErrors" /> مغایرت‌های باز هم پاک بشن (<span id="wipeErrCount">…</span> مورد)</label>
       <label class="field" for="wipeConfirm">برای تأیید، کلمه‌ی «حذف» رو تایپ کنید</label>
@@ -1028,13 +1081,13 @@
     const m = String((error && error.message) || "").toLowerCase();
     const c = error && error.code;
     if (c === "42P01" || c === "PGRST205" || m.includes("could not find the table") || m.includes("does not exist")) {
-      return "جدول هنوز ساخته نشده؛ فایل supabase-setup.sql رو توی Supabase اجرا کنید.";
+      return "جدول موردنیاز هنوز ساخته نشده؛ اسکریپت SQL مربوطه رو توی Supabase اجرا کنید.";
     }
     if (m.includes("jwt expired") || m.includes("invalid jwt")) {
       return "نشست ورود منقضی شده؛ صفحه رو رفرش کنید و دوباره وارد بشید.";
     }
     if (c === "42501" || m.includes("row-level security") || m.includes("permission denied")) {
-      return "دسترسی نوشتن روی این جدول بسته‌ست؛ نسخه‌ی جدید supabase-setup.sql رو توی Supabase اجرا کنید.";
+      return "دسترسی نوشتن روی این جدول بسته‌ست؛ نسخه‌ی جدید اسکریپت SQL رو توی Supabase اجرا کنید.";
     }
     return (error && error.message) ? error.message : "خطای نامشخص";
   }
@@ -1209,6 +1262,230 @@
     loadAnnouncements();
   });
 
+  /* =========================================================
+     بایگانی دوره‌ای (برای نمایش «دور قبل» تو پنل نماینده)
+     ========================================================= */
+  const archStartEl = $("archStart");
+  const archEndEl = $("archEnd");
+  const archLabelEl = $("archLabel");
+  const archTextEl = $("archText");
+  const archCheckBtn = $("archCheckBtn");
+  const archSaveBtn = $("archSaveBtn");
+  const archCancelBtn = $("archCancelBtn");
+  const archPreviewEl = $("archPreview");
+  const archMsgEl = $("archMsg");
+  const archLineCountEl = $("archLineCount");
+  const archFoldsEl = $("archFolds");
+
+  let pendingArchRows = [];
+  let pendingArchPeriod = { start: "", end: "", label: "" };
+
+  function setArchMsg(text, cls) { archMsgEl.textContent = text; archMsgEl.className = cls || ""; }
+
+  archTextEl.addEventListener("input", () => {
+    const n = archTextEl.value.split(/\r?\n/).filter(l => l.trim()).length;
+    archLineCountEl.textContent = n ? n + " خط وارد شده" : "";
+  });
+
+  function addArchFold(title, items) {
+    const d = document.createElement("details");
+    d.className = "fold";
+    const s = document.createElement("summary");
+    s.textContent = title;
+    d.appendChild(s);
+    const list = document.createElement("div");
+    list.className = "bulk-list";
+    list.textContent = items.join("  |  ");
+    d.appendChild(list);
+    archFoldsEl.appendChild(d);
+  }
+
+  archCheckBtn.addEventListener("click", async () => {
+    setArchMsg("");
+    archPreviewEl.classList.remove("show");
+    pendingArchRows = [];
+
+    const start = normalizeDigits(archStartEl.value.trim());
+    const end = normalizeDigits(archEndEl.value.trim());
+    if (!/^\d{4}\/\d{2}\/\d{2}$/.test(start) || !/^\d{4}\/\d{2}\/\d{2}$/.test(end)) {
+      setArchMsg("تاریخ شروع و پایان دوره رو به فرمت 1405/06/28 وارد کنید", "error");
+      return;
+    }
+    const label = archLabelEl.value.trim() || (start + " تا " + end);
+
+    const raw = normalizeDigits(archTextEl.value);
+    if (!raw.trim()) {
+      setArchMsg("لیست خالیه؛ داده‌ی اکسل رو پیست کنید", "error");
+      return;
+    }
+
+    archCheckBtn.disabled = true;
+    setArchMsg("در حال بررسی کاربران...");
+
+    let usernames;
+    try {
+      usernames = await fetchAllUsernames();
+    } catch (e) {
+      setArchMsg("خواندن لیست کاربران ناموفق بود: " + (e.message || e), "error");
+      archCheckBtn.disabled = false;
+      return;
+    }
+    archCheckBtn.disabled = false;
+    setArchMsg("");
+
+    const userMap = new Map(usernames.map(u => [String(u).toLowerCase(), u]));
+
+    const matched = new Map();
+    const notFound = [];
+    const invalid = [];
+    let duplicates = 0;
+
+    raw.split(/\r?\n/).forEach(line => {
+      const trimmed = line.trim();
+      if (!trimmed) return;
+      const parts = trimmed.split(/\s+/);
+      const name = parts[0];
+      const numStr = parts[parts.length - 1];
+
+      if (parts.length < 2 || !/^-?\d+(\.\d+)?$/.test(numStr)) { invalid.push(trimmed); return; }
+      const real = userMap.get(name.toLowerCase());
+      if (!real) { notFound.push(name); return; }
+      if (matched.has(real)) duplicates++;
+      matched.set(real, parseFloat(numStr));
+    });
+
+    pendingArchRows = [...matched.entries()].map(([username, total]) => ({
+      username, period_start: start, period_end: end, period_label: label, order_count: total
+    }));
+    pendingArchPeriod = { start, end, label };
+
+    $("archPreviewLabel").textContent = label;
+    $("archTileOk").textContent = pendingArchRows.length;
+    $("archTileMissing").textContent = notFound.length;
+    $("archTileInvalid").textContent = invalid.length;
+
+    archFoldsEl.innerHTML = "";
+    if (notFound.length) addArchFold("کاربرهایی که در سایت نیستن (ثبت نمی‌شن)", notFound);
+    if (invalid.length) addArchFold("خط‌های نامعتبر (نادیده گرفته شد)", invalid);
+    if (duplicates) {
+      const n = document.createElement("div");
+      n.className = "note";
+      n.textContent = duplicates + " نام تکراری بود؛ آخرین مقدار ثبت می‌شه";
+      archFoldsEl.appendChild(n);
+    }
+
+    archSaveBtn.textContent = "ثبت نهایی " + pendingArchRows.length + " نفر";
+    archSaveBtn.disabled = pendingArchRows.length === 0;
+    archPreviewEl.classList.add("show");
+    if (pendingArchRows.length === 0) setArchMsg("هیچ کاربر معتبری پیدا نشد", "error");
+  });
+
+  archCancelBtn.addEventListener("click", () => {
+    pendingArchRows = [];
+    archPreviewEl.classList.remove("show");
+    setArchMsg("");
+  });
+
+  archSaveBtn.addEventListener("click", async () => {
+    if (!pendingArchRows.length) return;
+
+    const sure = confirm(
+      "مجموع دوره‌ی «" + pendingArchPeriod.label + "» برای " + pendingArchRows.length + " نفر ثبت بشه؟\n" +
+      "اگه قبلاً برای همین بازه‌ی تاریخی ثبت شده باشه، مقدارش جایگزین می‌شه."
+    );
+    if (!sure) return;
+
+    archSaveBtn.disabled = true;
+    archCancelBtn.disabled = true;
+    archCheckBtn.disabled = true;
+
+    const batchSize = 200;
+    let done = 0;
+    for (let i = 0; i < pendingArchRows.length; i += batchSize) {
+      const batch = pendingArchRows.slice(i, i + batchSize);
+      setArchMsg("در حال ذخیره... " + done + " از " + pendingArchRows.length);
+
+      const { error } = await supabaseClient
+        .from("archives").upsert(batch, { onConflict: "username,period_start,period_end" });
+
+      if (error) {
+        setArchMsg("ثبت متوقف شد (" + done + " نفر ثبت شده بود): " + explainError(error), "error");
+        archSaveBtn.disabled = false;
+        archCancelBtn.disabled = false;
+        archCheckBtn.disabled = false;
+        return;
+      }
+      done += batch.length;
+    }
+
+    setArchMsg("✔ آرشیو دوره‌ی «" + pendingArchPeriod.label + "» برای " + done + " نفر ثبت شد", "ok");
+    pendingArchRows = [];
+    archPreviewEl.classList.remove("show");
+    archTextEl.value = "";
+    archLineCountEl.textContent = "";
+    archCancelBtn.disabled = false;
+    archCheckBtn.disabled = false;
+
+    loadArchivePeriods();
+  });
+
+  async function loadArchivePeriods() {
+    const list = $("archPeriodList");
+    const { data, error } = await supabaseClient
+      .from("archives").select("period_start, period_end, period_label, order_count")
+      .order("period_end", { ascending: false });
+
+    list.replaceChildren();
+    if (error) {
+      $("archPeriodCount").textContent = "";
+      list.appendChild(hintEl(explainError(error)));
+      return;
+    }
+    if (!data.length) {
+      $("archPeriodCount").textContent = "";
+      list.appendChild(hintEl("هنوز هیچ دوره‌ای آرشیو نشده"));
+      return;
+    }
+
+    // گروه‌بندی سمت کلاینت بر اساس بازه‌ی تاریخی
+    const groups = new Map();
+    data.forEach(r => {
+      const key = r.period_start + "|" + r.period_end;
+      if (!groups.has(key)) groups.set(key, { start: r.period_start, end: r.period_end, label: r.period_label, count: 0, total: 0 });
+      const g = groups.get(key);
+      g.count += 1;
+      g.total += Number(r.order_count) || 0;
+    });
+
+    $("archPeriodCount").textContent = groups.size + " دوره";
+
+    [...groups.values()].forEach(g => {
+      const box = mk("div", "ann-item");
+      box.appendChild(mk("div", "ann-text", g.label + "  (" + g.start + " تا " + g.end + ")"));
+      const foot = mk("div", "err-foot");
+      foot.appendChild(mk("span", "err-date", g.count + " نفر — مجموع " + fmt(g.total)));
+      const del = mk("button", "del-btn", "حذف این دوره");
+      del.type = "button";
+      del.addEventListener("click", async () => {
+        if (!confirm("همه‌ی رکوردهای دوره‌ی «" + g.label + "» حذف بشه؟")) return;
+        const { error } = await supabaseClient
+          .from("archives").delete().eq("period_start", g.start).eq("period_end", g.end);
+        if (error) { toast("حذف نشد: " + explainError(error), "error"); return; }
+        toast("دوره حذف شد", "ok");
+        loadArchivePeriods();
+      });
+      foot.appendChild(del);
+      box.appendChild(foot);
+      list.appendChild(box);
+    });
+  }
+
+  $("goArchiveBtn").addEventListener("click", () => {
+    closeWipe();
+    $("archiveCard").scrollIntoView({ behavior: "smooth", block: "start" });
+    setTimeout(() => archStartEl.focus(), 400);
+  });
+
   /* ---------- حذف آمار همه (پایان دوره) ---------- */
   const wipeModal = $("wipeModal");
   const wipeConfirm = $("wipeConfirm");
@@ -1337,6 +1614,7 @@
     loadStats();
     loadAllErrors();
     loadAnnouncements();
+    loadArchivePeriods();
   }
   function showApp() {
     $("gate").hidden = true;
