@@ -781,12 +781,20 @@
 
   function blendRGB(c1, c2, t) { return c1.map((v, i) => Math.round(v + (c2[i] - v) * t)); }
 
+    let seasonOverride = null; // null = خودکار؛ وگرنه یکی از spring/summer/autumn/winter
+
   function applySeasonTheme() {
     const isLight = root.getAttribute("data-theme") === "light";
     const pal = isLight ? PALETTES.light : PALETTES.dark;
     const alphas = isLight ? SEASON_ALPHAS.light : SEASON_ALPHAS.dark;
-    const doy = persianDayOfYear(new Date());
-    const { from, to, t } = seasonMix(doy);
+    let from, to, t;
+    if (seasonOverride) {
+      from = to = seasonOverride;
+      t = 0;
+    } else {
+      const doy = persianDayOfYear(new Date());
+      ({ from, to, t } = seasonMix(doy));
+    }
 
     const mix = key => blendRGB(pal[from][key], pal[to][key], t);
     const b1 = mix("blob1"), b2 = mix("blob2"), b3 = mix("blob3");
@@ -804,7 +812,17 @@
     if (badge) badge.textContent = SEASON_EMOJI[dominant];
     if (nameEl) nameEl.textContent = SEASON_NAMES[dominant];
   }
+    async function loadSeasonOverride() {
+    try {
+      const { data, error } = await supabaseClient
+        .from("app_settings").select("value").eq("key", "season").maybeSingle();
+      seasonOverride = (!error && data && data.value && data.value !== "auto") ? data.value : null;
+    } catch (e) { seasonOverride = null; }
+    applySeasonTheme();
+  }
+
   applySeasonTheme();
+  loadSeasonOverride();
 
   /* ---------- نمودار روند (با نشانگر تعاملی) ---------- */
   function drawSpark(asc) {
@@ -1089,7 +1107,7 @@
   $("annClose").addEventListener("click", closeAnn);
   annModal.addEventListener("click", (e) => { if (e.target === annModal) closeAnn(); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAnn(); });
-  document.addEventListener("visibilitychange", () => { if (!document.hidden) { loadNotices(); loadRank(); loadPeriods(); } });
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) { loadNotices(); loadRank(); loadPeriods(); loadSeasonOverride(); } });
 
   /* =========================================================
      رتبه‌ی ناشناس در بین نماینده‌ها
@@ -1150,7 +1168,7 @@
     const wrap = $("periodsWrap");
     const listEl = $("periodList");
     const { data, error } = await supabaseClient
-      .from("period_archives")
+      .from("period_totals")
       .select("period_label, period_start, period_end, total_count")
       .eq("username", currentUsername)
       .order("period_start", { ascending: false });
