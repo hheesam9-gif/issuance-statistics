@@ -125,7 +125,15 @@
     background-image: var(--season-veil-img, none);
     transition: opacity 1.2s ease;
   }
-
+  .season-fx { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+  .season-particle {
+    position: absolute; top: -40px; line-height: 1; opacity: 0.55; will-change: transform;
+    animation-name: seasonFall; animation-timing-function: linear; animation-iteration-count: infinite;
+  }
+  @keyframes seasonFall {
+    from { transform: translateY(-10vh) translateX(0) rotate(0deg); }
+    to { transform: translateY(112vh) translateX(var(--drift, 0px)) rotate(360deg); }
+  }
   /* ---------- قاب صفحه (وسط‌چین عمودی؛ اگه بلند شد از بالا شروع می‌شه) ---------- */
   .page { width: 100%; max-width: 1000px; margin: auto; display: flex; flex-direction: column; align-items: center; }
 
@@ -376,6 +384,7 @@
   .rank-note b { color: var(--text); font-variant-numeric: tabular-nums; }
   .rank-priv { margin-top: 8px; font-size: 10.5px; color: var(--text-faint); }
   @media (prefers-reduced-motion: reduce) { .pin { transition: none; } }
+  .season-particle { animation: none; display: none; }
 
   /* ---------- لیست ---------- */
   .list-head { display: flex; justify-content: space-between; align-items: baseline; margin: 0 3px 11px; }
@@ -504,12 +513,13 @@
 </style>
 </head>
 <body>
-  <div class="bg" aria-hidden="true">
+   <div class="bg" aria-hidden="true">
     <div class="blob b1"></div>
     <div class="blob b2"></div>
     <div class="blob b3"></div>
     <div class="dots"></div>
     <div class="grain"></div>
+    <div class="season-fx" id="seasonFx" aria-hidden="true"></div>
   </div>
 
   <div class="page">
@@ -724,6 +734,38 @@
      ========================================================= */
   const SEASON_NAMES = { spring: "بهار", summer: "تابستان", autumn: "پاییز", winter: "زمستان" };
   const SEASON_EMOJI = { spring: "🌸", summer: "☀️", autumn: "🍂", winter: "❄️" };
+    const SEASON_PARTICLES = {
+    spring: ["🌸", "🌿"],
+    summer: ["✨", "🌞"],
+    autumn: ["🍂", "🍁"],
+    winter: ["❄️"]
+  };
+  let lastParticleSeason = null;
+
+  function renderSeasonParticles(season) {
+    const fx = $("seasonFx");
+    if (!fx || season === lastParticleSeason) return;
+    lastParticleSeason = season;
+    fx.replaceChildren();
+    const set = SEASON_PARTICLES[season];
+    if (!set) return;
+    const count = season === "summer" ? 10 : 16;
+    for (let i = 0; i < count; i++) {
+      const span = document.createElement("span");
+      span.className = "season-particle";
+      span.textContent = set[i % set.length];
+      const duration = 10 + Math.random() * 14;
+      const delay = -1 * Math.random() * duration;
+      const drift = Math.round(Math.random() * 80 - 40) + "px";
+      const size = 12 + Math.random() * 12;
+      span.style.left = (Math.random() * 100) + "%";
+      span.style.fontSize = size + "px";
+      span.style.animationDuration = duration + "s";
+      span.style.animationDelay = delay + "s";
+      span.style.setProperty("--drift", drift);
+      fx.appendChild(span);
+    }
+  }
 
   // پالت هر فصل: [blob1, blob2, blob3, accent1, accent2] به‌صورت [r,g,b]
   const PALETTES = {
@@ -807,10 +849,11 @@
     style.setProperty("--accent1", `rgb(${a1.join(",")})`);
     style.setProperty("--accent2", `rgb(${a2.join(",")})`);
 
-    const dominant = t < 0.5 ? from : to;
+     const dominant = t < 0.5 ? from : to;
     const badge = $("seasonBadge"), nameEl = $("seasonName");
     if (badge) badge.textContent = SEASON_EMOJI[dominant];
     if (nameEl) nameEl.textContent = SEASON_NAMES[dominant];
+    renderSeasonParticles(dominant);
   }
     async function loadSeasonOverride() {
     try {
