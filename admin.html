@@ -424,7 +424,7 @@
           <div class="switch"><div class="knob"></div></div>
           <span>🌙</span>
         </div>
-        <button type="button" class="pill-btn" id="seasonToggle" title="تغییر تم فصلی">
+        <button type="button" class="pill-btn" id="seasonToggle" title="تغییر تم فصلی برای همه‌ی نماینده‌ها">
           <span id="seasonEmoji">🍂</span>
           <span id="seasonLabel">فصل</span>
         </button>
@@ -739,11 +739,34 @@
   let seasonPref = (function () { try { return localStorage.getItem("site_season") || "auto"; } catch (e) { return "auto"; } })();
   applySeason(seasonPref);
 
-  document.getElementById("seasonToggle").addEventListener("click", () => {
+  // مقدار مشترک فصل رو از دیتابیس می‌خونیم (اگه سرپرست قبلاً از یه دستگاه دیگه تنظیمش کرده باشه)
+  // این همون مقداریه که تو پنل نماینده‌ها هم (فقط برای نمایش، بدون دکمه‌ی تغییر) خونده می‌شه
+  async function loadSeasonFromServer() {
+    try {
+      const { data, error } = await supabaseClient
+        .from("app_settings").select("value").eq("key", "season").maybeSingle();
+      if (error) { console.warn("app_settings read failed:", error.message); return; }
+      if (data && data.value && data.value !== seasonPref) {
+        seasonPref = data.value;
+        try { localStorage.setItem("site_season", seasonPref); } catch (e) {}
+        applySeason(seasonPref);
+      }
+    } catch (e) { console.warn("app_settings read failed:", e); }
+  }
+
+  async function saveSeasonToServer(pref) {
+    const { error } = await supabaseClient
+      .from("app_settings")
+      .upsert({ key: "season", value: pref, updated_at: new Date().toISOString() }, { onConflict: "key" });
+    if (error) toast("تم فصلی برای بقیه ذخیره نشد: " + explainError(error), "error");
+  }
+
+  document.getElementById("seasonToggle").addEventListener("click", async () => {
     const idx = SEASON_ORDER.indexOf(seasonPref);
     seasonPref = SEASON_ORDER[(idx + 1) % SEASON_ORDER.length];
     try { localStorage.setItem("site_season", seasonPref); } catch (e) {}
     applySeason(seasonPref);
+    await saveSeasonToServer(seasonPref);
   });
 
   /* ---------- ابزارها ---------- */
@@ -1725,6 +1748,7 @@
     loadAllErrors();
     loadAnnouncements();
     loadPeriodList();
+    loadSeasonFromServer();
   }
   function showApp() {
     $("gate").hidden = true;
