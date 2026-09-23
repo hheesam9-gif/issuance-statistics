@@ -539,6 +539,28 @@
       </div>
       <div class="err-list" id="allErrList"></div>
     </section>
+        <!-- تم فصلی پنل نماینده -->
+    <section class="card">
+      <div class="card-head">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
+        </div>
+        <div>
+          <h2>تم فصلی پنل نماینده‌ها</h2>
+          <p>پیش‌فرض خودکار بر اساس فصل سال؛ در صورت نیاز دستی override کن</p>
+        </div>
+      </div>
+      <label class="field" for="themeSelect">حالت تم</label>
+      <select id="themeSelect" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-size:14px;font-family:inherit;">
+        <option value="auto">خودکار بر اساس فصل</option>
+        <option value="spring">بهاری (اجباری)</option>
+        <option value="summer">تابستانی (اجباری)</option>
+        <option value="autumn">پاییزی (اجباری)</option>
+        <option value="winter">زمستانی (اجباری)</option>
+      </select>
+      <div class="actions"><button id="themeSaveBtn">ذخیره تنظیم تم</button></div>
+      <div id="themeMsg" role="status" aria-live="polite"></div>
+    </section>
   </main>
   </div>
 
@@ -1321,6 +1343,26 @@
     if (alsoErrors) refreshErrors();
   });
 
+    /* =========================================================
+     تنظیم تم فصلی (override دستی)
+     ========================================================= */
+  async function loadThemeSetting() {
+    const { data, error } = await supabaseClient
+      .from("site_settings").select("value").eq("key", "theme_override").maybeSingle();
+    $("themeSelect").value = (!error && data && data.value) ? data.value : "auto";
+  }
+  $("themeSaveBtn").addEventListener("click", async () => {
+    const v = $("themeSelect").value;
+    $("themeSaveBtn").disabled = true;
+    const { error } = await supabaseClient
+      .from("site_settings")
+      .upsert({ key: "theme_override", value: v, updated_at: new Date().toISOString() });
+    $("themeSaveBtn").disabled = false;
+    const m = $("themeMsg");
+    if (error) { m.className = "error"; m.textContent = "ذخیره نشد: " + explainError(error); return; }
+    m.className = "ok";
+    m.textContent = v === "auto" ? "✔ روی حالت خودکار تنظیم شد" : "✔ تم به‌صورت دستی ثابت شد";
+  });
   /* =========================================================
      ورود مدیر (فقط h-abbasi)
      ========================================================= */
@@ -1332,11 +1374,13 @@
     return !!(session && session.user && String(session.user.email || "").toLowerCase() === ADMIN_EMAIL);
   }
 
-  function startApp() {
+   function startApp() {
     searchUsers();
     loadStats();
     loadAllErrors();
     loadAnnouncements();
+    loadArchivePeriods();
+    loadThemeSetting();
   }
   function showApp() {
     $("gate").hidden = true;
