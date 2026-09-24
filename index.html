@@ -749,7 +749,35 @@ input:focus + .icon { stroke: var(--accent2); }
 
     const fakeEmail = username + "@yourapp.local";
 
+    let result;
+    try {
+      result = await supabaseClient.auth.signInWithPassword({
+        email: fakeEmail,
+        password: password
+      });
+    } catch (e) {
+      msg.textContent = "اتصال برقرار نشد، دوباره تلاش کنید";
+      msg.className = "error";
+      loginBtn.disabled = false;
+      submitting = false;
+      return;
+    }
 
+    if (result.error) {
+      msg.textContent = "نام کاربری یا رمز عبور اشتباه است";
+      msg.className = "error";
+      loginBtn.disabled = false;
+      submitting = false;
+      return;
+    }
+
+    localStorage.setItem("current_username", username);
+    msg.textContent = "ورود موفق — در حال انتقال…";
+    msg.className = "ok";
+
+    await saveCredential(username, password);
+    window.location.replace("dashboard.html");
+  });
   const btnLabel = loginBtn.querySelector(".btn-label");
   const stageEl = document.getElementById("stage");
   const logoEl = document.getElementById("logo");
