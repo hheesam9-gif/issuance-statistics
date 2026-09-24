@@ -376,6 +376,63 @@
   background: var(--accent1); color: #fff;
   font-size: 11px; line-height: 18px; text-align: center; font-weight: bold;
 }
+  /* ===== چیدمان بزرگ‌تر و وسط‌چین ===== */
+.top, .grid { max-width: 1240px; }
+.grid { grid-template-columns: 1fr; gap: 22px; align-items: stretch; }
+@media (min-width: 980px) { .grid { grid-template-columns: 1fr 1fr; } }
+.card[data-pane="period"] { grid-column: 1 / -1; width: 100%; max-width: 780px; margin: 0 auto; }
+@media (min-width: 521px) {
+  .card { padding: 32px; border-radius: 26px; }
+  .card-head h2 { font-size: 18px; }
+  .card-head p { font-size: 13px; }
+}
+[data-pane]:not([hidden]) { animation: paneIn .35s ease; }
+@keyframes paneIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+/* ===== تب‌های اصلی با نشانگر متحرک ===== */
+.main-tabs {
+  position: relative; display: flex; gap: 0; width: 100%; max-width: 620px; margin: 0 auto 26px;
+  padding: 6px; border-radius: 20px;
+  background: var(--card-bg); border: 1px solid var(--card-border); box-shadow: var(--card-shadow);
+}
+.main-tabs .tab {
+  position: relative; z-index: 1; flex: 1; padding: 15px 12px; font-size: 15px;
+  border-radius: 15px; background: transparent; color: var(--text-dim); transition: color .3s ease;
+}
+.main-tabs .tab:hover { color: var(--text); }
+.main-tabs .tab.active { background: transparent; color: #fff; font-weight: bold; }
+.main-tabs .tab-ind {
+  position: absolute; z-index: 0; top: 6px; bottom: 6px; right: 6px;
+  width: calc((100% - 12px) / 2); border-radius: 15px;
+  background: linear-gradient(135deg, var(--accent1), var(--accent2));
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.28);
+  transition: transform .4s cubic-bezier(.4, 0, .2, 1);
+}
+.main-tabs[data-active="period"] .tab-ind { transform: translateX(-100%); }
+
+/* ===== منوی بازشونده‌ی بالا ===== */
+.menu-wrap { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.menu-items { display: none; align-items: center; gap: 10px; flex-wrap: wrap; }
+.menu-items.open { display: flex; }
+button.menu-toggle {
+  padding: 10px 18px; font-size: 14px; font-weight: bold; border: none; color: #fff;
+  background: linear-gradient(135deg, var(--accent1), var(--accent2));
+}
+button.menu-toggle svg { transition: transform .35s ease; }
+button.menu-toggle.on svg { transform: rotate(90deg); }
+.menu-toggle .badge:not(:empty) { background: #fff; color: #222; }
+
+@keyframes menuIn { from { opacity: 0; transform: translateX(30px) scale(.85); } to { opacity: 1; transform: none; } }
+@keyframes menuOut { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateX(30px) scale(.85); } }
+.menu-items.open > * { animation: menuIn .38s cubic-bezier(.2, .9, .3, 1.15) backwards; }
+.menu-items.open > *:nth-child(1) { animation-delay: .00s; }
+.menu-items.open > *:nth-child(2) { animation-delay: .04s; }
+.menu-items.open > *:nth-child(3) { animation-delay: .08s; }
+.menu-items.open > *:nth-child(4) { animation-delay: .12s; }
+.menu-items.open > *:nth-child(5) { animation-delay: .16s; }
+.menu-items.open > *:nth-child(6) { animation-delay: .20s; }
+.menu-items.open > *:nth-child(7) { animation-delay: .24s; }
+.menu-items.open.closing > * { animation: menuOut .22s ease forwards; animation-delay: 0s; }
 </style>
 </head>
 <body>
@@ -420,38 +477,46 @@
           <p>ثبت و مدیریت آمار صدور کاربران</p>
         </div>
       </div>
-      <div class="tools">
-        <button type="button" class="btn-danger" id="wipeOpen" title="حذف آمار همه‌ی کاربران (پایان دوره)">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
-          <span>پایان دوره</span>
-        </button>
-        <button type="button" class="pill-btn" id="annOpen" title="اعلان به نماینده‌ها">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15 9a4 4 0 0 1 0 6"/><path d="M18 6a8 8 0 0 1 0 12"/></svg>
-          <span>اعلان</span><span class="badge" id="annBadge"></span>
-        </button>
-        <button type="button" class="pill-btn" id="errOpen" title="مغایرت‌های باز">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-          <span>مغایرت‌ها</span><span class="badge" id="errBadge"></span>
-        </button>
-        <button type="button" class="pill-btn" id="usersOpen" title="مدیریت نمایندگان">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0 1 14 0v1"/></svg>
-          <span>نمایندگان</span>
-        </button>
-        <div class="theme-toggle" id="themeToggle" role="button" tabindex="0" aria-label="تغییر تم">
-          <span>☀️</span>
-          <div class="switch"><div class="knob"></div></div>
-          <span>🌙</span>
+           <div class="tools">
+        <div class="menu-wrap">
+          <button type="button" class="pill-btn menu-toggle" id="menuToggle" aria-expanded="false" title="منو">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/></svg>
+            <span>منو</span><span class="badge" id="menuBadge"></span>
+          </button>
+
+          <div class="menu-items" id="menuItems">
+            <button type="button" class="btn-danger" id="wipeOpen" title="حذف آمار همه‌ی کاربران (پایان دوره)">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+              <span>پایان دوره</span>
+            </button>
+            <button type="button" class="pill-btn" id="annOpen" title="اعلان به نماینده‌ها">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15 9a4 4 0 0 1 0 6"/><path d="M18 6a8 8 0 0 1 0 12"/></svg>
+              <span>اعلان</span><span class="badge" id="annBadge"></span>
+            </button>
+            <button type="button" class="pill-btn" id="errOpen" title="مغایرت‌های باز">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+              <span>مغایرت‌ها</span><span class="badge" id="errBadge"></span>
+            </button>
+            <button type="button" class="pill-btn" id="usersOpen" title="مدیریت نمایندگان">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0 1 14 0v1"/></svg>
+              <span>نمایندگان</span>
+            </button>
+            <div class="theme-toggle" id="themeToggle" role="button" tabindex="0" aria-label="تغییر تم">
+              <span>☀️</span>
+              <div class="switch"><div class="knob"></div></div>
+              <span>🌙</span>
+            </div>
+            <button type="button" class="pill-btn" id="seasonToggle" title="تغییر تم فصلی برای همه‌ی نماینده‌ها">
+              <span id="seasonEmoji">🍂</span>
+              <span id="seasonLabel">فصل</span>
+            </button>
+            <button type="button" class="pill-btn" id="logoutBtn" title="خروج از پنل مدیریت">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+              <span>خروج</span>
+            </button>
+          </div>
         </div>
-        <button type="button" class="pill-btn" id="seasonToggle" title="تغییر تم فصلی برای همه‌ی نماینده‌ها">
-          <span id="seasonEmoji">🍂</span>
-          <span id="seasonLabel">فصل</span>
-        </button>
-        <button type="button" class="pill-btn" id="logoutBtn" title="خروج از پنل مدیریت">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
-          <span>خروج</span>
-        </button>
       </div>
-    </div>
 
     <div class="stats">
       <div class="stat"><div class="v" id="statUsers">—</div><div class="l">تعداد کاربران</div></div>
@@ -459,14 +524,14 @@
       <div class="stat"><div class="v" id="statLastCount">—</div><div class="l">کاربران ثبت‌شده در آن تاریخ</div></div>
     </div>
   </header>
-<div class="tabs main-tabs" id="mainTabs" role="tablist">
-  <button type="button" class="tab active" data-tab="daily">ثبت روزانه</button>
+<div class="tabs main-tabs" id="mainTabs" role="tablist" data-active="stats">
+  <span class="tab-ind" aria-hidden="true"></span>
+  <button type="button" class="tab active" data-tab="stats">ثبت روزانه و کاربران</button>
   <button type="button" class="tab" data-tab="period">ثبت مجموع بازه</button>
-  <button type="button" class="tab" data-tab="users">مدیریت کاربران</button>
 </div>
   <main class="grid">
     <!-- ثبت دسته‌ای از اکسل (روزانه) -->
-   <section class="card" data-pane="daily">
+   <section class="card" data-pane="stats">
       <div class="card-head">
         <div class="card-icon">
           <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 10h18"/><path d="M9 4v16"/></svg>
@@ -556,7 +621,7 @@
     </section>
 
     <!-- مدیریت تکی -->
-   <section class="card" data-pane="users">
+   <section class="card" data-pane="stats">
       <div class="card-head">
         <div class="card-icon">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M18 14.2a6.5 6.5 0 0 1 3.5 5.8"/></svg>
@@ -1585,7 +1650,7 @@
   }
 
   async function openUser(name) {
-    showMainTab("users");
+    showMainTab("stats");
     $("errorsModal").classList.remove("show");
     $("searchInput").value = name;
     await searchUsers();
@@ -1925,12 +1990,44 @@ $("usersModal").addEventListener("click", (e) => { if (e.target === $("usersModa
 bindModal("annOpen", "annModal", "annCloseBtn", loadAnnouncements);
 bindModal("errOpen", "errorsModal", "errCloseBtn", loadAllErrors);
   function showMainTab(name) {
+  if (name !== "stats" && name !== "period") name = "stats";
   document.querySelectorAll("[data-pane]").forEach(p => { p.hidden = p.dataset.pane !== name; });
   document.querySelectorAll("#mainTabs .tab").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
+  $("mainTabs").dataset.active = name;
   try { localStorage.setItem("admin_tab", name); } catch (e) {}
 }
 document.querySelectorAll("#mainTabs .tab").forEach(b => b.addEventListener("click", () => showMainTab(b.dataset.tab)));
-showMainTab((function () { try { return localStorage.getItem("admin_tab") || "daily"; } catch (e) { return "daily"; } })());
+showMainTab((function () { try { return localStorage.getItem("admin_tab") || "stats"; } catch (e) { return "stats"; } })());
+
+/* ---------- منوی بالا ---------- */
+const menuItems = $("menuItems");
+const menuToggle = $("menuToggle");
+function openMenu() {
+  menuItems.classList.remove("closing");
+  menuItems.classList.add("open");
+  menuToggle.classList.add("on");
+  menuToggle.setAttribute("aria-expanded", "true");
+}
+function closeMenu() {
+  if (!menuToggle.classList.contains("on")) return;
+  menuToggle.classList.remove("on");
+  menuToggle.setAttribute("aria-expanded", "false");
+  menuItems.classList.add("closing");
+  setTimeout(() => {
+    if (menuToggle.classList.contains("on")) return;
+    menuItems.classList.remove("open", "closing");
+  }, 240);
+}
+menuToggle.addEventListener("click", () => menuToggle.classList.contains("on") ? closeMenu() : openMenu());
+
+// عدد روی دکمه‌ی منو = مجموع اعلان‌ها و مغایرت‌ها
+function updateMenuBadge() {
+  const n = (parseInt($("annBadge").textContent) || 0) + (parseInt($("errBadge").textContent) || 0);
+  $("menuBadge").textContent = n || "";
+}
+["annBadge", "errBadge"].forEach(id =>
+  new MutationObserver(updateMenuBadge).observe($(id), { childList: true, characterData: true, subtree: true })
+);
   /* =========================================================
      ورود مدیر (فقط h-abbasi)
      ========================================================= */
