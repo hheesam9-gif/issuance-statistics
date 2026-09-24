@@ -543,12 +543,17 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
       </div>
 
       <label class="field" for="bulkDate">تاریخی که آمار برایش ثبت می‌شود</label>
-      <div class="date-row">
+      <div class="date-row" id="dateRowWrap">
         <input id="bulkDate" type="text" placeholder="مثلاً 1405/06/28" inputmode="numeric" />
         <button type="button" class="chip" id="todayBtn">امروز</button>
       </div>
 
-      <label class="field" for="bulkText">لیست از اکسل (هر خط: نام کاربری و تعداد)</label>
+      <label class="check" for="autoDateToggle" style="margin:-6px 0 16px;">
+        <input type="checkbox" id="autoDateToggle" />
+        <span>حالت خودکار: هر خط تاریخ میلادی خودشو داره (نام‌کاربری، تاریخ مثل 2026/9/14، تعداد) — نیازی به تاریخ بالا نیست</span>
+      </label>
+
+      <label class="field" for="bulkText" id="bulkTextLabel">لیست از اکسل (هر خط: نام کاربری و تعداد)</label>
       <textarea id="bulkText" placeholder="a.alavi 323.9&#10;a.barghi 750.2&#10;a.biabani 837.3" spellcheck="false"></textarea>
       <div class="paste-meta"><span id="lineCount"></span></div>
 
@@ -947,8 +952,38 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
 
   let pendingRows = [];
   let pendingDate = "";
+  let autoDateMode = false;
 
   function setBulkMsg(text, cls) { bulkMsgEl.textContent = text; bulkMsgEl.className = cls || ""; }
+
+  // تبدیل تاریخ میلادی (سال/ماه/روز) به شمسی، با تکیه بر تقویم داخلی مرورگر
+  function gregorianToJalaliStr(y, m, d) {
+    try {
+      const dateObj = new Date(Date.UTC(y, m - 1, d));
+      if (dateObj.getUTCFullYear() !== y || dateObj.getUTCMonth() !== m - 1 || dateObj.getUTCDate() !== d) return null;
+      const parts = new Intl.DateTimeFormat("en-u-ca-persian-nu-latn", { year: "numeric", month: "2-digit", day: "2-digit", timeZone: "UTC" }).formatToParts(dateObj);
+      const g = t => parts.find(p => p.type === t).value;
+      return g("year") + "/" + g("month") + "/" + g("day");
+    } catch (e) { return null; }
+  }
+
+  const autoDateToggleEl = document.getElementById("autoDateToggle");
+  const dateRowWrapEl = document.getElementById("dateRowWrap");
+  const bulkTextLabelEl = document.getElementById("bulkTextLabel");
+
+  autoDateToggleEl.addEventListener("change", () => {
+    autoDateMode = autoDateToggleEl.checked;
+    dateRowWrapEl.style.opacity = autoDateMode ? "0.4" : "1";
+    dateRowWrapEl.style.pointerEvents = autoDateMode ? "none" : "auto";
+    bulkTextLabelEl.textContent = autoDateMode
+      ? "لیست از اکسل (هر خط: نام کاربری، تاریخ میلادی، تعداد)"
+      : "لیست از اکسل (هر خط: نام کاربری و تعداد)";
+    bulkTextEl.placeholder = autoDateMode
+      ? "y-askarimoghadam\t2026/9/14\t20.3\nf.malekian\t2026/9/15\t26.7"
+      : "a.alavi 323.9\na.barghi 750.2\na.biabani 837.3";
+    bulkPreviewEl.classList.remove("show");
+    setBulkMsg("");
+  });
 
   document.getElementById("todayBtn").addEventListener("click", () => {
     const t = todayJalali();
@@ -990,15 +1025,18 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
     foldsEl.appendChild(d);
   }
 
-  bulkCheckBtn.addEventListener("click", async () => {
+   bulkCheckBtn.addEventListener("click", async () => {
     setBulkMsg("");
     bulkPreviewEl.classList.remove("show");
     pendingRows = [];
 
-    const date = normalizeDigits(bulkDateEl.value.trim());
-    if (!/^\d{4}\/\d{2}\/\d{2}$/.test(date)) {
-      setBulkMsg("تاریخ رو به فرمت 1405/06/28 وارد کنید", "error");
-      return;
+    let date = "";
+    if (!autoDateMode) {
+      date = normalizeDigits(bulkDateEl.value.trim());
+      if (!/^\d{4}\/\d{2}\/\d{2}$/.test(date)) {
+        setBulkMsg("تاریخ رو به فرمت 1405/06/28 وارد کنید", "error");
+        return;
+      }
     }
     const raw = normalizeDigits(bulkTextEl.value);
     if (!raw.trim()) {
@@ -1026,38 +1064,61 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
     const notFound = [];
     const invalid = [];
     let duplicates = 0;
+    const dateSet = new Set();
 
     raw.split(/\r?\n/).forEach(line => {
       const trimmed = line.trim();
       if (!trimmed) return;
       const parts = trimmed.split(/\s+/);
-      const name = parts[0];
-      const numStr = parts[parts.length - 1];
 
-      if (parts.length < 2 || !/^-?\d+(\.\d+)?$/.test(numStr)) { invalid.push(trimmed); return; }
+      if (!autoDateMode) {
+        const name = parts[0];
+        const numStr = parts[parts.length - 1];
+        if (parts.length < 2 || !/^-?\d+(\.\d+)?$/.test(numStr)) { invalid.push(trimmed); return; }
+        const real = userMap.get(name.toLowerCase());
+        if (!real) { notFound.push(name); return; }
+        if (matched.has(real)) duplicates++;
+        matched.set(real, { username: real, order_date: date, order_count: parseFloat(numStr) });
+        return;
+      }
+
+      // حالت خودکار: نام‌کاربری، تاریخ میلادی، تعداد
+      if (parts.length < 3) { invalid.push(trimmed); return; }
+      const name = parts[0];
+      const dateStr = parts[1];
+      const numStr = parts[2];
+
+      const dm = /^(\d{4})\/(\d{1,2})\/(\d{1,2})$/.exec(dateStr);
+      if (!dm || !/^-?\d+(\.\d+)?$/.test(numStr)) { invalid.push(trimmed); return; }
+      const jalali = gregorianToJalaliStr(parseInt(dm[1], 10), parseInt(dm[2], 10), parseInt(dm[3], 10));
+      if (!jalali) { invalid.push(trimmed); return; }
       const real = userMap.get(name.toLowerCase());
       if (!real) { notFound.push(name); return; }
-      if (matched.has(real)) duplicates++;
-      matched.set(real, parseFloat(numStr));
+
+      dateSet.add(jalali);
+      const key = real + "|" + jalali;
+      if (matched.has(key)) duplicates++;
+      matched.set(key, { username: real, order_date: jalali, order_count: parseFloat(numStr) });
     });
 
-    pendingRows = [...matched.entries()].map(([username, count]) => ({
-      username, order_date: date, order_count: count
-    }));
-    pendingDate = date;
+    pendingRows = [...matched.values()];
+    pendingDate = autoDateMode ? "" : date;
 
-    document.getElementById("previewDate").textContent = date;
+    document.getElementById("previewDate").textContent = autoDateMode
+      ? (dateSet.size + " تاریخ مختلف (تشخیص خودکار)")
+      : date;
     document.getElementById("tileOk").textContent = pendingRows.length;
     document.getElementById("tileMissing").textContent = notFound.length;
     document.getElementById("tileInvalid").textContent = invalid.length;
 
     foldsEl.innerHTML = "";
+    if (autoDateMode && dateSet.size) addFold("تاریخ‌های شمسی تشخیص داده‌شده", [...dateSet].sort());
     if (notFound.length) addFold("کاربرهایی که در سایت نیستن (ثبت نمی‌شن)", notFound);
     if (invalid.length) addFold("خط‌های نامعتبر (نادیده گرفته شد)", invalid);
     if (duplicates) {
       const n = document.createElement("div");
       n.className = "note";
-      n.textContent = duplicates + " نام تکراری بود؛ آخرین مقدار ثبت می‌شه";
+      n.textContent = duplicates + " مورد تکراری بود؛ آخرین مقدار ثبت می‌شه";
       foldsEl.appendChild(n);
     }
 
@@ -1066,7 +1127,6 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
     bulkPreviewEl.classList.add("show");
     if (pendingRows.length === 0) setBulkMsg("هیچ کاربر معتبری پیدا نشد", "error");
   });
-
   bulkCancelBtn.addEventListener("click", () => {
     pendingRows = [];
     bulkPreviewEl.classList.remove("show");
@@ -1076,9 +1136,11 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
   bulkSaveBtn.addEventListener("click", async () => {
     if (!pendingRows.length) return;
 
+    const distinctDates = new Set(pendingRows.map(r => r.order_date)).size;
     const sure = confirm(
-      "آمار " + pendingRows.length + " نفر برای تاریخ " + pendingDate + " ثبت بشه؟\n" +
-      "اگه برای کسی قبلاً همین تاریخ ثبت شده باشه، مقدارش جایگزین می‌شه."
+      autoDateMode
+        ? ("آمار " + pendingRows.length + " ردیف برای " + distinctDates + " تاریخ مختلف ثبت بشه؟\nاگه برای کسی قبلاً همون تاریخ ثبت شده باشه، مقدارش جایگزین می‌شه.")
+        : ("آمار " + pendingRows.length + " نفر برای تاریخ " + pendingDate + " ثبت بشه؟\nاگه برای کسی قبلاً همین تاریخ ثبت شده باشه، مقدارش جایگزین می‌شه.")
     );
     if (!sure) return;
 
@@ -1105,7 +1167,9 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
       done += batch.length;
     }
 
-    setBulkMsg("✔ آمار " + done + " نفر برای تاریخ " + pendingDate + " ثبت شد", "ok");
+    setBulkMsg(autoDateMode
+      ? ("✔ آمار " + done + " ردیف برای " + distinctDates + " تاریخ مختلف ثبت شد")
+      : ("✔ آمار " + done + " نفر برای تاریخ " + pendingDate + " ثبت شد"), "ok");
     pendingRows = [];
     bulkPreviewEl.classList.remove("show");
     bulkTextEl.value = "";
