@@ -370,6 +370,11 @@
     .blob { animation: none; }
     .switch .knob, input, textarea, button, .user-row { transition: none; }
   }
+.pill-btn .badge:not(:empty) {
+  min-width: 18px; padding: 0 6px; border-radius: 9px;
+  background: var(--accent1); color: #fff;
+  font-size: 11px; line-height: 18px; text-align: center; font-weight: bold;
+}
 </style>
 </head>
 <body>
@@ -418,6 +423,14 @@
         <button type="button" class="btn-danger" id="wipeOpen" title="حذف آمار همه‌ی کاربران (پایان دوره)">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
           <span>پایان دوره</span>
+        </button>
+        <button type="button" class="pill-btn" id="annOpen" title="اعلان به نماینده‌ها">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15 9a4 4 0 0 1 0 6"/><path d="M18 6a8 8 0 0 1 0 12"/></svg>
+          <span>اعلان</span><span class="badge" id="annBadge"></span>
+        </button>
+        <button type="button" class="pill-btn" id="errOpen" title="مغایرت‌های باز">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+          <span>مغایرت‌ها</span><span class="badge" id="errBadge"></span>
         </button>
         <button type="button" class="pill-btn" id="usersOpen" title="مدیریت نمایندگان">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0 1 14 0v1"/></svg>
@@ -592,47 +605,8 @@
       </div>
     </section>
 
-    <!-- اعلان به نماینده‌ها -->
-    <section class="card">
-      <div class="card-head">
-        <div class="card-icon">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15 9a4 4 0 0 1 0 6"/><path d="M18 6a8 8 0 0 1 0 12"/></svg>
-        </div>
-        <div>
-          <h2>اعلان به نماینده‌ها</h2>
-          <p>پیام شما توی پنل همه‌ی نماینده‌ها نمایش داده می‌شه</p>
-        </div>
-      </div>
+ 
 
-      <label class="field" for="annText">متن اعلان</label>
-      <textarea class="reason" id="annText" placeholder="مثلاً: سفارش در تاریخ 1405/06/28 سینک نبوده؛ به‌محض سینک شدن، آمار به‌روزرسانی می‌شه."></textarea>
-      <div class="chips">
-        <button type="button" class="chip-btn" data-tpl="sync">آمار سینک نیست</button>
-        <button type="button" class="chip-btn" data-tpl="done">آمار به‌روز شد</button>
-      </div>
-      <div class="actions"><button type="button" id="annSendBtn">ارسال اعلان</button></div>
-
-      <div class="sub-title"><span>اعلان‌های فعال</span><span id="annCount"></span></div>
-      <div class="ann-list" id="annAdminList"></div>
-    </section>
-
-    <!-- مغایرت‌های باز -->
-    <section class="card">
-      <div class="card-head">
-        <div class="card-icon">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-        </div>
-        <div>
-          <h2>مغایرت‌های باز</h2>
-          <p>همه‌ی مغایرت‌هایی که هنوز رفع نشدن؛ با کلیک روی اسم به کاربر برید</p>
-        </div>
-      </div>
-      <div class="sum-row">
-        <span class="sum-chip">تعداد: <b id="errSumCount">—</b></span>
-        <span class="sum-chip">مجموع مبلغ: <b id="errSumTotal">—</b></span>
-      </div>
-      <div class="err-list" id="allErrList"></div>
-    </section>
   </main>
   </div>
 
@@ -673,6 +647,59 @@
 
     <div class="actions" style="margin-top:18px;">
       <button type="button" class="secondary full" id="usersCloseBtn">بستن</button>
+    </div>
+  </div>
+</div>
+  <!-- پنجره اعلان -->
+<div class="modal" id="annModal" role="dialog" aria-modal="true">
+  <div class="modal-box" style="max-width:560px; text-align:right;">
+    <div class="card-head">
+      <div class="card-icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15 9a4 4 0 0 1 0 6"/><path d="M18 6a8 8 0 0 1 0 12"/></svg>
+      </div>
+      <div>
+        <h2>اعلان به نماینده‌ها</h2>
+        <p>پیام شما توی پنل همه‌ی نماینده‌ها نمایش داده می‌شه</p>
+      </div>
+    </div>
+
+    <label class="field" for="annText">متن اعلان</label>
+    <textarea class="reason" id="annText" placeholder="مثلاً: سفارش در تاریخ 1405/06/28 سینک نبوده؛ به‌محض سینک شدن، آمار به‌روزرسانی می‌شه."></textarea>
+    <div class="chips">
+      <button type="button" class="chip-btn" data-tpl="sync">آمار سینک نیست</button>
+      <button type="button" class="chip-btn" data-tpl="done">آمار به‌روز شد</button>
+    </div>
+    <div class="actions"><button type="button" id="annSendBtn">ارسال اعلان</button></div>
+
+    <div class="sub-title"><span>اعلان‌های فعال</span><span id="annCount"></span></div>
+    <div class="ann-list" id="annAdminList"></div>
+
+    <div class="actions" style="margin-top:18px;">
+      <button type="button" class="secondary full" id="annCloseBtn">بستن</button>
+    </div>
+  </div>
+</div>
+
+<!-- پنجره مغایرت‌های باز -->
+<div class="modal" id="errorsModal" role="dialog" aria-modal="true">
+  <div class="modal-box" style="max-width:560px; text-align:right;">
+    <div class="card-head">
+      <div class="card-icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+      </div>
+      <div>
+        <h2>مغایرت‌های باز</h2>
+        <p>همه‌ی مغایرت‌هایی که هنوز رفع نشدن؛ با کلیک روی اسم به کاربر برید</p>
+      </div>
+    </div>
+    <div class="sum-row">
+      <span class="sum-chip">تعداد: <b id="errSumCount">—</b></span>
+      <span class="sum-chip">مجموع مبلغ: <b id="errSumTotal">—</b></span>
+    </div>
+    <div class="err-list" id="allErrList"></div>
+
+    <div class="actions" style="margin-top:18px;">
+      <button type="button" class="secondary full" id="errCloseBtn">بستن</button>
     </div>
   </div>
 </div>
@@ -1094,7 +1121,7 @@
     periodCheckBtn.disabled = false;
     setPeriodMsg("");
 
-    const userMap = new Map(usernames.map(u => [String(u).toLowerCase(), u]));
+    const userMap = new Map(usernames.map(u => [String(u).trim().toLowerCase(), u]));
     const matched = new Map();
     const notFound = [];
     const invalid = [];
@@ -1540,6 +1567,7 @@
     let total = 0;
     data.forEach(e => { total += Number(e.amount) || 0; });
     $("errSumCount").textContent = data.length;
+    $("errBadge").textContent = data.length || "";
     $("errSumTotal").textContent = fmtMoney(Math.round(total * 100) / 100);
     if (!data.length) { list.appendChild(hintEl("الان مغایرت بازی وجود نداره")); return; }
     data.forEach(e => list.appendChild(errItemEl(e, true)));
@@ -1551,6 +1579,7 @@
   }
 
   async function openUser(name) {
+    $("errorsModal").classList.remove("show");
     $("searchInput").value = name;
     await searchUsers();
     const row = [...document.querySelectorAll(".user-row")].find(r => r.querySelector(".name").textContent === name);
@@ -1597,6 +1626,7 @@
     list.replaceChildren();
     if (error) { $("annCount").textContent = ""; list.appendChild(hintEl(explainError(error))); return; }
     $("annCount").textContent = data.length ? data.length + " مورد" : "";
+    $("annBadge").textContent = data.length || "";
     if (!data.length) { list.appendChild(hintEl("اعلان فعالی وجود نداره")); return; }
     data.forEach(a => {
       const box = mk("div", "ann-item");
@@ -1672,8 +1702,13 @@
   $("wipeCancel").addEventListener("click", closeWipe);
   wipeModal.addEventListener("click", (e) => { if (e.target === wipeModal) closeWipe(); });
   // Escape: اگه مودال حذف بازه اون بسته می‌شه، وگرنه پنل کاربر
-  document.addEventListener("keydown", (e) => {
+   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
+    const open = ["wipeModal", "usersModal", "annModal", "errorsModal"]
+      .map($).find(m => m.classList.contains("show"));
+    if (open) open.classList.remove("show");
+    else if (panelEl.classList.contains("show")) closeUserPanel();
+  });
     if (wipeModal.classList.contains("show")) closeWipe();
     else if (panelEl.classList.contains("show")) closeUserPanel();
   });
@@ -1879,6 +1914,14 @@ $("usersOpen").addEventListener("click", () => {
 });
 $("usersCloseBtn").addEventListener("click", () => $("usersModal").classList.remove("show"));
 $("usersModal").addEventListener("click", (e) => { if (e.target === $("usersModal")) $("usersModal").classList.remove("show"); });
+  function bindModal(openId, modalId, closeId, onOpen) {
+  const m = $(modalId);
+  $(openId).addEventListener("click", () => { m.classList.add("show"); if (onOpen) onOpen(); });
+  $(closeId).addEventListener("click", () => m.classList.remove("show"));
+  m.addEventListener("click", (e) => { if (e.target === m) m.classList.remove("show"); });
+}
+bindModal("annOpen", "annModal", "annCloseBtn", loadAnnouncements);
+bindModal("errOpen", "errorsModal", "errCloseBtn", loadAllErrors);
   /* =========================================================
      ورود مدیر (فقط h-abbasi)
      ========================================================= */
