@@ -923,7 +923,7 @@
     bulkCheckBtn.disabled = false;
     setBulkMsg("");
 
-    const userMap = new Map(usernames.map(u => [String(u).toLowerCase(), u]));
+    const userMap = new Map(usernames.map(u => [String(u).trim().toLowerCase(), u]));
 
     const matched = new Map();
     const notFound = [];
