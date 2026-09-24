@@ -419,6 +419,10 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
           <span>پایان دوره</span>
         </button>
+        <button type="button" class="pill-btn" id="usersOpen" title="مدیریت نمایندگان">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0 1 14 0v1"/></svg>
+          <span>نمایندگان</span>
+        </button>
         <div class="theme-toggle" id="themeToggle" role="button" tabindex="0" aria-label="تغییر تم">
           <span>☀️</span>
           <div class="switch"><div class="knob"></div></div>
@@ -652,7 +656,26 @@
       <div id="wipeMsg" role="status" aria-live="polite"></div>
     </div>
   </div>
+<div class="modal" id="usersModal" role="dialog" aria-modal="true">
+  <div class="modal-box" style="max-width:520px; text-align:right;">
+    <h3 style="text-align:right; margin-bottom:16px;">مدیریت نمایندگان</h3>
 
+    <div class="sub-title" style="margin-top:0; padding-top:0; border-top:none;"><span>افزودن نماینده جدید</span></div>
+    <div class="date-row">
+      <input class="ltr" id="newUserName" type="text" placeholder="نام کاربری (مثلاً h-abbasi)" autocomplete="off" spellcheck="false" />
+      <input class="ltr" id="newUserPass" type="text" placeholder="رمز عبور" autocomplete="off" />
+    </div>
+    <button type="button" class="full" id="createUserBtn">افزودن نماینده</button>
+    <div id="usersMsg" role="status" aria-live="polite" style="text-align:center; font-size:13px; min-height:18px; margin-top:10px; color:var(--text-dim);"></div>
+
+    <div class="sub-title"><span>لیست نمایندگان</span></div>
+    <div class="history" id="usersMgmtList" style="max-height:280px;"></div>
+
+    <div class="actions" style="margin-top:18px;">
+      <button type="button" class="secondary full" id="usersCloseBtn">بستن</button>
+    </div>
+  </div>
+</div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
@@ -1730,7 +1753,132 @@
     if (selectedUsername) loadHistory(selectedUsername);
     if (alsoErrors) refreshErrors();
   });
+/* =========================================================
+   مدیریت نمایندگان (از طریق Edge Function)
+   ========================================================= */
+const ADMIN_FN_URL = "https://jmbpskxloffcrbxiqcdy.supabase.co/functions/v1/admin-users";
 
+async function callAdminFn(payload) {
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const token = sessionData?.session?.access_token;
+  const res = await fetch(ADMIN_FN_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+    body: JSON.stringify(payload),
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || "خطای نامشخص");
+  return json;
+}
+
+function setUsersMsg(text, cls) {
+  $("usersMsg").textContent = text;
+  $("usersMsg").className = cls || "";
+  $("usersMsg").style.color = cls === "error" ? "var(--error)" : cls === "ok" ? "var(--ok)" : "var(--text-dim)";
+}
+
+async function loadUsersMgmtList() {
+  const list = $("usersMgmtList");
+  list.replaceChildren(hintEl("در حال بارگذاری..."));
+  try {
+    const { data } = await callAdminFn({ action: "list" });
+    list.replaceChildren();
+    if (!data.length) { list.appendChild(hintEl("نماینده‌ای ثبت نشده")); return; }
+    data.forEach(u => {
+      const row = document.createElement("div");
+      row.className = "row";
+      const name = document.createElement("span");
+      name.className = "d";
+      name.style.direction = "ltr";
+      name.textContent = u.username;
+
+      const vals = document.createElement("span");
+      vals.className = "vals";
+
+      const editBtn = document.createElement("button");
+      editBtn.className = "delete-btn";
+      editBtn.title = "ویرایش";
+      editBtn.textContent = "✏️";
+      editBtn.addEventListener("click", () => editUserPrompt(u));
+
+      const delBtn = document.createElement("button");
+      delBtn.className = "delete-btn";
+      delBtn.title = "حذف نماینده";
+      delBtn.textContent = "🗑️";
+      delBtn.addEventListener("click", () => deleteUserMgmt(u));
+
+      vals.appendChild(editBtn);
+      vals.appendChild(delBtn);
+      row.appendChild(name);
+      row.appendChild(vals);
+      list.appendChild(row);
+    });
+  } catch (e) {
+    list.replaceChildren(hintEl("خطا: " + e.message));
+  }
+}
+
+async function editUserPrompt(u) {
+  const newUsername = prompt("نام کاربری جدید (خالی = بدون تغییر):", u.username);
+  if (newUsername === null) return;
+  const newPassword = prompt("رمز عبور جدید (خالی = بدون تغییر):", "");
+  if (newPassword === null) return;
+  if (!newUsername.trim() && !newPassword.trim()) return;
+
+  try {
+    await callAdminFn({
+      action: "update", userId: u.id,
+      newUsername: newUsername.trim() || undefined,
+      newPassword: newPassword.trim() || undefined,
+    });
+    toast("نماینده به‌روزرسانی شد", "ok");
+    loadUsersMgmtList();
+    searchUsers();
+  } catch (e) {
+    toast("ویرایش ناموفق بود: " + e.message, "error");
+  }
+}
+
+async function deleteUserMgmt(u) {
+  if (!confirm("نماینده «" + u.username + "» به‌طور کامل حذف بشه؟ (حساب کاربری و آمارش)")) return;
+  try {
+    await callAdminFn({ action: "delete", userId: u.id });
+    toast("نماینده حذف شد", "ok");
+    loadUsersMgmtList();
+    searchUsers();
+    loadStats();
+  } catch (e) {
+    toast("حذف ناموفق بود: " + e.message, "error");
+  }
+}
+
+$("createUserBtn").addEventListener("click", async () => {
+  const username = $("newUserName").value.trim().toLowerCase();
+  const password = $("newUserPass").value;
+  if (!username || !password) { setUsersMsg("نام کاربری و رمز رو کامل وارد کنید", "error"); return; }
+  if (password.length < 6) { setUsersMsg("رمز باید حداقل ۶ کاراکتر باشه", "error"); return; }
+
+  $("createUserBtn").disabled = true;
+  setUsersMsg("در حال ثبت...");
+  try {
+    await callAdminFn({ action: "create", username, password });
+    setUsersMsg("✔ نماینده «" + username + "» ثبت شد", "ok");
+    $("newUserName").value = ""; $("newUserPass").value = "";
+    loadUsersMgmtList();
+    loadStats();
+  } catch (e) {
+    setUsersMsg("ثبت نشد: " + e.message, "error");
+  }
+  $("createUserBtn").disabled = false;
+});
+
+$("usersOpen").addEventListener("click", () => {
+  $("usersModal").classList.add("show");
+  setUsersMsg("");
+  loadUsersMgmtList();
+});
+$("usersCloseBtn").addEventListener("click", () => $("usersModal").classList.remove("show"));
+$("usersModal").addEventListener("click", (e) => { if (e.target === $("usersModal")) $("usersModal").classList.remove("show"); });
   /* =========================================================
      ورود مدیر (فقط h-abbasi)
      ========================================================= */
