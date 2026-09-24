@@ -528,6 +528,106 @@
     .switch .knob, button.logout, .row, .row .fill, .sdot { transition: none; }
     .skel::after { animation: none; }
   }
+  /* ===== تب‌های شیشه‌ای لیست ===== */
+.list-head { flex-direction: column; align-items: stretch; gap: 10px; margin: 0 0 14px; }
+.list-head em { align-self: flex-end; margin: 0 4px; }
+.list-head em:empty { display: none; }
+
+.list-tabs {
+  --i: 0;
+  position: relative; display: flex; gap: 0; width: 100%; padding: 5px; overflow: hidden;
+  border-radius: 19px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.03));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(20px) saturate(170%); -webkit-backdrop-filter: blur(20px) saturate(170%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), inset 0 -1px 0 rgba(0, 0, 0, 0.25), 0 14px 34px rgba(0, 0, 0, 0.28);
+}
+[data-theme="light"] .list-tabs {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.45));
+  border-color: rgba(110, 115, 180, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 12px 30px rgba(70, 75, 140, 0.16);
+}
+.list-tabs[data-active="errors"]  { --i: 1; }
+.list-tabs[data-active="periods"] { --i: 2; }
+
+/* درخشش دوره‌ای روی نوار */
+.list-tabs::after {
+  content: ""; position: absolute; top: 0; bottom: 0; width: 38%; left: -45%; z-index: 2; pointer-events: none;
+  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.16), transparent);
+  transform: skewX(-18deg); animation: tabSheen 7s ease-in-out infinite;
+}
+@keyframes tabSheen { 0%, 68% { left: -45%; } 100% { left: 130%; } }
+
+/* نشانگر متحرک */
+.ltab-ind {
+  position: absolute; z-index: 0; top: 5px; bottom: 5px; right: 5px;
+  width: calc((100% - 10px) / 3); border-radius: 14px; pointer-events: none;
+  transform: translateX(calc(-100% * var(--i)));
+  transition: transform 0.55s cubic-bezier(.34, 1.4, .4, 1);
+}
+.ltab-ind::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  background: linear-gradient(135deg, var(--accent1), var(--accent2));
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--accent1) 45%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+.ltab-ind::after {
+  content: ""; position: absolute; inset: 1px 1px 52% 1px; border-radius: 13px 13px 45% 45%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0));
+}
+.list-tabs.pulse .ltab-ind::before { animation: indPulse 0.55s ease; }
+@keyframes indPulse { 0% { transform: scale(1, 1); } 35% { transform: scale(1.14, 0.9); } 100% { transform: scale(1, 1); } }
+
+/* خود دکمه‌ها */
+.list-tabs .ltab {
+  position: relative; z-index: 1; flex: 1 1 0; min-width: 0; height: 46px; padding: 0 6px;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  border: none; border-radius: 14px; background: transparent; color: var(--text-dim);
+  font-size: 13px; font-weight: 500; white-space: nowrap;
+  transition: color 0.3s ease, transform 0.2s ease;
+}
+.list-tabs .ltab svg {
+  width: 17px; height: 17px; flex: none; stroke: currentColor; fill: none;
+  stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round;
+  transition: transform 0.35s cubic-bezier(.34, 1.56, .64, 1);
+}
+.list-tabs .ltab:hover { color: var(--text); }
+.list-tabs .ltab:hover svg { transform: translateY(-2px) scale(1.12); }
+.list-tabs .ltab:active { transform: scale(0.94); }
+.list-tabs .ltab.active { background: transparent; border-color: transparent; color: #fff; font-weight: 700; text-shadow: 0 1px 8px rgba(0, 0, 0, 0.25); }
+.list-tabs .ltab.active svg { transform: scale(1.1); }
+
+/* افکت جابجایی محتوای لیست */
+.list.swap-out {
+  opacity: 0; filter: blur(5px);
+  transform: translateX(calc(var(--dir, 1) * -28px));
+  transition: opacity 0.16s ease, transform 0.16s ease, filter 0.16s ease;
+}
+.list.swap-in { animation: swapIn 0.42s cubic-bezier(.16, .84, .3, 1) both; }
+@keyframes swapIn {
+  from { opacity: 0; filter: blur(4px); transform: translateX(calc(var(--dir, 1) * 28px)); }
+  to   { opacity: 1; filter: blur(0);   transform: none; }
+}
+
+/* کارت‌های خطا و ماهانه: ورود پله‌ای + hover */
+.list > .e-row, .list > .p-row, .list > .empty { animation: rise 0.5s cubic-bezier(.16, .84, .3, 1) backwards; }
+.list > :nth-child(1) { animation-delay: 0.05s; }
+.list > :nth-child(2) { animation-delay: 0.10s; }
+.list > :nth-child(3) { animation-delay: 0.15s; }
+.list > :nth-child(4) { animation-delay: 0.20s; }
+.list > :nth-child(5) { animation-delay: 0.25s; }
+.list > :nth-child(6) { animation-delay: 0.30s; }
+.list > .e-row, .list > .p-row { transition: transform 0.25s ease, border-color 0.25s ease, background 0.25s ease; }
+.list > .e-row:hover, .list > .p-row:hover { transform: translateY(-2px); border-color: var(--accent1); background: var(--row-bg-hover); }
+.list > .p-row { position: relative; overflow: hidden; }
+.list > .p-row::before {
+  content: ""; position: absolute; top: 0; bottom: 0; right: 0; width: 3px;
+  background: linear-gradient(180deg, var(--accent1), var(--accent2), var(--mint));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .list-tabs::after, .list-tabs.pulse .ltab-ind::before, .list.swap-in, .list > .e-row, .list > .p-row, .list > .empty { animation: none; }
+  .ltab-ind, .list.swap-out { transition: none; }
+}
 </style>
 </head>
 <body>
@@ -619,14 +719,23 @@
       <!-- ستون چپ: سابقه -->
       <section class="pane pane-side">
         <div class="list-head" id="listHead">
-          <div class="list-tabs" role="tablist">
-            <button type="button" class="ltab active" id="tabOrders" role="tab">سابقه ثبت</button>
-            <button type="button" class="ltab" id="tabErrors" role="tab">خطاها<span class="ltab-count" id="errCountBadge"></span></button>
-            <button type="button" class="ltab" id="tabPeriods" role="tab">سابقه ماهانه</button>
+          <div class="list-tabs" id="listTabs" role="tablist" data-active="orders">
+            <span class="ltab-ind" aria-hidden="true"></span>
+            <button type="button" class="ltab active" id="tabOrders" role="tab">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>
+              <span>سابقه ثبت</span>
+            </button>
+            <button type="button" class="ltab" id="tabErrors" role="tab">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+              <span>خطاها</span><span class="ltab-count" id="errCountBadge"></span>
+            </button>
+            <button type="button" class="ltab" id="tabPeriods" role="tab">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18"/><path d="M8 2v4"/><path d="M16 2v4"/></svg>
+              <span>سابقه ماهانه</span>
+            </button>
           </div>
           <em id="listMeta"></em>
-        </div>
-        <div class="list-wrap">
+        </div>"list-wrap">
           <div class="list" id="list">
             <div class="skel"></div>
             <div class="skel"></div>
@@ -1281,12 +1390,10 @@
     });
   }
 
-  function switchListTab(name) {
-    activeListTab = name;
-    $("tabOrders").classList.toggle("active", name === "orders");
-    $("tabErrors").classList.toggle("active", name === "errors");
-    $("tabPeriods").classList.toggle("active", name === "periods");
+   const TAB_ORDER = ["orders", "errors", "periods"];
+  let swapTimer = null;
 
+  function renderListTab(name) {
     const listEl = $("list");
     if (name === "orders") {
       if (ORDER_ITEMS.length) renderRows(listEl, ORDER_ITEMS, ORDER_MAX);
@@ -1301,6 +1408,37 @@
     }
   }
 
+  function switchListTab(name) {
+    const prev = activeListTab;
+    activeListTab = name;
+    const tabs = $("listTabs");
+    tabs.dataset.active = name;
+    $("tabOrders").classList.toggle("active", name === "orders");
+    $("tabErrors").classList.toggle("active", name === "errors");
+    $("tabPeriods").classList.toggle("active", name === "periods");
+
+    const listEl = $("list");
+    if (name === prev || REDUCE) { renderListTab(name); return; }
+
+    // کشیدگی نشانگر
+    tabs.classList.remove("pulse");
+    void tabs.offsetWidth;
+    tabs.classList.add("pulse");
+
+    // جابجایی محتوا: قبلی سُر می‌خوره بیرون، جدید می‌آد تو
+    listEl.style.setProperty("--dir", TAB_ORDER.indexOf(name) > TAB_ORDER.indexOf(prev) ? 1 : -1);
+    clearTimeout(swapTimer);
+    listEl.classList.remove("swap-in");
+    listEl.classList.add("swap-out");
+    swapTimer = setTimeout(() => {
+      renderListTab(name);
+      listEl.scrollTop = 0;
+      listEl.classList.remove("swap-out");
+      void listEl.offsetWidth;
+      listEl.classList.add("swap-in");
+      swapTimer = setTimeout(() => listEl.classList.remove("swap-in"), 480);
+    }, 170);
+  }
   $("tabOrders").addEventListener("click", () => switchListTab("orders"));
   $("tabErrors").addEventListener("click", () => switchListTab("errors"));
   $("tabPeriods").addEventListener("click", () => switchListTab("periods"));
