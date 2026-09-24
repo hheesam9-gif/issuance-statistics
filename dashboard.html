@@ -102,6 +102,10 @@
 
   /* ---------- پس‌زمینه ---------- */
   .bg { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; background: var(--page-base); }
+    .bg::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(520px circle at var(--cx, 50%) var(--cy, 35%), color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);
+  }
   .blob { position: absolute; border-radius: 50%; filter: blur(120px); will-change: transform; transition: background-color 1.4s ease; }
   .b1 { width: 62vmax; height: 62vmax; top: -24vmax; right: -16vmax; background: var(--blob1); animation: drift1 34s ease-in-out infinite alternate; }
   .b2 { width: 56vmax; height: 56vmax; bottom: -26vmax; left: -18vmax; background: var(--blob2); animation: drift2 41s ease-in-out infinite alternate; }
@@ -231,7 +235,10 @@
   /* ---------- کارت پهن ---------- */
   .box {
     position: relative;
-    background: var(--card-bg);
+    background:
+      radial-gradient(420px circle at var(--sx, 50%) var(--sy, -15%), color-mix(in srgb, var(--accent1) 15%, transparent), transparent 65%),
+      var(--card-bg);
+    transition: rotate 0.22s ease-out;
     border: 1px solid var(--card-border);
     backdrop-filter: blur(26px) saturate(140%);
     -webkit-backdrop-filter: blur(26px) saturate(140%);
@@ -249,7 +256,15 @@
     content: ""; position: absolute; top: 0; right: 8%; left: 8%; height: 1px;
     background: linear-gradient(90deg, transparent, var(--sheen), transparent);
   }
-
+  @property --ang { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+  .box::after {
+    content: ""; position: absolute; inset: -1px; border-radius: inherit; padding: 1.5px; pointer-events: none;
+    background: conic-gradient(from var(--ang), transparent 0deg, var(--accent1) 60deg, var(--accent2) 120deg, transparent 200deg, transparent 360deg);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    animation: spinAng 6s linear infinite;
+  }
+  @keyframes spinAng { to { --ang: 360deg; } }
   .pane { padding: 30px 30px 26px; min-width: 0; display: flex; flex-direction: column; }
   .pane-side { border-left: 1px solid var(--divider); }
 
@@ -471,11 +486,18 @@
 
   /* ---------- خروج ---------- */
   button.logout {
+    position: relative; overflow: hidden;
     width: 100%; padding: 13px; border-radius: 14px; margin-top: auto;
     background: var(--row-bg); border: 1px solid var(--row-border);
     color: var(--text-dim); cursor: pointer; font-size: 13.5px; font-family: inherit; font-weight: 500;
     transition: color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
   }
+  button.logout::before {
+    content: ""; position: absolute; top: 0; bottom: 0; width: 40%; left: -60%;
+    background: linear-gradient(105deg, transparent, color-mix(in srgb, var(--text) 22%, transparent), transparent);
+    transform: skewX(-20deg); transition: left 0.7s ease; pointer-events: none;
+  }
+  button.logout:hover::before { left: 130%; }
   button.logout:hover { color: var(--text); border-color: var(--accent1); }
   button.logout:active { transform: scale(0.99); }
   button.logout:focus-visible, .theme-toggle:focus-visible, .bell:focus-visible, button.n-btn:focus-visible { outline: 2px solid var(--accent2); outline-offset: 3px; }
@@ -521,6 +543,8 @@
   @media (prefers-reduced-motion: reduce) {
     .blob { animation: none; }
     .box, .toolbar { animation: none; opacity: 1; transform: none; }
+    .box::after { animation: none; }
+    button.logout::before { transition: none; }
     .notice, .modal-box { animation: none; }
     .bell.ring svg { animation: none; }
     .row.entered { animation: none; opacity: 1; transform: none; }
@@ -793,7 +817,28 @@
 
   const REDUCE = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const $ = id => document.getElementById(id);
-
+  /* افکت موس: نور پس‌زمینه، نورافکن کارت و تیلت سه‌بعدی (فقط دسکتاپ) */
+  (function () {
+    if (REDUCE || !window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    const box = document.querySelector(".box");
+    if (!box) return;
+    let raf = null, mx = 0, my = 0;
+    function update() {
+      raf = null;
+      root.style.setProperty("--cx", mx + "px");
+      root.style.setProperty("--cy", my + "px");
+      const r = box.getBoundingClientRect();
+      const px = (mx - r.left) / r.width, py = (my - r.top) / r.height;
+      box.style.setProperty("--sx", (px * 100) + "%");
+      box.style.setProperty("--sy", (py * 100) + "%");
+      const nx = Math.max(-1, Math.min(1, (px - 0.5) * 2));
+      const ny = Math.max(-1, Math.min(1, (py - 0.5) * 2));
+      const mag = Math.min(Math.hypot(nx, ny), 1);
+      box.style.rotate = mag < 0.001 ? "none" : (-ny) + " " + nx + " 0 " + (mag * 4) + "deg";
+    }
+    window.addEventListener("pointermove", (e) => { mx = e.clientX; my = e.clientY; if (!raf) raf = requestAnimationFrame(update); });
+    document.addEventListener("mouseleave", () => { box.style.rotate = "none"; });
+  })();
   /* ---------- تم ---------- */
   const root = document.documentElement;
   const themeToggle = $("themeToggle");
