@@ -610,12 +610,12 @@
 
 /* کارت‌های خطا و ماهانه: ورود پله‌ای + hover */
 .list > .e-row, .list > .p-row, .list > .empty { animation: rise 0.5s cubic-bezier(.16, .84, .3, 1) backwards; }
-.list > :nth-child(1) { animation-delay: 0.05s; }
-.list > :nth-child(2) { animation-delay: 0.10s; }
-.list > :nth-child(3) { animation-delay: 0.15s; }
-.list > :nth-child(4) { animation-delay: 0.20s; }
-.list > :nth-child(5) { animation-delay: 0.25s; }
-.list > :nth-child(6) { animation-delay: 0.30s; }
+.list > .e-row:nth-child(1), .list > .p-row:nth-child(1) { animation-delay: 0.05s; }
+.list > .e-row:nth-child(2), .list > .p-row:nth-child(2) { animation-delay: 0.10s; }
+.list > .e-row:nth-child(3), .list > .p-row:nth-child(3) { animation-delay: 0.15s; }
+.list > .e-row:nth-child(4), .list > .p-row:nth-child(4) { animation-delay: 0.20s; }
+.list > .e-row:nth-child(5), .list > .p-row:nth-child(5) { animation-delay: 0.25s; }
+.list > .e-row:nth-child(6), .list > .p-row:nth-child(6) { animation-delay: 0.30s; }
 .list > .e-row, .list > .p-row { transition: transform 0.25s ease, border-color 0.25s ease, background 0.25s ease; }
 .list > .e-row:hover, .list > .p-row:hover { transform: translateY(-2px); border-color: var(--accent1); background: var(--row-bg-hover); }
 .list > .p-row { position: relative; overflow: hidden; }
@@ -735,7 +735,9 @@
             </button>
           </div>
           <em id="listMeta"></em>
-        </div>"list-wrap">
+        </div>
+
+        <div class="list-wrap">
           <div class="list" id="list">
             <div class="skel"></div>
             <div class="skel"></div>
