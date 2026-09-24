@@ -1701,15 +1701,12 @@
   $("wipeOpen").addEventListener("click", openWipe);
   $("wipeCancel").addEventListener("click", closeWipe);
   wipeModal.addEventListener("click", (e) => { if (e.target === wipeModal) closeWipe(); });
-  // Escape: اگه مودال حذف بازه اون بسته می‌شه، وگرنه پنل کاربر
-   document.addEventListener("keydown", (e) => {
+   // Escape: بستن پنجره‌ها یا پنل کاربر
+  document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
     const open = ["wipeModal", "usersModal", "annModal", "errorsModal"]
       .map($).find(m => m.classList.contains("show"));
     if (open) open.classList.remove("show");
-    else if (panelEl.classList.contains("show")) closeUserPanel();
-  });
-    if (wipeModal.classList.contains("show")) closeWipe();
     else if (panelEl.classList.contains("show")) closeUserPanel();
   });
   wipeConfirm.addEventListener("input", () => { wipeGo.disabled = wipeConfirm.value.trim() !== "حذف"; });
