@@ -433,7 +433,7 @@ input:focus + .icon { stroke: var(--accent2); }
       <h1>ورود به حساب کاربری</h1>
       <div class="subtitle">نام کاربری و رمز خود را وارد کنید</div>
 
-      <form id="loginForm" action="dashboard.html" method="post" autocomplete="on">
+      <form id="loginForm" autocomplete="on">
         <label for="username">نام کاربری</label>
         <div class="input-wrap">
           <input id="username" name="username" type="text" placeholder="نام کاربری"
@@ -724,60 +724,7 @@ input:focus + .icon { stroke: var(--accent2); }
   const loginBtn = document.getElementById("loginBtn");
   const msg = document.getElementById("msg");
 
-  let submitting = false;
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    if (submitting) return;
-    submitting = true;
 
-    const username = document.getElementById("username").value.trim();
-    const password = passwordEl.value;
-
-    if (!username || !password) {
-      msg.textContent = "نام کاربری و رمز عبور را وارد کنید";
-      msg.className = "error";
-      submitting = false;
-      return;
-    }
-
-    loginBtn.disabled = true;
-    msg.textContent = "در حال بررسی…";
-    msg.className = "";
-
-    const remember = document.getElementById("remember").checked;
-    try { localStorage.setItem("remember_pref", remember ? "true" : "false"); } catch (e) {}
-
-    const fakeEmail = username + "@yourapp.local";
-
-    let result;
-    try {
-      result = await supabaseClient.auth.signInWithPassword({
-        email: fakeEmail,
-        password: password
-      });
-    } catch (e) {
-      msg.textContent = "اتصال برقرار نشد، دوباره تلاش کنید";
-      msg.className = "error";
-      loginBtn.disabled = false;
-      submitting = false;
-      return;
-    }
-
-    if (result.error) {
-      msg.textContent = "نام کاربری یا رمز عبور اشتباه است";
-      msg.className = "error";
-      loginBtn.disabled = false;
-      submitting = false;
-      return;
-    }
-
-    localStorage.setItem("current_username", username);
-    msg.textContent = "ورود موفق — در حال انتقال…";
-    msg.className = "ok";
-
-    await saveCredential(username, password);
-    window.location.replace("dashboard.html");
-  });
   const btnLabel = loginBtn.querySelector(".btn-label");
   const stageEl = document.getElementById("stage");
   const logoEl = document.getElementById("logo");
