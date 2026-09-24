@@ -278,6 +278,14 @@
     box-shadow: 0 10px 26px rgba(79, 110, 255, 0.35);
     direction: ltr; transition: background 0.8s ease;
   }
+  .avatar { position: relative; }
+  .avatar::before, .avatar::after {
+    content: ""; position: absolute; inset: -6px; border-radius: 20px; pointer-events: none;
+    border: 1px solid color-mix(in srgb, var(--accent1) 55%, transparent);
+    animation: avatarRing 3s ease-out infinite;
+  }
+  .avatar::after { animation-delay: 1.5s; }
+  @keyframes avatarRing { 0% { opacity: 0.7; transform: scale(0.9); } 100% { opacity: 0; transform: scale(1.35); } }
   .head-txt { min-width: 0; }
   .greet { font-size: 17px; font-weight: 700; margin: 0 0 3px; letter-spacing: -0.2px; }
   .username {
@@ -326,9 +334,15 @@
   /* ---------- آمار ---------- */
   .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
   .stat {
-    background: var(--row-bg); border: 1px solid var(--row-border);
+    position: relative; overflow: hidden;
+    background:
+      radial-gradient(160px circle at var(--stx, 50%) var(--sty, 0%), color-mix(in srgb, var(--accent1) 18%, transparent), transparent 70%),
+      var(--row-bg);
+    border: 1px solid var(--row-border);
     border-radius: 15px; padding: 14px 8px; text-align: center;
+    transition: transform 0.18s ease, border-color 0.2s ease;
   }
+  .stat:hover { border-color: var(--accent1); }
   .stat b { display: block; font-size: 19px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.3px; }
   .stat span { display: block; font-size: 11px; color: var(--text-faint); margin-top: 5px; }
 
@@ -355,6 +369,9 @@
   .period-card .p-num { font-size: 24px; font-weight: 800; margin-top: 6px; font-variant-numeric: tabular-nums; letter-spacing: -0.5px; }
 
   /* ---------- رتبه‌ی ناشناس ---------- */
+    .confetti-fx { position: fixed; inset: 0; z-index: 60; pointer-events: none; overflow: hidden; }
+  .confetti-piece { position: absolute; top: -20px; width: 8px; height: 14px; opacity: 0.9; animation: confettiFall linear forwards; }
+  @keyframes confettiFall { to { transform: translateY(110vh) rotate(600deg); opacity: 0; } }
   .rank {
     --medal: var(--accent2); --medal2: var(--accent1); --on-medal: #fff;
     position: relative; overflow: hidden; margin-bottom: 12px; padding: 16px 16px 14px;
@@ -369,6 +386,12 @@
   }
   .rank > * { position: relative; z-index: 1; }
   .rank-top { display: flex; align-items: center; gap: 13px; }
+    .rank.gold .rank-badge, .rank.silver .rank-badge, .rank.bronze .rank-badge { position: relative; }
+  .rank.gold .rank-badge::after, .rank.silver .rank-badge::after, .rank.bronze .rank-badge::after {
+    content: ""; position: absolute; inset: -6px; border-radius: 22px; pointer-events: none;
+    border: 1px solid var(--medal);
+    animation: avatarRing 2.4s ease-out infinite;
+  }
   .rank-badge {
     width: 54px; height: 54px; flex-shrink: 0; border-radius: 17px; display: grid; place-items: center;
     font-size: 23px; font-weight: 900; direction: ltr; font-variant-numeric: tabular-nums;
@@ -472,7 +495,11 @@
   .row.enter { opacity: 0; transform: translateY(14px); }
   .row.entered { animation: rowIn 0.55s cubic-bezier(.16,.84,.3,1) forwards; }
   @keyframes rowIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
-
+  .row.fresh { animation: freshGlow 1.8s ease-out 1; }
+  @keyframes freshGlow {
+    0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent1) 55%, transparent); }
+    100% { box-shadow: 0 0 0 14px transparent; }
+  }
   .empty { text-align: center; color: var(--text-dim); font-size: 13.5px; padding: 40px 10px; line-height: 2; }
   .empty b { display: block; color: var(--text); font-size: 15px; font-weight: 500; margin-bottom: 4px; }
 
@@ -498,6 +525,9 @@
     transform: skewX(-20deg); transition: left 0.7s ease; pointer-events: none;
   }
   button.logout:hover::before { left: 130%; }
+  .ripple { position: absolute; border-radius: 50%; transform: scale(0); pointer-events: none;
+    background: rgba(255,255,255,0.5); animation: rippleAnim 0.6s ease-out forwards; }
+  @keyframes rippleAnim { to { transform: scale(3); opacity: 0; } }
   button.logout:hover { color: var(--text); border-color: var(--accent1); }
   button.logout:active { transform: scale(0.99); }
   button.logout:focus-visible, .theme-toggle:focus-visible, .bell:focus-visible, button.n-btn:focus-visible { outline: 2px solid var(--accent2); outline-offset: 3px; }
@@ -543,14 +573,13 @@
   @media (prefers-reduced-motion: reduce) {
     .blob { animation: none; }
     .box, .toolbar { animation: none; opacity: 1; transform: none; }
-    .box::after { animation: none; }
-    button.logout::before { transition: none; }
     .notice, .modal-box { animation: none; }
     .bell.ring svg { animation: none; }
     .row.entered { animation: none; opacity: 1; transform: none; }
     .period-card { animation: none; opacity: 1; transform: none; }
     .switch .knob, button.logout, .row, .row .fill, .sdot { transition: none; }
     .skel::after { animation: none; }
+    .avatar::before, .avatar::after, .rank-badge::after, .row.fresh, .confetti-piece { animation: none; }
   }
   /* ===== تب‌های شیشه‌ای لیست ===== */
 .list-head { flex-direction: column; align-items: stretch; gap: 10px; margin: 0 0 14px; }
@@ -817,6 +846,61 @@
 
   const REDUCE = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const $ = id => document.getElementById(id);
+  /* تیلت و نورافکن روی کارت‌های آمار */
+  (function () {
+    if (REDUCE || !window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    document.querySelectorAll(".stat").forEach(card => {
+      card.addEventListener("pointermove", (e) => {
+        const r = card.getBoundingClientRect();
+        const px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height;
+        card.style.setProperty("--stx", (px * 100) + "%");
+        card.style.setProperty("--sty", (py * 100) + "%");
+        const nx = (px - 0.5) * 2, ny = (py - 0.5) * 2;
+        card.style.transform = "perspective(500px) rotateX(" + (-ny * 6) + "deg) rotateY(" + (nx * 6) + "deg)";
+      });
+      card.addEventListener("pointerleave", () => { card.style.transform = "none"; });
+    });
+  })();
+
+  /* کانفتی برای نفر اول */
+  let confettiFired = false;
+  function launchConfetti() {
+    if (confettiFired || REDUCE) return;
+    confettiFired = true;
+    const colors = ["#f5c542", "#6d5bff", "#4f7bff", "#2fd3a7", "#ff8fc0"];
+    const fx = document.createElement("div");
+    fx.className = "confetti-fx";
+    document.body.appendChild(fx);
+    for (let i = 0; i < 60; i++) {
+      const p = document.createElement("span");
+      p.className = "confetti-piece";
+      p.style.left = (Math.random() * 100) + "%";
+      p.style.background = colors[i % colors.length];
+      p.style.animationDuration = (2.2 + Math.random() * 1.6) + "s";
+      p.style.animationDelay = (Math.random() * 0.6) + "s";
+      p.style.borderRadius = Math.random() > 0.5 ? "50%" : "2px";
+      fx.appendChild(p);
+    }
+    setTimeout(() => fx.remove(), 4200);
+  }
+
+  /* ریپل موقع کلیک روی دکمه‌ها */
+  function addRipple(e) {
+    const btn = e.currentTarget;
+    const rect = btn.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height);
+    const ripple = document.createElement("span");
+    ripple.className = "ripple";
+    ripple.style.width = ripple.style.height = size + "px";
+    ripple.style.left = (e.clientX - rect.left - size / 2) + "px";
+    ripple.style.top = (e.clientY - rect.top - size / 2) + "px";
+    btn.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 650);
+  }
+  document.querySelectorAll("button.logout, button.ltab, button.bell").forEach(b => {
+    b.style.overflow = "hidden";
+    b.addEventListener("click", addRipple);
+  });
   /* افکت موس: نور پس‌زمینه، نورافکن کارت و تیلت سه‌بعدی (فقط دسکتاپ) */
   (function () {
     if (REDUCE || !window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
@@ -1178,6 +1262,7 @@
         div.classList.remove("enter");
         div.classList.add("entered");
         fill.style.width = max > 0 ? Math.max(6, (it.count / max) * 100) + "%" : "0";
+        if (i === 0) div.classList.add("fresh");
       }, 260 + delay);
     });
 
@@ -1345,7 +1430,7 @@
     const gap = r.next_gap == null ? null : Number(r.next_gap);
 
     card.classList.remove("gold", "silver", "bronze");
-    if (rank === 1) card.classList.add("gold");
+    if (rank === 1) { card.classList.add("gold"); launchConfetti(); }
     else if (rank === 2) card.classList.add("silver");
     else if (rank === 3) card.classList.add("bronze");
 
