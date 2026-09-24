@@ -390,7 +390,25 @@
   .list-head { display: flex; justify-content: space-between; align-items: baseline; margin: 0 3px 11px; }
   .list-head h2 { font-size: 13px; font-weight: 500; color: var(--text-dim); margin: 0; }
   .list-head em { font-style: normal; font-size: 11.5px; color: var(--text-faint); font-variant-numeric: tabular-nums; }
+  .list-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  button.ltab {
+    padding: 7px 12px; border-radius: 10px; background: var(--row-bg); border: 1px solid var(--row-border);
+    color: var(--text-dim); cursor: pointer; font-family: inherit; font-size: 12.5px; font-weight: 500;
+    display: flex; align-items: center; gap: 6px;
+    transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  }
+  button.ltab:hover { color: var(--text); }
+  button.ltab.active { background: linear-gradient(135deg, var(--accent1), var(--accent2)); color: #fff; border-color: transparent; }
+  .ltab-count {
+    min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--error); color: #fff;
+    font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center;
+  }
+  .ltab.active .ltab-count { background: rgba(255,255,255,0.32); }
+  .ltab-count:empty { display: none; }
 
+  .list .p-row { background: var(--row-bg); border: 1px solid var(--row-border); border-radius: 13px; padding: 13px 15px; }
+  .list .p-row .p-row-label { font-size: 12.5px; color: var(--text-dim); margin-bottom: 6px; }
+  .list .p-row .p-row-num { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; }
   .list-wrap {
     position: relative; flex: 1; min-height: 0; margin-bottom: 16px;
     -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
@@ -577,10 +595,7 @@
           </div>
         </div>
 
-        <div class="periods" id="periodsWrap" hidden>
-          <div class="list-head"><h2>سابقه بازه‌های قبل</h2></div>
-          <div class="period-scroll" id="periodList"></div>
-        </div>
+      
 
         <div class="rank" id="rankCard" hidden>
           <div class="rank-top">
@@ -604,10 +619,13 @@
       <!-- ستون چپ: سابقه -->
       <section class="pane pane-side">
         <div class="list-head" id="listHead">
-          <h2>سابقه ثبت</h2>
+          <div class="list-tabs" role="tablist">
+            <button type="button" class="ltab active" id="tabOrders" role="tab">سابقه ثبت</button>
+            <button type="button" class="ltab" id="tabErrors" role="tab">خطاها<span class="ltab-count" id="errCountBadge"></span></button>
+            <button type="button" class="ltab" id="tabPeriods" role="tab">سابقه ماهانه</button>
+          </div>
           <em id="listMeta"></em>
         </div>
-
         <div class="list-wrap">
           <div class="list" id="list">
             <div class="skel"></div>
@@ -1110,7 +1128,9 @@
 
   function renderNotices() {
     noticesEl.replaceChildren();
-    if (ERRS.length) noticesEl.appendChild(buildErrCard());
+    const badge = $("errCountBadge");
+    if (badge) badge.textContent = ERRS.length ? ERRS.length : "";
+    if (activeListTab === "errors") renderErrorRows($("list"));
 
     const seen = new Set(getSeen());
     const unread = ANN.filter(a => !seen.has(a.id));
@@ -1208,27 +1228,82 @@
      ========================================================= */
   async function loadPeriods() {
     if (!currentUsername) return;
-    const wrap = $("periodsWrap");
-    const listEl = $("periodList");
     const { data, error } = await supabaseClient
       .from("period_totals")
       .select("period_label, period_start, period_end, total_count")
       .eq("username", currentUsername)
       .order("period_start", { ascending: false });
 
-    if (error || !data || !data.length) { wrap.hidden = true; return; }
+    PERIODS_DATA = (error || !data) ? [] : data;
+    if (activeListTab === "periods") renderPeriodRows($("list"));
+  }
+  let activeListTab = "orders";
+  let ORDER_ITEMS = [], ORDER_MAX = 0;
+  let PERIODS_DATA = [];
 
+  function renderErrorRows(listEl) {
     listEl.innerHTML = "";
-    data.forEach((p, i) => {
-      const card = el("div", "period-card");
-      card.style.animationDelay = (i * 70) + "ms";
-      card.appendChild(el("div", "p-label", p.period_label));
-      card.appendChild(el("div", "p-num", fmt(p.total_count)));
-      listEl.appendChild(card);
+    if (!ERRS.length) {
+      const empty = el("div", "empty");
+      empty.appendChild(el("b", null, "مغایرتی برای شما ثبت نشده"));
+      empty.appendChild(el("span", null, "اگه مغایرتی ثبت بشه، همین‌جا نمایش داده می‌شه."));
+      listEl.appendChild(empty);
+      return;
+    }
+    ERRS.forEach(e => {
+      const row = el("div", "e-row");
+      const top = el("div", "e-top");
+      const ord = el("div", "e-order", "سفارش ");
+      ord.appendChild(el("span", null, e.order_number));
+      top.appendChild(ord);
+      top.appendChild(el("div", "e-amount", fmtMoney(e.amount)));
+      row.appendChild(top);
+      row.appendChild(el("div", "e-reason", e.reason));
+      row.appendChild(el("div", "e-date", "ثبت‌شده در " + jalaliOf(new Date(e.created_at))));
+      listEl.appendChild(row);
     });
-    wrap.hidden = false;
   }
 
+  function renderPeriodRows(listEl) {
+    listEl.innerHTML = "";
+    if (!PERIODS_DATA.length) {
+      const empty = el("div", "empty");
+      empty.appendChild(el("b", null, "هنوز سابقه‌ای ثبت نشده"));
+      empty.appendChild(el("span", null, "بعد از ثبت هر دوره توسط سرپرست، همین‌جا نمایش داده می‌شه."));
+      listEl.appendChild(empty);
+      return;
+    }
+    PERIODS_DATA.forEach(p => {
+      const row = el("div", "p-row");
+      row.appendChild(el("div", "p-row-label", p.period_label));
+      row.appendChild(el("div", "p-row-num", fmt(p.total_count)));
+      listEl.appendChild(row);
+    });
+  }
+
+  function switchListTab(name) {
+    activeListTab = name;
+    $("tabOrders").classList.toggle("active", name === "orders");
+    $("tabErrors").classList.toggle("active", name === "errors");
+    $("tabPeriods").classList.toggle("active", name === "periods");
+
+    const listEl = $("list");
+    if (name === "orders") {
+      if (ORDER_ITEMS.length) renderRows(listEl, ORDER_ITEMS, ORDER_MAX);
+      else showEmpty(listEl);
+      $("listMeta").textContent = ORDER_ITEMS.length ? ORDER_ITEMS.length + " ثبت" : "";
+    } else if (name === "errors") {
+      renderErrorRows(listEl);
+      $("listMeta").textContent = ERRS.length ? ERRS.length + " مورد" : "";
+    } else {
+      renderPeriodRows(listEl);
+      $("listMeta").textContent = PERIODS_DATA.length ? PERIODS_DATA.length + " دوره" : "";
+    }
+  }
+
+  $("tabOrders").addEventListener("click", () => switchListTab("orders"));
+  $("tabErrors").addEventListener("click", () => switchListTab("errors"));
+  $("tabPeriods").addEventListener("click", () => switchListTab("periods"));
   /* ---------- شروع ---------- */
   async function init() {
     let session;
@@ -1278,12 +1353,13 @@
 
     drawSpark(asc);
 
-    const items = asc.map((r, i) => ({
+    ORDER_ITEMS = asc.map((r, i) => ({
       date: r.order_date,
       count: counts[i],
       delta: i > 0 ? Math.round((counts[i] - counts[i - 1]) * 100) / 100 : null
     })).reverse();
-    renderRows(listEl, items, max);
+    ORDER_MAX = max;
+    if (activeListTab === "orders") renderRows(listEl, ORDER_ITEMS, ORDER_MAX);
   }
 
   $("logoutBtn").addEventListener("click", async (e) => {
