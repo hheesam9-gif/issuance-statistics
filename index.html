@@ -237,6 +237,169 @@
     .box, .theme-toggle { animation: none; opacity: 1; transform: none; }
     .switch .knob, input, #loginBtn, .tick { transition: none; }
   }
+/* ===== نسخه‌ی خفن صفحه ورود ===== */
+[hidden] { display: none !important; }
+
+/* --- پس‌زمینه --- */
+.blob { transition: background-color 1.4s ease; }
+.dots { animation: dotsMove 60s linear infinite; }
+@keyframes dotsMove { to { background-position: 30px 30px; } }
+.bg::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(520px circle at var(--cx, 50%) var(--cy, 35%), color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);
+}
+.season-fx { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.season-particle {
+  position: absolute; top: -40px; line-height: 1; opacity: 0.55; will-change: transform;
+  animation-name: seasonFall; animation-timing-function: linear; animation-iteration-count: infinite;
+}
+@keyframes seasonFall {
+  from { transform: translateY(-10vh) translateX(0) rotate(0deg); }
+  to { transform: translateY(112vh) translateX(var(--drift, 0px)) rotate(360deg); }
+}
+
+/* --- نوار بالا: تم + فصل --- */
+.toolbar {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 20px;
+  opacity: 0; transform: translateY(-8px);
+  animation: fadeDown 0.6s cubic-bezier(.2,.7,.3,1) 0.05s forwards;
+}
+.toolbar .theme-toggle { margin-bottom: 0; opacity: 1; transform: none; animation: none; }
+.season-pill {
+  display: flex; align-items: center; gap: 7px;
+  background: var(--card-bg); border: 1px solid var(--card-border);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border-radius: 999px; padding: 6px 13px; font-size: 12.5px; color: var(--text-dim); user-select: none;
+}
+.season-pill .semoji { font-size: 15px; line-height: 1; filter: drop-shadow(0 0 6px var(--accent1)); }
+.season-pill b { color: var(--text); font-weight: 500; }
+
+/* --- قاب و کارت --- */
+.stage { width: 100%; max-width: 420px; perspective: 1200px; }
+.stage.shake { animation: shake 0.5s ease; }
+@keyframes shake {
+  10%, 90% { transform: translateX(-2px); }
+  20%, 80% { transform: translateX(4px); }
+  30%, 50%, 70% { transform: translateX(-7px); }
+  40%, 60% { transform: translateX(7px); }
+}
+.stage.leaving {
+  opacity: 0; filter: blur(8px); transform: scale(0.95) translateY(-12px);
+  transition: opacity 0.45s ease, transform 0.45s ease, filter 0.45s ease;
+}
+
+.box {
+  max-width: 100%;
+  background:
+    radial-gradient(420px circle at var(--sx, 50%) var(--sy, -15%), color-mix(in srgb, var(--accent1) 15%, transparent), transparent 65%),
+    var(--card-bg);
+  transition: rotate 0.22s ease-out;
+}
+
+/* حاشیه‌ی نورانی چرخان */
+@property --ang { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.box::after {
+  content: ""; position: absolute; inset: -1px; border-radius: inherit; padding: 1.5px; pointer-events: none;
+  background: conic-gradient(from var(--ang), transparent 0deg, var(--accent1) 60deg, var(--accent2) 120deg, transparent 200deg, transparent 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: spinAng 6s linear infinite;
+}
+@keyframes spinAng { to { --ang: 360deg; } }
+
+/* --- لوگو (قفل) --- */
+.logo { position: relative; }
+.logo::before, .logo::after {
+  content: ""; position: absolute; inset: -7px; border-radius: 22px; pointer-events: none;
+  border: 1px solid color-mix(in srgb, var(--accent1) 55%, transparent);
+  animation: ringPulse 3s ease-out infinite;
+}
+.logo::after { animation-delay: 1.5s; }
+@keyframes ringPulse { 0% { opacity: 0.7; transform: scale(0.92); } 100% { opacity: 0; transform: scale(1.4); } }
+.logo .shackle {
+  transform-box: fill-box; transform-origin: 100% 100%;
+  transition: transform 0.55s cubic-bezier(.34, 1.56, .64, 1);
+}
+.logo.unlocked .shackle { transform: translateY(-2.5px) rotate(-32deg); }
+.logo.unlocked { box-shadow: 0 10px 30px rgba(47, 211, 167, 0.5); transition: box-shadow 0.4s ease; }
+
+.greet-chip {
+  display: inline-flex; align-items: center; gap: 7px; margin-bottom: 12px; padding: 5px 13px;
+  border-radius: 999px; font-size: 12px; color: var(--text-dim);
+  background: var(--row-bg); border: 1px solid var(--row-border);
+}
+.greet-chip:empty { display: none; }
+
+h1 {
+  background: linear-gradient(100deg, var(--text) 30%, var(--accent2) 50%, var(--text) 70%);
+  background-size: 220% auto; -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: titleShine 6s linear infinite;
+}
+@keyframes titleShine { to { background-position: -220% center; } }
+
+/* --- فیلدها --- */
+.icon { transition: stroke 0.2s ease; }
+input:focus {
+  border-color: var(--accent1);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent1) 24%, transparent), 0 8px 24px color-mix(in srgb, var(--accent1) 14%, transparent);
+}
+input:focus + .icon { stroke: var(--accent2); }
+
+.caps {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  margin: -6px 0 12px; font-size: 12px; color: #f5b942;
+}
+
+/* --- دکمه --- */
+#loginBtn {
+  position: relative; overflow: hidden; height: 50px; padding: 0 14px;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+#loginBtn::before {
+  content: ""; position: absolute; top: 0; bottom: 0; width: 40%; left: -60%;
+  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transform: skewX(-20deg); transition: left 0.7s ease;
+}
+#loginBtn:hover::before { left: 130%; }
+.btn-spin {
+  display: none; width: 18px; height: 18px; border-radius: 50%;
+  border: 2.5px solid rgba(255, 255, 255, 0.35); border-top-color: #fff; animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+#loginBtn.loading .btn-spin { display: block; }
+#loginBtn.success { background: linear-gradient(135deg, #12a883, #2fd3a7); box-shadow: 0 12px 26px rgba(47, 211, 167, 0.35); }
+#loginBtn.loading:disabled, #loginBtn.success:disabled { opacity: 1; }
+
+.secure {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  margin-top: 18px; font-size: 11.5px; color: var(--text-faint);
+}
+.secure svg { width: 14px; height: 14px; stroke: var(--mint); fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+
+/* --- ورود پله‌ای عناصر --- */
+@keyframes rise2 { from { opacity: 0; transform: translateY(16px); } }
+.box > :not(form), #loginForm > * { animation: rise2 0.7s cubic-bezier(.16, .84, .3, 1) backwards; }
+.box > .logo { animation-delay: 0.25s; }
+.box > .greet-chip { animation-delay: 0.32s; }
+.box > h1 { animation: rise2 0.7s cubic-bezier(.16, .84, .3, 1) 0.39s backwards, titleShine 6s linear infinite; }
+.box > .subtitle { animation-delay: 0.46s; }
+#loginForm > :nth-child(1) { animation-delay: 0.52s; }
+#loginForm > :nth-child(2) { animation-delay: 0.58s; }
+#loginForm > :nth-child(3) { animation-delay: 0.64s; }
+#loginForm > :nth-child(4) { animation-delay: 0.70s; }
+#loginForm > :nth-child(5) { animation-delay: 0.76s; }
+#loginForm > :nth-child(6) { animation-delay: 0.82s; }
+#loginForm > :nth-child(7) { animation-delay: 0.88s; }
+#loginForm > :nth-child(8) { animation-delay: 0.94s; }
+.box > .secure { animation-delay: 1s; }
+.box > .footer { animation-delay: 1.06s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dots, .box::after, .logo::before, .logo::after, h1, .season-particle, .stage.shake { animation: none; }
+  .season-particle { display: none; }
+  .box > :not(form), #loginForm > * { animation: none; }
+  #loginBtn::before { transition: none; }
+}
 </style>
 </head>
 <body>
@@ -246,51 +409,66 @@
     <div class="blob b3"></div>
     <div class="dots"></div>
     <div class="grain"></div>
+    <div class="season-fx" id="seasonFx"></div>
   </div>
 
-  <div class="theme-toggle" id="themeToggle" role="button" tabindex="0" aria-label="تغییر تم">
-    <span>☀️</span>
-    <div class="switch"><div class="knob"></div></div>
-    <span>🌙</span>
-  </div>
-
-  <main class="box">
-    <div class="logo">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="3"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+  <div class="toolbar">
+    <div class="theme-toggle" id="themeToggle" role="button" tabindex="0" aria-label="تغییر تم">
+      <span>☀️</span>
+      <div class="switch"><div class="knob"></div></div>
+      <span>🌙</span>
     </div>
-    <h1>ورود به حساب کاربری</h1>
-    <div class="subtitle">نام کاربری و رمز خود را وارد کنید</div>
+    <div class="season-pill" title="تم فصلی">
+      <span class="semoji" id="seasonBadge">🌸</span>
+      <b id="seasonName"></b>
+    </div>
+  </div>
 
-    <form id="loginForm" action="dashboard.html" method="post" autocomplete="on">
-      <label for="username">نام کاربری</label>
-      <div class="input-wrap">
-        <input id="username" name="username" type="text" placeholder="نام کاربری"
-               autocomplete="username" autocapitalize="none" spellcheck="false" required />
-        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+  <div class="stage" id="stage">
+    <main class="box" id="loginBox">
+      <div class="logo" id="logo">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path class="shackle" d="M8 11V8a4 4 0 0 1 8 0v3"/><rect x="4" y="11" width="16" height="10" rx="3"/><circle cx="12" cy="16" r="1.1" fill="#fff" stroke="none"/></svg>
       </div>
+      <div class="greet-chip" id="greetChip"></div>
+      <h1>ورود به حساب کاربری</h1>
+      <div class="subtitle">نام کاربری و رمز خود را وارد کنید</div>
 
-      <label for="password">رمز عبور</label>
-      <div class="input-wrap">
-        <input id="password" name="password" type="password" placeholder="رمز عبور"
-               autocomplete="current-password" required />
-        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="3"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
-        <button type="button" class="eye" id="eyeBtn" aria-label="نمایش رمز عبور">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
-        </button>
+      <form id="loginForm" action="dashboard.html" method="post" autocomplete="on">
+        <label for="username">نام کاربری</label>
+        <div class="input-wrap">
+          <input id="username" name="username" type="text" placeholder="نام کاربری"
+                 autocomplete="username" autocapitalize="none" spellcheck="false" required />
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+        </div>
+
+        <label for="password">رمز عبور</label>
+        <div class="input-wrap">
+          <input id="password" name="password" type="password" placeholder="رمز عبور"
+                 autocomplete="current-password" required />
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="3"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+          <button type="button" class="eye" id="eyeBtn" aria-label="نمایش رمز عبور">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <div class="caps" id="capsHint" hidden>⚠️ کلید Caps Lock روشنه</div>
+
+        <label class="remember" for="remember">
+          <input type="checkbox" id="remember" name="remember" checked />
+          <span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5 9.5 18 20 6.5"/></svg></span>
+          <span>رمز را در مرورگر ذخیره کن</span>
+        </label>
+
+        <button id="loginBtn" type="submit"><span class="btn-spin"></span><span class="btn-label">ورود</span></button>
+        <div id="msg" role="status" aria-live="polite"></div>
+      </form>
+
+      <div class="secure">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg>
+        <span>اتصال امن و رمزگذاری‌شده</span>
       </div>
-
-      <label class="remember" for="remember">
-        <input type="checkbox" id="remember" name="remember" checked />
-        <span class="tick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5 9.5 18 20 6.5"/></svg></span>
-        <span>رمز را در مرورگر ذخیره کن</span>
-      </label>
-
-      <button id="loginBtn" type="submit">ورود</button>
-      <div id="msg" role="status" aria-live="polite"></div>
-    </form>
-
-    <div class="footer">azki sword</div>
-  </main>
+      <div class="footer">azki sword</div>
+    </main>
+  </div>
 
 <script>
   const SUPABASE_URL = "https://jmbpskxloffcrbxiqcdy.supabase.co";
@@ -336,7 +514,170 @@
   themeToggle.addEventListener("keydown", (e) => {
     if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleTheme(); }
   });
+  /* =========================================================
+     تم فصلی، افکت‌های موس، سلام زمان‌محور و هشدار Caps Lock
+     ========================================================= */
+  const byId = id => document.getElementById(id);
+  const REDUCE_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  const SEASON_NAMES = { spring: "بهار", summer: "تابستان", autumn: "پاییز", winter: "زمستان" };
+  const SEASON_EMOJI = { spring: "🌸", summer: "☀️", autumn: "🍂", winter: "❄️" };
+  const SEASON_PARTICLES = { spring: ["🌸", "🌿"], summer: ["✨", "🌞"], autumn: ["🍂", "🍁"], winter: ["❄️"] };
+  let lastParticleSeason = null;
+
+  function renderSeasonParticles(season) {
+    const fx = byId("seasonFx");
+    if (!fx || season === lastParticleSeason) return;
+    lastParticleSeason = season;
+    fx.replaceChildren();
+    const set = SEASON_PARTICLES[season];
+    if (!set) return;
+    const count = season === "summer" ? 10 : 16;
+    for (let i = 0; i < count; i++) {
+      const span = document.createElement("span");
+      span.className = "season-particle";
+      span.textContent = set[i % set.length];
+      const duration = 10 + Math.random() * 14;
+      span.style.left = (Math.random() * 100) + "%";
+      span.style.fontSize = (12 + Math.random() * 12) + "px";
+      span.style.animationDuration = duration + "s";
+      span.style.animationDelay = (-1 * Math.random() * duration) + "s";
+      span.style.setProperty("--drift", Math.round(Math.random() * 80 - 40) + "px");
+      fx.appendChild(span);
+    }
+  }
+
+  const PALETTES = {
+    dark: {
+      spring: { blob1: [110, 200, 140], blob2: [255, 150, 190], blob3: [140, 225, 175], accent1: [86, 189, 122], accent2: [255, 133, 176] },
+      summer: { blob1: [255, 170, 55],  blob2: [255, 110, 80],  blob3: [255, 205, 90],  accent1: [255, 150, 55],  accent2: [255, 99, 82]  },
+      autumn: { blob1: [214, 124, 58],  blob2: [178, 84, 56],   blob3: [224, 168, 90],  accent1: [214, 122, 63],  accent2: [178, 88, 46]  },
+      winter: { blob1: [90, 150, 235],  blob2: [140, 108, 255], blob3: [175, 210, 255], accent1: [79, 141, 255],  accent2: [130, 118, 255] }
+    },
+    light: {
+      spring: { blob1: [150, 220, 175], blob2: [255, 185, 210], blob3: [175, 235, 200], accent1: [46, 158, 95],   accent2: [230, 105, 150] },
+      summer: { blob1: [255, 190, 110], blob2: [255, 140, 115], blob3: [255, 215, 130], accent1: [220, 130, 30],  accent2: [222, 96, 70]  },
+      autumn: { blob1: [214, 150, 100], blob2: [190, 115, 80],  blob3: [226, 185, 130], accent1: [178, 100, 45],  accent2: [150, 76, 38]  },
+      winter: { blob1: [130, 175, 235], blob2: [160, 145, 255], blob3: [195, 220, 255], accent1: [70, 120, 225],  accent2: [120, 110, 230] }
+    }
+  };
+  const SEASON_ALPHAS = {
+    dark:  { blob1: 0.42, blob2: 0.30, blob3: 0.22 },
+    light: { blob1: 0.40, blob2: 0.34, blob3: 0.26 }
+  };
+  const ANCHORS = [
+    { day: 47,  key: "spring" },
+    { day: 140, key: "summer" },
+    { day: 232, key: "autumn" },
+    { day: 322, key: "winter" }
+  ];
+  const PERSIAN_MONTH_STARTS = [1, 32, 63, 94, 125, 156, 187, 217, 247, 277, 307, 337];
+
+  function persianDayOfYear(d) {
+    try {
+      const parts = new Intl.DateTimeFormat("en-u-ca-persian-nu-latn", { month: "2-digit", day: "2-digit" }).formatToParts(d);
+      const g = t => +parts.find(p => p.type === t).value;
+      return PERSIAN_MONTH_STARTS[g("month") - 1] + g("day") - 1;
+    } catch (e) { return 47; }
+  }
+  function seasonMix(doy) {
+    const n = ANCHORS.length;
+    for (let i = 0; i < n; i++) {
+      const a = ANCHORS[i], b = ANCHORS[(i + 1) % n];
+      let aDay = a.day, bDay = b.day;
+      if (bDay <= aDay) bDay += 365;
+      let d = doy;
+      if (d < aDay) d += 365;
+      if (d >= aDay && d <= bDay) {
+        const t = (d - aDay) / (bDay - aDay);
+        return { from: a.key, to: b.key, t: t * t * (3 - 2 * t) };
+      }
+    }
+    return { from: "winter", to: "spring", t: 0 };
+  }
+  function blendRGB(c1, c2, t) { return c1.map((v, i) => Math.round(v + (c2[i] - v) * t)); }
+
+  let seasonOverride = null;
+
+  function applySeasonTheme() {
+    const isLight = root.getAttribute("data-theme") === "light";
+    const pal = isLight ? PALETTES.light : PALETTES.dark;
+    const alphas = isLight ? SEASON_ALPHAS.light : SEASON_ALPHAS.dark;
+    let from, to, t;
+    if (seasonOverride) { from = to = seasonOverride; t = 0; }
+    else ({ from, to, t } = seasonMix(persianDayOfYear(new Date())));
+
+    const mix = key => blendRGB(pal[from][key], pal[to][key], t);
+    const b1 = mix("blob1"), b2 = mix("blob2"), b3 = mix("blob3");
+    const a1 = mix("accent1"), a2 = mix("accent2");
+    const s = root.style;
+    s.setProperty("--blob1", `rgba(${b1.join(",")}, ${alphas.blob1})`);
+    s.setProperty("--blob2", `rgba(${b2.join(",")}, ${alphas.blob2})`);
+    s.setProperty("--blob3", `rgba(${b3.join(",")}, ${alphas.blob3})`);
+    s.setProperty("--accent1", `rgb(${a1.join(",")})`);
+    s.setProperty("--accent2", `rgb(${a2.join(",")})`);
+
+    const dominant = t < 0.5 ? from : to;
+    byId("seasonBadge").textContent = SEASON_EMOJI[dominant];
+    byId("seasonName").textContent = SEASON_NAMES[dominant];
+    renderSeasonParticles(dominant);
+  }
+
+  async function loadSeasonOverride() {
+    try {
+      const { data, error } = await supabaseClient
+        .from("app_settings").select("value").eq("key", "season").maybeSingle();
+      seasonOverride = (!error && data && data.value && data.value !== "auto") ? data.value : null;
+    } catch (e) { seasonOverride = null; }
+    applySeasonTheme();
+  }
+
+  applySeasonTheme();
+  loadSeasonOverride();
+  themeToggle.addEventListener("click", applySeasonTheme);
+  themeToggle.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") applySeasonTheme(); });
+
+  /* سلام بر اساس ساعت */
+  (function () {
+    const h = new Date().getHours();
+    let text, emoji;
+    if (h >= 5 && h < 11) { text = "صبح بخیر"; emoji = "🌅"; }
+    else if (h >= 11 && h < 16) { text = "ظهر بخیر"; emoji = "☀️"; }
+    else if (h >= 16 && h < 19) { text = "عصر بخیر"; emoji = "🌇"; }
+    else { text = "شب بخیر"; emoji = "🌙"; }
+    byId("greetChip").textContent = emoji + "  " + text;
+  })();
+
+  /* هشدار Caps Lock */
+  (function () {
+    const pw = byId("password"), hint = byId("capsHint");
+    const check = (e) => { if (e.getModifierState) hint.hidden = !e.getModifierState("CapsLock"); };
+    pw.addEventListener("keydown", check);
+    pw.addEventListener("keyup", check);
+    pw.addEventListener("blur", () => { hint.hidden = true; });
+  })();
+
+  /* افکت موس: نور پس‌زمینه، نورافکن کارت و تیلت سه‌بعدی (فقط دسکتاپ) */
+  (function () {
+    if (REDUCE_MOTION || !window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    const box = byId("loginBox");
+    let raf = null, mx = 0, my = 0;
+    function update() {
+      raf = null;
+      root.style.setProperty("--cx", mx + "px");
+      root.style.setProperty("--cy", my + "px");
+      const r = box.getBoundingClientRect();
+      const px = (mx - r.left) / r.width, py = (my - r.top) / r.height;
+      box.style.setProperty("--sx", (px * 100) + "%");
+      box.style.setProperty("--sy", (py * 100) + "%");
+      const nx = Math.max(-1, Math.min(1, (px - 0.5) * 2));
+      const ny = Math.max(-1, Math.min(1, (py - 0.5) * 2));
+      const mag = Math.min(Math.hypot(nx, ny), 1);
+      box.style.rotate = mag < 0.001 ? "none" : (-ny) + " " + nx + " 0 " + (mag * 5) + "deg";
+    }
+    window.addEventListener("pointermove", (e) => { mx = e.clientX; my = e.clientY; if (!raf) raf = requestAnimationFrame(update); });
+    document.addEventListener("mouseleave", () => { box.style.rotate = "none"; });
+  })();
   /* ---------- نمایش/مخفی کردن رمز ---------- */
   const passwordEl = document.getElementById("password");
   const eyeBtn = document.getElementById("eyeBtn");
@@ -437,7 +778,64 @@
     await saveCredential(username, password);
     window.location.replace("dashboard.html");
   });
+  const btnLabel = loginBtn.querySelector(".btn-label");
+  const stageEl = document.getElementById("stage");
+  const logoEl = document.getElementById("logo");
+  let submitting = false;
 
+  function setBtn(state, text) {
+    loginBtn.classList.toggle("loading", state === "loading");
+    loginBtn.classList.toggle("success", state === "success");
+    loginBtn.disabled = state === "loading" || state === "success";
+    btnLabel.textContent = text;
+  }
+  function failLogin(text) {
+    msg.textContent = text;
+    msg.className = "error";
+    setBtn("idle", "ورود");
+    stageEl.classList.remove("shake");
+    void stageEl.offsetWidth;
+    stageEl.classList.add("shake");
+    submitting = false;
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (submitting) return;
+    submitting = true;
+
+    const username = document.getElementById("username").value.trim();
+    const password = passwordEl.value;
+
+    if (!username || !password) { failLogin("نام کاربری و رمز عبور را وارد کنید"); return; }
+
+    setBtn("loading", "در حال ورود…");
+    msg.textContent = "";
+    msg.className = "";
+
+    const remember = document.getElementById("remember").checked;
+    try { localStorage.setItem("remember_pref", remember ? "true" : "false"); } catch (err) {}
+
+    const fakeEmail = username + "@yourapp.local";
+
+    let result;
+    try {
+      result = await supabaseClient.auth.signInWithPassword({ email: fakeEmail, password: password });
+    } catch (err) {
+      failLogin("اتصال برقرار نشد، دوباره تلاش کنید");
+      return;
+    }
+
+    if (result.error) { failLogin("نام کاربری یا رمز عبور اشتباه است"); return; }
+
+    localStorage.setItem("current_username", username);
+    setBtn("success", "ورود موفق");
+    logoEl.classList.add("unlocked");
+
+    await saveCredential(username, password);
+    setTimeout(() => stageEl.classList.add("leaving"), 450);
+    setTimeout(() => window.location.replace("dashboard.html"), 900);
+  });
   /* اگر قبلاً وارد شده، مستقیم برو داشبورد — فقط یک‌بار، بدون افزودن به تاریخچه */
   (async () => {
     try {
