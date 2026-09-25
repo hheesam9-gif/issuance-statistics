@@ -307,9 +307,36 @@
     font-variant-numeric: tabular-nums; letter-spacing: -2px; direction: ltr;
     transition: background 0.8s ease;
   }
-  .total .lbl { font-size: 12px; color: var(--text-dim); margin-top: 8px; text-align: center; min-height: 18px; font-variant-numeric: tabular-nums; transition: color 0.2s ease; }
+.total .lbl { font-size: 12px; color: var(--text-dim); margin-top: 8px; text-align: center; min-height: 18px; font-variant-numeric: tabular-nums; transition: color 0.2s ease; }
   .total .lbl.live { color: var(--text); font-weight: 500; }
 
+  .payout {
+    position: relative; overflow: hidden; margin-top: 12px; padding: 18px 16px;
+    border-radius: 18px; text-align: center;
+    background: linear-gradient(135deg,
+      color-mix(in srgb, var(--accent1) 22%, var(--row-bg)),
+      color-mix(in srgb, var(--mint) 16%, var(--row-bg)));
+    border: 1px solid color-mix(in srgb, var(--accent1) 55%, transparent);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 18px 40px rgba(109,91,255,0.28);
+  }
+  .payout-shine {
+    position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(105deg, transparent, rgba(255,255,255,0.28), transparent);
+    transform: translateX(-130%) skewX(-20deg);
+    animation: payoutSheen 3.4s ease-in-out infinite;
+  }
+  @keyframes payoutSheen {
+    0%, 55% { transform: translateX(-130%) skewX(-20deg); }
+    100%    { transform: translateX(160%) skewX(-20deg); }
+  }
+  .payout-label { font-size: 12px; color: var(--text-dim); margin-bottom: 6px; }
+  .payout-num {
+    font-size: 36px; font-weight: 900; letter-spacing: -1px; direction: ltr;
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, var(--accent1), var(--mint));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .payout-unit { font-size: 11px; color: var(--text-faint); margin-top: 2px; }
   .spark-wrap { position: relative; margin-top: 14px; touch-action: pan-y; cursor: crosshair; }
   .spark { display: block; width: 100%; height: 96px; }
   .spark .line { fill: none; stroke: url(#sparkGrad); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
@@ -472,6 +499,8 @@
     transform-origin: center center;
     will-change: transform, opacity;
     transition: background 0.25s ease, border-color 0.25s ease;
+        flex-wrap: wrap;
+    gap: 8px 12px;
   }
   .row:hover, .row.hl { background: var(--row-bg-hover); }
   .row.hl { border-color: var(--accent1); }
@@ -482,7 +511,7 @@
   }
   .row > * { position: relative; }
   .row .date { color: var(--text-dim); font-variant-numeric: tabular-nums; font-size: 13.5px; letter-spacing: 0.2px; direction: ltr; }
-  .row .count { font-weight: 700; font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 7px; }
+  .row .count { font-weight: 700; font-variant-numeric: tabular-nums; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
   .row.peak .count { color: var(--mint); }
   .row.peak .tag {
     font-size: 10px; font-weight: 500; color: var(--mint);
@@ -491,7 +520,16 @@
   .delta { font-size: 10.5px; font-weight: 500; padding: 2px 6px; border-radius: 6px; direction: ltr; font-variant-numeric: tabular-nums; }
   .delta.up { color: var(--ok); background: rgba(74, 222, 128, 0.12); }
   .delta.down { color: var(--warn); background: rgba(251, 191, 36, 0.12); }
-
+.tier-badge {
+  font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 999px;
+  border: 1px solid var(--tier-color); color: var(--tier-color);
+  background: color-mix(in srgb, var(--tier-color) 16%, transparent);
+  white-space: nowrap; flex-shrink: 0;
+}
+.row-pay {
+  font-size: 11px; font-weight: 600; color: var(--mint);
+  direction: ltr; font-variant-numeric: tabular-nums;
+}
   .row.enter { opacity: 0; transform: translateY(14px); }
   .row.entered { animation: rowIn 0.55s cubic-bezier(.16,.84,.3,1) forwards; }
   @keyframes rowIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
@@ -570,7 +608,8 @@
     .e-list { grid-template-columns: 1fr; }
   }
 
-  @media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce) {
+    .payout-shine { animation: none; }
     .blob { animation: none; }
     .box, .toolbar { animation: none; opacity: 1; transform: none; }
     .notice, .modal-box { animation: none; }
@@ -580,7 +619,7 @@
     .switch .knob, button.logout, .row, .row .fill, .sdot { transition: none; }
     .skel::after { animation: none; }
     .avatar::before, .avatar::after, .rank-badge::after, .row.fresh, .confetti-piece { animation: none; }
-  }
+}
   /* ===== تب‌های شیشه‌ای لیست ===== */
 .list-head { flex-direction: column; align-items: stretch; gap: 10px; margin: 0 0 14px; }
 .list-head em { align-self: flex-end; margin: 0 4px; }
@@ -746,8 +785,14 @@
             <div class="sguide" id="sparkGuide"></div>
             <div class="sdot" id="sparkDot"></div>
           </div>
-        </div>
 
+          <div class="payout" id="payoutBox" hidden>
+            <div class="payout-shine"></div>
+            <div class="payout-label">پورسانت تخمینی</div>
+            <div class="payout-num" id="payoutNum">0</div>
+            <div class="payout-unit">تومان</div>
+          </div>
+        </div>
       
 
         <div class="rank" id="rankCard" hidden>
@@ -846,6 +891,22 @@
 
   const REDUCE = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const $ = id => document.getElementById(id);
+  const BASE_PRICE = 21000; // پایه هر سفارش
+const TARGET_TIERS = [
+  { min: 0,  max: 7,        bonus: 0,     label: "بدون پاداش", color: "#7c83aa" },
+  { min: 8,  max: 14,       bonus: 4000,  label: "۸ تا ۱۴",    color: "#4f7bff" },
+  { min: 15, max: 19,       bonus: 9000,  label: "۱۵ تا ۱۹",   color: "#2fd3a7" },
+  { min: 20, max: 24,       bonus: 12000, label: "۲۰ تا ۲۴",   color: "#fbbf24" },
+  { min: 25, max: 29,       bonus: 14000, label: "۲۵ تا ۲۹",   color: "#f5c542" },
+  { min: 30, max: Infinity, bonus: 16000, label: "۳۰ به بالا", color: "#ff6b7d" }
+];
+function getTier(count) {
+  return TARGET_TIERS.find(t => count >= t.min && count <= t.max) || TARGET_TIERS[0];
+}
+function dayPay(count) {
+  return count * (BASE_PRICE + getTier(count).bonus);
+}
+  
   /* تیلت و نورافکن روی کارت‌های آمار */
   (function () {
     if (REDUCE || !window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
@@ -1242,6 +1303,9 @@
 
       const fill = el("span", "fill");
       const dateEl = el("span", "date", it.date);
+      const tier = getTier(it.count);
+      const tierEl = el("span", "tier-badge", tier.label);
+      tierEl.style.setProperty("--tier-color", tier.color);
 
       const countEl = el("span", "count");
       if (it.count === max && max > 0 && items.length > 1) countEl.appendChild(el("span", "tag", "بیشترین"));
@@ -1250,11 +1314,14 @@
         dl.title = "نسبت به ثبت قبلی";
         countEl.appendChild(dl);
       }
-      countEl.appendChild(el("span", null, fmt(it.count)));
+countEl.appendChild(el("span", null, fmt(it.count)));
+const payEl = el("span", "row-pay", fmtMoney(dayPay(it.count)) + " ت");
 
       div.appendChild(fill);
       div.appendChild(dateEl);
+      div.appendChild(tierEl);
       div.appendChild(countEl);
+      div.appendChild(payEl);
       listEl.appendChild(div);
 
       const delay = Math.min(i, 8) * 60;
@@ -1612,7 +1679,20 @@
     const total = counts.reduce((a, b) => a + b, 0);
     const max = Math.max(...counts);
     const avg = total / counts.length;
-
+const totalPay = asc.reduce((sum, r, i) => sum + dayPay(counts[i]), 0);
+$("payoutBox").hidden = false;
+$("payoutNum").textContent = "0";
+if (REDUCE) {
+  $("payoutNum").textContent = fmtMoney(totalPay);
+} else {
+  const start = performance.now(), dur = 1000;
+  (function frame(now) {
+    const t = Math.min((now - start) / dur, 1);
+    const eased = 1 - Math.pow(1 - t, 3);
+    $("payoutNum").textContent = fmtMoney(Math.round(totalPay * eased));
+    if (t < 1) requestAnimationFrame(frame);
+  })(start);
+}
     $("stats").hidden = false;
     $("listMeta").textContent = asc.length + " ثبت";
 
