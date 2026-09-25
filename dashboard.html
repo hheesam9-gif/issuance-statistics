@@ -310,33 +310,62 @@
 .total .lbl { font-size: 12px; color: var(--text-dim); margin-top: 8px; text-align: center; min-height: 18px; font-variant-numeric: tabular-nums; transition: color 0.2s ease; }
   .total .lbl.live { color: var(--text); font-weight: 500; }
 
-  .payout {
-    position: relative; overflow: hidden; margin-top: 12px; padding: 18px 16px;
-    border-radius: 18px; text-align: center;
-    background: linear-gradient(135deg,
-      color-mix(in srgb, var(--accent1) 22%, var(--row-bg)),
-      color-mix(in srgb, var(--mint) 16%, var(--row-bg)));
-    border: 1px solid color-mix(in srgb, var(--accent1) 55%, transparent);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 18px 40px rgba(109,91,255,0.28);
+  /* دکمه‌ی پورسانت کنار زنگ */
+  .payout-trigger { color: var(--mint); }
+  .payout-trigger svg { stroke: var(--mint); }
+  .payout-trigger:hover { border-color: var(--mint); }
+  .payout-trigger:disabled { opacity: 0.4; cursor: default; }
+
+  /* پنجره‌ی پورسانت */
+  .payout-modal-box {
+    position: relative; text-align: center; overflow: hidden;
+    max-width: 380px; padding: 40px 24px 32px;
+    background:
+      radial-gradient(220px circle at 50% 0%, color-mix(in srgb, var(--mint) 20%, transparent), transparent 70%),
+      var(--card-bg);
   }
-  .payout-shine {
-    position: absolute; inset: 0; pointer-events: none;
-    background: linear-gradient(105deg, transparent, rgba(255,255,255,0.28), transparent);
-    transform: translateX(-130%) skewX(-20deg);
-    animation: payoutSheen 3.4s ease-in-out infinite;
+  .payout-close { position: absolute; top: 14px; left: 14px; }
+  .payout-burst {
+    position: absolute; inset: 0; pointer-events: none; z-index: 0;
+    background: radial-gradient(circle at 50% 32%, color-mix(in srgb, var(--mint) 35%, transparent), transparent 60%);
+    opacity: 0; transform: scale(0.4);
   }
-  @keyframes payoutSheen {
-    0%, 55% { transform: translateX(-130%) skewX(-20deg); }
-    100%    { transform: translateX(160%) skewX(-20deg); }
+  .payout-modal.show .payout-burst { animation: payoutBurst 1s cubic-bezier(.16,.84,.3,1) both; }
+  @keyframes payoutBurst {
+    0%   { opacity: 0;   transform: scale(0.2); }
+    45%  { opacity: 0.9; transform: scale(1.3); }
+    100% { opacity: 0;   transform: scale(1.9); }
   }
-  .payout-label { font-size: 12px; color: var(--text-dim); margin-bottom: 6px; }
-  .payout-num {
-    font-size: 36px; font-weight: 900; letter-spacing: -1px; direction: ltr;
+  .payout-coin {
+    position: relative; z-index: 1; font-size: 46px; line-height: 1;
+    filter: drop-shadow(0 8px 18px rgba(47,211,167,0.45));
+    transform: scale(0) rotate(-25deg); opacity: 0;
+  }
+  .payout-modal.show .payout-coin { animation: payoutCoinPop 0.7s cubic-bezier(.34,1.56,.64,1) 0.1s forwards; }
+  @keyframes payoutCoinPop { to { transform: scale(1) rotate(0deg); opacity: 1; } }
+  .payout-modal-label {
+    position: relative; z-index: 1; margin-top: 14px; font-size: 13px; color: var(--text-dim);
+    opacity: 0; transform: translateY(8px);
+  }
+  .payout-modal.show .payout-modal-label { animation: payoutFadeUp 0.5s ease 0.35s forwards; }
+  .payout-modal-num {
+    position: relative; z-index: 1; margin-top: 10px;
+    font-size: 44px; font-weight: 900; letter-spacing: -1.5px; direction: ltr;
     font-variant-numeric: tabular-nums;
     background: linear-gradient(135deg, var(--accent1), var(--mint));
     -webkit-background-clip: text; background-clip: text; color: transparent;
+    opacity: 0; transform: translateY(8px) scale(0.9);
   }
-  .payout-unit { font-size: 11px; color: var(--text-faint); margin-top: 2px; }
+  .payout-modal.show .payout-modal-num { animation: payoutFadeUp 0.55s cubic-bezier(.16,.84,.3,1) 0.5s forwards; }
+  .payout-modal-unit {
+    position: relative; z-index: 1; margin-top: 4px; font-size: 11.5px; color: var(--text-faint);
+    opacity: 0;
+  }
+  .payout-modal.show .payout-modal-unit { animation: payoutFadeUp 0.5s ease 0.7s forwards; }
+  @keyframes payoutFadeUp { to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    .payout-burst, .payout-coin, .payout-modal-label, .payout-modal-num, .payout-modal-unit { animation: none !important; opacity: 1; transform: none; }
+  }
   .spark-wrap { position: relative; margin-top: 14px; touch-action: pan-y; cursor: crosshair; }
   .spark { display: block; width: 100%; height: 96px; }
   .spark .line { fill: none; stroke: url(#sparkGrad); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
@@ -743,6 +772,9 @@
         <span class="semoji" id="seasonBadge">🌸</span>
         <b id="seasonName"></b>
       </div>
+            <button class="bell payout-trigger" id="payoutBtn" type="button" aria-label="پورسانت تخمینی">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v10"/><path d="M15 9.5c0-1.4-1.3-2.5-3-2.5s-3 1.1-3 2.5c0 1.4 1.3 2 3 2.5s3 1.1 3 2.5-1.3 2.5-3 2.5-3-1.1-3-2.5"/></svg>
+      </button>
       <button class="bell" id="bellBtn" type="button" aria-label="اعلان‌ها">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
         <span class="badge" id="bellBadge" hidden>0</span>
@@ -786,12 +818,7 @@
             <div class="sdot" id="sparkDot"></div>
           </div>
 
-          <div class="payout" id="payoutBox" hidden>
-            <div class="payout-shine"></div>
-            <div class="payout-label">پورسانت تخمینی</div>
-            <div class="payout-num" id="payoutNum">0</div>
-            <div class="payout-unit">تومان</div>
-          </div>
+          
         </div>
       
 
@@ -857,6 +884,17 @@
         <button class="close" id="annClose" type="button" aria-label="بستن">✕</button>
       </div>
       <div id="annList"></div>
+    </div>
+  </div>
+
+  <div class="modal payout-modal" id="payoutModal" role="dialog" aria-modal="true" aria-labelledby="payoutTitle">
+    <div class="modal-box payout-modal-box">
+      <button class="close payout-close" id="payoutClose" type="button" aria-label="بستن">✕</button>
+      <div class="payout-burst" aria-hidden="true"></div>
+      <div class="payout-coin">💰</div>
+      <div class="payout-modal-label">پورسانت تخمینی شما</div>
+      <div class="payout-modal-num" id="payoutModalNum">0</div>
+      <div class="payout-modal-unit">تومان</div>
     </div>
   </div>
 
@@ -1545,6 +1583,30 @@ const payEl = el("span", "row-pay", fmtMoney(dayPay(it.count)) + " ت");
     PERIODS_DATA = (error || !data) ? [] : data;
     if (activeListTab === "periods") renderPeriodRows($("list"));
   }
+  /* ---------- پنجره‌ی پورسانت تخمینی ---------- */
+let totalPayoutValue = 0;
+const payoutModal = $("payoutModal");
+const payoutBtn = $("payoutBtn");
+payoutBtn.disabled = true;
+
+function openPayout() {
+  payoutModal.classList.add("show");
+  const numEl = $("payoutModalNum");
+  numEl.textContent = "0";
+  if (REDUCE) { numEl.textContent = fmtMoney(totalPayoutValue); return; }
+  const start = performance.now(), dur = 1100;
+  (function frame(now) {
+    const t = Math.min((now - start) / dur, 1);
+    const eased = 1 - Math.pow(1 - t, 3);
+    numEl.textContent = fmtMoney(Math.round(totalPayoutValue * eased));
+    if (t < 1) requestAnimationFrame(frame);
+  })(start);
+}
+function closePayout() { payoutModal.classList.remove("show"); }
+payoutBtn.addEventListener("click", openPayout);
+$("payoutClose").addEventListener("click", closePayout);
+payoutModal.addEventListener("click", (e) => { if (e.target === payoutModal) closePayout(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closePayout(); });
   let activeListTab = "orders";
   let ORDER_ITEMS = [], ORDER_MAX = 0;
   let PERIODS_DATA = [];
@@ -1680,19 +1742,8 @@ const payEl = el("span", "row-pay", fmtMoney(dayPay(it.count)) + " ت");
     const max = Math.max(...counts);
     const avg = total / counts.length;
 const totalPay = asc.reduce((sum, r, i) => sum + dayPay(counts[i]), 0);
-$("payoutBox").hidden = false;
-$("payoutNum").textContent = "0";
-if (REDUCE) {
-  $("payoutNum").textContent = fmtMoney(totalPay);
-} else {
-  const start = performance.now(), dur = 1000;
-  (function frame(now) {
-    const t = Math.min((now - start) / dur, 1);
-    const eased = 1 - Math.pow(1 - t, 3);
-    $("payoutNum").textContent = fmtMoney(Math.round(totalPay * eased));
-    if (t < 1) requestAnimationFrame(frame);
-  })(start);
-}
+totalPayoutValue = totalPay;
+payoutBtn.disabled = false;
     $("stats").hidden = false;
     $("listMeta").textContent = asc.length + " ثبت";
 
