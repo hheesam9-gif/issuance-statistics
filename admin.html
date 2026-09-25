@@ -37,9 +37,10 @@
     --dot: rgba(255, 255, 255, 0.09);
     --grain-opacity: 0.09;
     --grain-blend: overlay;
-    --card-bg: rgba(19, 23, 46, 0.92);
+    --card-bg: rgba(19, 23, 46, 0.62);
     --card-border: rgba(255, 255, 255, 0.09);
     --card-shadow: 0 30px 80px rgba(0, 0, 0, 0.42);
+    --sheen: rgba(255, 255, 255, 0.06);
     --text: #eef1fb; --text-dim: #9aa3c7;
     --input-bg: rgba(8, 10, 26, 0.6); --input-border: rgba(255, 255, 255, 0.13);
     --row-bg: rgba(255, 255, 255, 0.045); --row-border: rgba(255, 255, 255, 0.08);
@@ -54,9 +55,10 @@
     --dot: rgba(60, 66, 120, 0.13);
     --grain-opacity: 0.10;
     --grain-blend: multiply;
-    --card-bg: rgba(255, 255, 255, 0.92);
+    --card-bg: rgba(255, 255, 255, 0.62);
     --card-border: rgba(110, 115, 180, 0.20);
     --card-shadow: 0 30px 70px rgba(70, 75, 140, 0.20);
+    --sheen: rgba(255, 255, 255, 0.65);
     --text: #1b1f3a; --text-dim: #5a6088;
     --input-bg: rgba(238, 241, 255, 0.85); --input-border: rgba(90, 96, 136, 0.25);
     --row-bg: rgba(90, 96, 136, 0.06); --row-border: rgba(90, 96, 136, 0.15);
@@ -135,6 +137,7 @@
   .theme-toggle {
     display: flex; align-items: center; gap: 8px;
     background: var(--card-bg); border: 1px solid var(--card-border);
+    backdrop-filter: blur(18px) saturate(150%); -webkit-backdrop-filter: blur(18px) saturate(150%);
     border-radius: 999px; padding: 6px 12px; cursor: pointer; user-select: none;
   }
   .theme-toggle span { font-size: 15px; }
@@ -158,8 +161,14 @@
   @media (min-width: 920px) { .grid { grid-template-columns: 1fr 1fr; } }
 
   .card {
+    position: relative;
     background: var(--card-bg); border: 1px solid var(--card-border);
+    backdrop-filter: blur(26px) saturate(150%); -webkit-backdrop-filter: blur(26px) saturate(150%);
     padding: 26px; border-radius: 22px; box-shadow: var(--card-shadow); min-width: 0;
+  }
+  .card::before {
+    content: ""; position: absolute; top: 0; right: 10%; left: 10%; height: 1px; pointer-events: none;
+    background: linear-gradient(90deg, transparent, var(--sheen), transparent);
   }
   .card-head { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
   .card-icon {
@@ -329,7 +338,17 @@
 
   .modal { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; padding: 18px; background: rgba(4, 6, 16, 0.66); }
   .modal.show { display: flex; }
-  .modal-box { width: 100%; max-width: 470px; max-height: 92vh; overflow-y: auto; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 22px; padding: 26px; box-shadow: var(--card-shadow); }
+  .modal-box { width: 100%; max-width: 470px; max-he  .modal-box {
+    position: relative;
+    width: 100%; max-width: 470px; max-height: 92vh; overflow-y: auto;
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    backdrop-filter: blur(26px) saturate(150%); -webkit-backdrop-filter: blur(26px) saturate(150%);
+    border-radius: 22px; padding: 26px; box-shadow: var(--card-shadow);
+  }
+  .modal-box::before {
+    content: ""; position: absolute; top: 0; right: 10%; left: 10%; height: 1px; pointer-events: none;
+    background: linear-gradient(90deg, transparent, var(--sheen), transparent);
+  }
   .modal-icon { width: 52px; height: 52px; border-radius: 15px; margin: 0 auto 14px; display: flex; align-items: center; justify-content: center; background: rgba(255, 90, 110, 0.12); border: 1px solid rgba(255, 90, 110, 0.35); }
   .modal-icon svg { width: 26px; height: 26px; stroke: var(--error); fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
   .modal-box h3 { text-align: center; margin: 0 0 10px; font-size: 18px; }
@@ -351,6 +370,7 @@
   button.pill-btn {
     display: flex; align-items: center; gap: 7px; padding: 8px 14px; border-radius: 999px;
     background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text);
+    backdrop-filter: blur(18px) saturate(150%); -webkit-backdrop-filter: blur(18px) saturate(150%);
     font-weight: normal; font-size: 13px;
   }
   button.pill-btn:hover { filter: none; border-color: var(--accent1); }
@@ -377,6 +397,7 @@
       radial-gradient(420px circle at var(--gsx, 50%) var(--gsy, -15%), color-mix(in srgb, var(--accent1) 15%, transparent), transparent 65%),
       var(--card-bg);
     border: 1px solid var(--card-border); border-radius: 24px;
+    backdrop-filter: blur(26px) saturate(150%); -webkit-backdrop-filter: blur(26px) saturate(150%);
     padding: 34px 30px 28px; box-shadow: var(--card-shadow); text-align: center;
     transition: rotate 0.22s ease-out;
     opacity: 0; transform: translateY(24px) scale(0.99);
@@ -516,6 +537,7 @@
   position: relative; display: flex; gap: 0; width: 100%; max-width: 620px; margin: 0 auto 26px;
   padding: 6px; border-radius: 20px;
   background: var(--card-bg); border: 1px solid var(--card-border); box-shadow: var(--card-shadow);
+  backdrop-filter: blur(22px) saturate(150%); -webkit-backdrop-filter: blur(22px) saturate(150%);
 }
 .main-tabs .tab {
   position: relative; z-index: 1; flex: 1; padding: 15px 12px; font-size: 15px;
@@ -570,6 +592,7 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
   min-width: 250px;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
+  backdrop-filter: blur(24px) saturate(150%); -webkit-backdrop-filter: blur(24px) saturate(150%);
   border-radius: 16px;
   box-shadow: var(--card-shadow);
   padding: 8px;
