@@ -751,6 +751,9 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
     <div id="usersMsg" role="status" aria-live="polite" style="text-align:center; font-size:13px; min-height:18px; margin-top:10px; color:var(--text-dim);"></div>
     <div id="bulkUserMsg" role="status" aria-live="polite" style="text-align:center; font-size:13px; min-height:18px; margin-top:6px; color:var(--text-dim);"></div>
     <div class="sub-title"><span>لیست نمایندگان</span></div>
+    <div class="search-box" style="margin-bottom:10px;">
+      <input class="ltr" id="usersMgmtSearch" type="text" placeholder="جستجوی نام کاربری..." autocomplete="off" spellcheck="false" />
+    </div>
     <div class="history" id="usersMgmtList" style="max-height:280px;"></div>
 
     <div class="actions" style="margin-top:18px;">
@@ -1976,46 +1979,65 @@ function setUsersMsg(text, cls) {
   $("usersMsg").style.color = cls === "error" ? "var(--error)" : cls === "ok" ? "var(--ok)" : "var(--text-dim)";
 }
 
+let allMgmtUsers = [];
+
+function renderUserMgmtRow(u) {
+  const row = document.createElement("div");
+  row.className = "row";
+  const name = document.createElement("span");
+  name.className = "d";
+  name.style.direction = "ltr";
+  name.textContent = u.username;
+
+  const vals = document.createElement("span");
+  vals.className = "vals";
+
+  const editBtn = document.createElement("button");
+  editBtn.className = "delete-btn";
+  editBtn.title = "ویرایش";
+  editBtn.textContent = "✏️";
+  editBtn.addEventListener("click", () => editUserPrompt(u));
+
+  const delBtn = document.createElement("button");
+  delBtn.className = "delete-btn";
+  delBtn.title = "حذف نماینده";
+  delBtn.textContent = "🗑️";
+  delBtn.addEventListener("click", () => deleteUserMgmt(u));
+
+  vals.appendChild(editBtn);
+  vals.appendChild(delBtn);
+  row.appendChild(name);
+  row.appendChild(vals);
+  return row;
+}
+
+function renderUsersMgmtList(filterTerm) {
+  const list = $("usersMgmtList");
+  list.replaceChildren();
+  if (!allMgmtUsers.length) { list.appendChild(hintEl("نماینده‌ای ثبت نشده")); return; }
+  const term = (filterTerm || "").trim().toLowerCase();
+  const filtered = term ? allMgmtUsers.filter(u => u.username.toLowerCase().includes(term)) : allMgmtUsers;
+  if (!filtered.length) { list.appendChild(hintEl("نماینده‌ای با این نام پیدا نشد")); return; }
+  filtered.forEach(u => list.appendChild(renderUserMgmtRow(u)));
+}
+
 async function loadUsersMgmtList() {
   const list = $("usersMgmtList");
   list.replaceChildren(hintEl("در حال بارگذاری..."));
   try {
     const { data } = await callAdminFn({ action: "list" });
-    list.replaceChildren();
-    if (!data.length) { list.appendChild(hintEl("نماینده‌ای ثبت نشده")); return; }
-    data.forEach(u => {
-      const row = document.createElement("div");
-      row.className = "row";
-      const name = document.createElement("span");
-      name.className = "d";
-      name.style.direction = "ltr";
-      name.textContent = u.username;
-
-      const vals = document.createElement("span");
-      vals.className = "vals";
-
-      const editBtn = document.createElement("button");
-      editBtn.className = "delete-btn";
-      editBtn.title = "ویرایش";
-      editBtn.textContent = "✏️";
-      editBtn.addEventListener("click", () => editUserPrompt(u));
-
-      const delBtn = document.createElement("button");
-      delBtn.className = "delete-btn";
-      delBtn.title = "حذف نماینده";
-      delBtn.textContent = "🗑️";
-      delBtn.addEventListener("click", () => deleteUserMgmt(u));
-
-      vals.appendChild(editBtn);
-      vals.appendChild(delBtn);
-      row.appendChild(name);
-      row.appendChild(vals);
-      list.appendChild(row);
-    });
+    allMgmtUsers = data || [];
+    renderUsersMgmtList($("usersMgmtSearch").value);
   } catch (e) {
     list.replaceChildren(hintEl("خطا: " + e.message));
   }
 }
+
+let mgmtSearchTimer = null;
+$("usersMgmtSearch").addEventListener("input", () => {
+  clearTimeout(mgmtSearchTimer);
+  mgmtSearchTimer = setTimeout(() => renderUsersMgmtList($("usersMgmtSearch").value), 200);
+});
 
 async function editUserPrompt(u) {
   const newUsername = prompt("نام کاربری جدید (خالی = بدون تغییر):", u.username);
@@ -2229,7 +2251,8 @@ $("bulkUserCancelBtn").addEventListener("click", () => {
   $("bulkUserText").value = "";
   setBulkUserMsg("");
 });
-  
+$("newUserName").addEventListener("keydown", (e) => { if (e.key === "Enter") $("newUserPass").focus(); });
+$("newUserPass").addEventListener("keydown", (e) => { if (e.key === "Enter") $("createUserBtn").click(); });
 $("createUserBtn").addEventListener("click", async () => {
   const username = $("newUserName").value.trim().toLowerCase();
   const password = $("newUserPass").value;
@@ -2253,6 +2276,7 @@ $("createUserBtn").addEventListener("click", async () => {
 $("usersOpen").addEventListener("click", () => {
   $("usersModal").classList.add("show");
   setUsersMsg("");
+  $("usersMgmtSearch").value = "";
   loadUsersMgmtList();
   bulkUserMode = false;
   singleUserWrap.hidden = false;
