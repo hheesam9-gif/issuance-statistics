@@ -235,6 +235,9 @@
   /* ---------- کارت پهن ---------- */
   .box {
     position: relative;
+      .box {
+    position: relative;
+    z-index: 2;
     background:
       radial-gradient(420px circle at var(--sx, 50%) var(--sy, -15%), color-mix(in srgb, var(--accent1) 15%, transparent), transparent 65%),
       var(--card-bg);
@@ -266,10 +269,10 @@
   }
     /* ---------- مسکات ---------- */
   .mascot {
-    position: fixed; z-index: 5; pointer-events: none;
-    left: max(2vw, calc(50% - 500px - 260px));
+    position: fixed; z-index: 1; pointer-events: none;
+    left: max(2vw, calc(50% - 500px - 260px + 34px));
     bottom: 0; width: 260px; height: auto;
-    filter: drop-shadow(0 20px 40px rgba(0,0,0,0.45));
+    filter: drop-shadow(0 14px 30px rgba(0,0,0,0.4));
     opacity: 0; transform: translateY(40px) rotate(-3deg);
     animation: mascotIn 1s cubic-bezier(.16,.84,.3,1) 0.5s forwards,
                mascotFloat 4.5s ease-in-out 1.6s infinite;
