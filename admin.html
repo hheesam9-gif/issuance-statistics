@@ -349,21 +349,129 @@
   button.pill-btn svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 
   .gate { width: 100%; max-width: 400px; margin: auto; }
-  .gate-box {
-    background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 24px;
-    padding: 34px 30px 28px; box-shadow: var(--card-shadow); text-align: center;
+  .gate-stage { perspective: 1200px; }
+  .gate-stage.shake { animation: gateShake 0.5s ease; }
+  @keyframes gateShake {
+    10%, 90% { transform: translateX(-2px); }
+    20%, 80% { transform: translateX(4px); }
+    30%, 50%, 70% { transform: translateX(-7px); }
+    40%, 60% { transform: translateX(7px); }
   }
+  .gate-stage.leaving {
+    opacity: 0; filter: blur(8px); transform: scale(0.95) translateY(-12px);
+    transition: opacity 0.45s ease, transform 0.45s ease, filter 0.45s ease;
+  }
+
+  @property --gAng { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+  .gate-box {
+    position: relative;
+    background:
+      radial-gradient(420px circle at var(--gsx, 50%) var(--gsy, -15%), color-mix(in srgb, var(--accent1) 15%, transparent), transparent 65%),
+      var(--card-bg);
+    border: 1px solid var(--card-border); border-radius: 24px;
+    padding: 34px 30px 28px; box-shadow: var(--card-shadow); text-align: center;
+    transition: rotate 0.22s ease-out;
+    opacity: 0; transform: translateY(24px) scale(0.99);
+    animation: gateCardIn 0.85s cubic-bezier(.16,.84,.3,1) 0.05s forwards;
+  }
+  @keyframes gateCardIn { to { opacity: 1; transform: translateY(0) scale(1); } }
+  .gate-box::after {
+    content: ""; position: absolute; inset: -1px; border-radius: inherit; padding: 1.5px; pointer-events: none;
+    background: conic-gradient(from var(--gAng), transparent 0deg, var(--accent1) 60deg, var(--accent2) 120deg, transparent 200deg, transparent 360deg);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    animation: gateSpinAng 6s linear infinite;
+  }
+  @keyframes gateSpinAng { to { --gAng: 360deg; } }
+
   .gate-logo {
+    position: relative;
     width: 54px; height: 54px; margin: 0 auto 16px; border-radius: 16px;
     background: linear-gradient(140deg, var(--accent1), var(--accent2));
     display: flex; align-items: center; justify-content: center;
     box-shadow: 0 10px 26px rgba(90, 100, 255, 0.35);
   }
+  .gate-logo::before, .gate-logo::after {
+    content: ""; position: absolute; inset: -7px; border-radius: 22px; pointer-events: none;
+    border: 1px solid color-mix(in srgb, var(--accent1) 55%, transparent);
+    animation: gateRingPulse 3s ease-out infinite;
+  }
+  .gate-logo::after { animation-delay: 1.5s; }
+  @keyframes gateRingPulse { 0% { opacity: 0.7; transform: scale(0.92); } 100% { opacity: 0; transform: scale(1.4); } }
   .gate-logo svg { width: 26px; height: 26px; stroke: #fff; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
-  .gate-box h1 { font-size: 20px; margin: 0 0 6px; }
+  .gate-logo .shackle { transform-box: fill-box; transform-origin: 100% 100%; transition: transform 0.55s cubic-bezier(.34,1.56,.64,1); }
+  .gate-logo.unlocked .shackle { transform: translateY(-2.5px) rotate(-32deg); }
+  .gate-logo.unlocked { box-shadow: 0 10px 30px rgba(47, 211, 167, 0.5); transition: box-shadow 0.4s ease; }
+
+  .greet-chip {
+    display: inline-flex; align-items: center; gap: 7px; margin-bottom: 12px; padding: 5px 13px;
+    border-radius: 999px; font-size: 12px; color: var(--text-dim);
+    background: var(--row-bg); border: 1px solid var(--row-border);
+  }
+  .greet-chip:empty { display: none; }
+
+  .gate-box h1 {
+    font-size: 20px; margin: 0 0 6px;
+    background: linear-gradient(100deg, var(--text) 30%, var(--accent2) 50%, var(--text) 70%);
+    background-size: 220% auto; -webkit-background-clip: text; background-clip: text; color: transparent;
+    animation: gateTitleShine 6s linear infinite;
+  }
+  @keyframes gateTitleShine { to { background-position: -220% center; } }
   .gate-sub { margin: 0 0 24px; font-size: 13px; color: var(--text-dim); }
   .gate-box label.field { text-align: right; }
+
+  .gate-input-wrap { position: relative; }
+  .gate-input-wrap input:focus {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent1) 24%, transparent), 0 8px 24px color-mix(in srgb, var(--accent1) 14%, transparent);
+  }
+  .gate-eye {
+    position: absolute; left: 6px; top: 50%; transform: translateY(-50%);
+    width: 34px; height: 34px; padding: 0; border: none; border-radius: 9px;
+    background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .gate-eye svg { width: 18px; height: 18px; stroke: var(--text-dim); fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .gate-eye:hover svg { stroke: var(--text); }
+
+  .gate-caps { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 8px 0 0; font-size: 12px; color: #f5b942; }
+
+  #gLogin {
+    position: relative; overflow: hidden; height: 50px;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+  }
+  #gLogin::before {
+    content: ""; position: absolute; top: 0; bottom: 0; width: 40%; left: -60%;
+    background: linear-gradient(105deg, transparent, rgba(255,255,255,0.35), transparent);
+    transform: skewX(-20deg); transition: left 0.7s ease;
+  }
+  #gLogin:hover::before { left: 130%; }
+  .gate-spin {
+    display: none; width: 18px; height: 18px; border-radius: 50%;
+    border: 2.5px solid rgba(255,255,255,0.35); border-top-color: #fff; animation: gateSpin 0.7s linear infinite;
+  }
+  @keyframes gateSpin { to { transform: rotate(360deg); } }
+  #gLogin.loading .gate-spin { display: block; }
+  #gLogin.success { background: linear-gradient(135deg, #12a883, #2fd3a7); }
+  #gLogin.loading, #gLogin.success { opacity: 1; cursor: not-allowed; }
+
   #gMsg { min-height: 18px; margin-top: 14px; font-size: 13px; color: var(--text-dim); }
+
+  @keyframes gateRise { from { opacity: 0; transform: translateY(16px); } }
+  .gate-box > * { animation: gateRise 0.7s cubic-bezier(.16,.84,.3,1) backwards; }
+  .gate-box > .gate-logo { animation-delay: .12s; }
+  .gate-box > .greet-chip { animation-delay: .18s; }
+  .gate-box > h1 { animation: gateRise 0.7s cubic-bezier(.16,.84,.3,1) .24s backwards, gateTitleShine 6s linear infinite; }
+  .gate-box > .gate-sub { animation-delay: .30s; }
+  .gate-box > label.field:nth-of-type(1) { animation-delay: .36s; }
+  .gate-box > .gate-input-wrap:nth-of-type(1) { animation-delay: .40s; }
+  .gate-box > label.field:nth-of-type(2) { animation-delay: .44s; }
+  .gate-box > .gate-input-wrap:nth-of-type(2) { animation-delay: .48s; }
+  .gate-box > #gLogin { animation-delay: .58s; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .gate-box::after, .gate-logo::before, .gate-logo::after, .gate-box h1, .gate-stage.shake { animation: none; }
+    .gate-box > * { animation: none; }
+    #gLogin::before { transition: none; }
+  }
 
   @media (max-width: 520px) {
     .card { padding: 20px; }
@@ -499,21 +607,32 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
 
   <!-- ورود مدیر -->
   <div class="gate" id="gate" hidden>
-    <div class="gate-box">
-      <div class="gate-logo">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="3"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+    <div class="gate-stage" id="gateStage">
+      <div class="gate-box" id="gateBox">
+        <div class="gate-logo" id="gateLogo">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path class="shackle" d="M8 11V8a4 4 0 0 1 8 0v3"/><rect x="4" y="11" width="16" height="10" rx="3"/><circle cx="12" cy="16" r="1.1" fill="#fff" stroke="none"/></svg>
+        </div>
+        <div class="greet-chip" id="gGreet"></div>
+        <h1>ورود مدیر</h1>
+        <p class="gate-sub">این بخش فقط برای مدیر سایت در دسترسه</p>
+
+        <label class="field" for="gUser">نام کاربری</label>
+        <div class="gate-input-wrap">
+          <input class="ltr" id="gUser" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" />
+        </div>
+
+        <label class="field" for="gPass" style="margin-top:14px">رمز عبور</label>
+        <div class="gate-input-wrap">
+          <input class="ltr" id="gPass" type="password" autocomplete="current-password" style="padding-left:44px;" />
+          <button type="button" class="gate-eye" id="gEyeBtn" aria-label="نمایش رمز عبور">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <div class="gate-caps" id="gCaps" hidden>⚠️ کلید Caps Lock روشنه</div>
+
+        <button type="button" class="full" id="gLogin" style="margin-top:20px"><span class="gate-spin"></span><span class="gate-btn-label">ورود</span></button>
+        <div id="gMsg" role="status" aria-live="polite"></div>
       </div>
-      <h1>ورود مدیر</h1>
-      <p class="gate-sub">این بخش فقط برای مدیر سایت در دسترسه</p>
-
-      <label class="field" for="gUser">نام کاربری</label>
-      <input class="ltr" id="gUser" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" />
-
-      <label class="field" for="gPass" style="margin-top:14px">رمز عبور</label>
-      <input class="ltr" id="gPass" type="password" autocomplete="current-password" />
-
-      <button type="button" class="full" id="gLogin" style="margin-top:20px">ورود</button>
-      <div id="gMsg" role="status" aria-live="polite"></div>
     </div>
   </div>
 
@@ -2566,40 +2685,117 @@ function updateMenuBadge() {
     setTimeout(() => $("gUser").focus(), 60);
   }
 
-  async function doLogin() {
-    const msg = $("gMsg");
+  /* ---------- سلام بر اساس ساعت ---------- */
+  (function () {
+    const h = new Date().getHours();
+    let text, emoji;
+    if (h >= 5 && h < 11) { text = "صبح بخیر"; emoji = "🌅"; }
+    else if (h >= 11 && h < 16) { text = "ظهر بخیر"; emoji = "☀️"; }
+    else if (h >= 16 && h < 19) { text = "عصر بخیر"; emoji = "🌇"; }
+    else { text = "شب بخیر"; emoji = "🌙"; }
+    $("gGreet").textContent = emoji + "  " + text;
+  })();
+
+  /* ---------- هشدار Caps Lock ---------- */
+  (function () {
+    const pw = $("gPass"), hint = $("gCaps");
+    const check = (e) => { if (e.getModifierState) hint.hidden = !e.getModifierState("CapsLock"); };
+    pw.addEventListener("keydown", check);
+    pw.addEventListener("keyup", check);
+    pw.addEventListener("blur", () => { hint.hidden = true; });
+  })();
+
+  /* ---------- نمایش/مخفی رمز ---------- */
+  $("gEyeBtn").addEventListener("click", () => {
+    const pw = $("gPass");
+    const show = pw.type === "password";
+    pw.type = show ? "text" : "password";
+    $("gEyeBtn").setAttribute("aria-label", show ? "مخفی کردن رمز عبور" : "نمایش رمز عبور");
+  });
+
+  /* ---------- افکت موس: نورافکن و تیلت سه‌بعدی کارت (فقط دسکتاپ) ---------- */
+  (function () {
+    const REDUCE_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (REDUCE_MOTION || !window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    const box = $("gateBox");
+    if (!box) return;
+    let raf = null, mx = 0, my = 0;
+    function update() {
+      raf = null;
+      const r = box.getBoundingClientRect();
+      const px = (mx - r.left) / r.width, py = (my - r.top) / r.height;
+      box.style.setProperty("--gsx", (px * 100) + "%");
+      box.style.setProperty("--gsy", (py * 100) + "%");
+      const nx = Math.max(-1, Math.min(1, (px - 0.5) * 2));
+      const ny = Math.max(-1, Math.min(1, (py - 0.5) * 2));
+      const mag = Math.min(Math.hypot(nx, ny), 1);
+      box.style.rotate = mag < 0.001 ? "none" : (-ny) + " " + nx + " 0 " + (mag * 5) + "deg";
+    }
+    window.addEventListener("pointermove", (e) => { mx = e.clientX; my = e.clientY; if (!raf) raf = requestAnimationFrame(update); });
+    document.addEventListener("mouseleave", () => { box.style.rotate = "none"; });
+  })();
+
+  /* ---------- ورود مدیر ---------- */
+  const gateStage = $("gateStage");
+  const gateLogo = $("gateLogo");
+  const gBtnLabel = $("gLogin").querySelector(".gate-btn-label");
+  let gSubmitting = false;
+
+  function setGateBtn(state, text) {
     const btn = $("gLogin");
+    btn.classList.toggle("loading", state === "loading");
+    btn.classList.toggle("success", state === "success");
+    btn.disabled = state === "loading" || state === "success";
+    gBtnLabel.textContent = text;
+  }
+
+  function gateFail(text) {
+    const msg = $("gMsg");
+    msg.className = "error";
+    msg.textContent = text;
+    setGateBtn("idle", "ورود");
+    gateStage.classList.remove("shake");
+    void gateStage.offsetWidth;
+    gateStage.classList.add("shake");
+    gSubmitting = false;
+  }
+
+  async function doLogin() {
+    if (gSubmitting) return;
+    gSubmitting = true;
+
+    const msg = $("gMsg");
     const username = $("gUser").value.trim().toLowerCase();
     const password = $("gPass").value;
 
-    if (!username || !password) {
-      msg.className = "error";
-      msg.textContent = "نام کاربری و رمز عبور رو وارد کنید";
-      return;
-    }
-    btn.disabled = true;
-    msg.className = "";
-    msg.textContent = "در حال بررسی...";
+    if (!username || !password) { gateFail("نام کاربری و رمز عبور رو وارد کنید"); return; }
 
-    const fail = () => {
-      msg.className = "error";
-      msg.textContent = "نام کاربری یا رمز عبور اشتباهه";
-      btn.disabled = false;
-    };
+    setGateBtn("loading", "در حال بررسی…");
+    msg.textContent = "";
+    msg.className = "";
 
     // فقط حساب مدیر اجازه‌ی ورود به این صفحه داره
-    if (username !== ADMIN_USERNAME) { setTimeout(fail, 700); return; }
+    if (username !== ADMIN_USERNAME) { setTimeout(() => gateFail("نام کاربری یا رمز عبور اشتباهه"), 700); return; }
 
     const { data, error } = await supabaseClient.auth.signInWithPassword({ email: ADMIN_EMAIL, password: password });
     if (error || !data || !isAdminSession(data.session)) {
       if (data && data.session) await supabaseClient.auth.signOut();
-      fail();
+      gateFail("نام کاربری یا رمز عبور اشتباهه");
       return;
     }
+
     $("gPass").value = "";
     msg.textContent = "";
-    btn.disabled = false;
-    showApp();
+    setGateBtn("success", "ورود موفق");
+    gateLogo.classList.add("unlocked");
+    setTimeout(() => gateStage.classList.add("leaving"), 400);
+    setTimeout(() => {
+      gateStage.classList.remove("leaving", "shake");
+      gateLogo.classList.remove("unlocked");
+      setGateBtn("idle", "ورود");
+      gSubmitting = false;
+      showApp();
+    }, 750);
   }
 
   $("gLogin").addEventListener("click", doLogin);
