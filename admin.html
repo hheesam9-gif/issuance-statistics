@@ -756,6 +756,20 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
     </div>
     <div class="history" id="usersMgmtList" style="max-height:280px;"></div>
 
+    <div class="sub-title">
+      <span>نماینده‌های بدون صدور (صفر)</span>
+      <button type="button" class="chip" id="zeroCheckBtn">بررسی</button>
+    </div>
+    <div id="zeroWrap" style="display:none;">
+      <div class="hint">نماینده‌هایی که مجموع صدورشون صفره یا اصلاً آماری براشون ثبت نشده؛ می‌تونید انتخاب و حذف کنید.</div>
+      <div class="history" id="zeroList" style="max-height:240px;"></div>
+      <div class="actions" style="margin-top:10px;">
+        <label class="check" style="margin:0; flex:1;"><input type="checkbox" id="zeroSelectAll" /> انتخاب همه</label>
+        <button type="button" class="btn-danger" id="zeroDeleteBtn" disabled><span>حذف انتخاب‌شده‌ها</span></button>
+      </div>
+      <div id="zeroMsg" role="status" aria-live="polite" style="text-align:center; font-size:13px; min-height:18px; margin-top:8px; color:var(--text-dim);"></div>
+    </div>
+
     <div class="actions" style="margin-top:18px;">
       <button type="button" class="secondary full" id="usersCloseBtn">بستن</button>
     </div>
@@ -2038,7 +2052,125 @@ $("usersMgmtSearch").addEventListener("input", () => {
   clearTimeout(mgmtSearchTimer);
   mgmtSearchTimer = setTimeout(() => renderUsersMgmtList($("usersMgmtSearch").value), 200);
 });
+/* ---------- نماینده‌های بدون صدور (صفر) ---------- */
+async function fetchAllOrderTotals() {
+  const totals = new Map();
+  const pageSize = 1000;
+  let from = 0;
+  while (true) {
+    const { data, error } = await supabaseClient
+      .from("orders").select("username, order_count").range(from, from + pageSize - 1);
+    if (error) throw error;
+    data.forEach(r => {
+      const prev = totals.get(r.username) || 0;
+      totals.set(r.username, prev + (Number(r.order_count) || 0));
+    });
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
+  return totals;
+}
 
+let zeroUsers = [];
+
+$("zeroCheckBtn").addEventListener("click", async () => {
+  const btn = $("zeroCheckBtn");
+  btn.disabled = true;
+  $("zeroMsg").textContent = "در حال بررسی...";
+  $("zeroMsg").style.color = "var(--text-dim)";
+  try {
+    if (!allMgmtUsers.length) {
+      const { data } = await callAdminFn({ action: "list" });
+      allMgmtUsers = data || [];
+    }
+    const totals = await fetchAllOrderTotals();
+    zeroUsers = allMgmtUsers.filter(u => (totals.get(u.username) || 0) === 0);
+    renderZeroList();
+    $("zeroWrap").style.display = "block";
+    $("zeroMsg").textContent = zeroUsers.length
+      ? zeroUsers.length + " نماینده با صدور صفر پیدا شد"
+      : "همه‌ی نماینده‌ها حداقل یه صدور دارن";
+    $("zeroMsg").style.color = "var(--text-dim)";
+  } catch (e) {
+    $("zeroMsg").textContent = "خطا: " + e.message;
+    $("zeroMsg").style.color = "var(--error)";
+  }
+  btn.disabled = false;
+});
+
+function renderZeroList() {
+  const list = $("zeroList");
+  list.replaceChildren();
+  $("zeroSelectAll").checked = false;
+  $("zeroDeleteBtn").disabled = true;
+  if (!zeroUsers.length) { list.appendChild(hintEl("موردی پیدا نشد")); return; }
+  zeroUsers.forEach(u => {
+    const row = document.createElement("div");
+    row.className = "row";
+    const left = document.createElement("label");
+    left.className = "check";
+    left.style.margin = "0";
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.className = "zero-cb";
+    cb.dataset.id = u.id;
+    cb.dataset.username = u.username;
+    cb.addEventListener("change", updateZeroDeleteBtn);
+    const span = document.createElement("span");
+    span.style.direction = "ltr";
+    span.textContent = u.username;
+    left.appendChild(cb);
+    left.appendChild(span);
+    row.appendChild(left);
+    list.appendChild(row);
+  });
+}
+
+function updateZeroDeleteBtn() {
+  const checked = document.querySelectorAll(".zero-cb:checked").length;
+  $("zeroDeleteBtn").disabled = checked === 0;
+  $("zeroDeleteBtn").querySelector("span").textContent = "حذف انتخاب‌شده‌ها" + (checked ? " (" + checked + ")" : "");
+}
+
+$("zeroSelectAll").addEventListener("change", (e) => {
+  document.querySelectorAll(".zero-cb").forEach(cb => cb.checked = e.target.checked);
+  updateZeroDeleteBtn();
+});
+
+$("zeroDeleteBtn").addEventListener("click", async () => {
+  const checked = [...document.querySelectorAll(".zero-cb:checked")];
+  if (!checked.length) return;
+  if (!confirm(checked.length + " نماینده به‌طور کامل حذف بشن؟ این کار برگشت نداره.")) return;
+
+  $("zeroDeleteBtn").disabled = true;
+  $("zeroSelectAll").disabled = true;
+  let done = 0;
+  const failed = [];
+  for (const cb of checked) {
+    const id = cb.dataset.id;
+    const uname = cb.dataset.username;
+    $("zeroMsg").textContent = "در حال حذف... " + done + " از " + checked.length;
+    $("zeroMsg").style.color = "var(--text-dim)";
+    try {
+      await callAdminFn({ action: "delete", userId: id });
+      done++;
+    } catch (e) {
+      failed.push(uname + ": " + e.message);
+    }
+  }
+
+  $("zeroMsg").textContent = failed.length
+    ? ("✔ " + done + " نفر حذف شد؛ " + failed.length + " مورد ناموفق (" + failed.slice(0, 3).join(" | ") + (failed.length > 3 ? " ..." : "") + ")")
+    : ("✔ " + done + " نماینده حذف شد");
+  $("zeroMsg").style.color = failed.length ? "var(--error)" : "var(--ok)";
+
+  const deletedIds = new Set(checked.map(cb => cb.dataset.id));
+  zeroUsers = zeroUsers.filter(u => !deletedIds.has(u.id));
+  renderZeroList();
+  $("zeroSelectAll").disabled = false;
+  loadUsersMgmtList();
+  loadStats();
+});
 async function editUserPrompt(u) {
   const newUsername = prompt("نام کاربری جدید (خالی = بدون تغییر):", u.username);
   if (newUsername === null) return;
@@ -2286,6 +2418,8 @@ $("usersOpen").addEventListener("click", () => {
   $("bulkUserPreview").style.display = "none";
   $("bulkUserText").value = "";
   setBulkUserMsg("");
+  $("zeroWrap").style.display = "none";
+  zeroUsers = [];
 });
   
 $("usersCloseBtn").addEventListener("click", () => $("usersModal").classList.remove("show"));
