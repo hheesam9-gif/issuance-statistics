@@ -215,6 +215,14 @@
   .tile .n { font-size: 22px; font-weight: bold; font-variant-numeric: tabular-nums; }
   .tile .lb { font-size: 11px; color: var(--text-dim); margin-top: 3px; }
   .tile.ok .n { color: var(--ok); } .tile.warn .n { color: var(--warn); } .tile.bad .n { color: var(--error); }
+    .stat .v, .tile .n, .user-total b, .sum-chip b { transition: color 0.3s ease; }
+  @keyframes numPop {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.16); text-shadow: 0 0 14px color-mix(in srgb, var(--accent1) 55%, transparent); }
+    100% { transform: scale(1); text-shadow: none; }
+  }
+  .num-pop { display: inline-block; animation: numPop 0.5s cubic-bezier(.34,1.56,.64,1); }
+  @media (prefers-reduced-motion: reduce) { .num-pop { animation: none; } }
   details.fold { margin-top: 10px; background: var(--row-bg); border: 1px solid var(--row-border); border-radius: 12px; padding: 10px 14px; font-size: 13px; }
   details.fold summary { cursor: pointer; }
   .bulk-list {
@@ -1117,6 +1125,33 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
   /* ---------- ابزارها ---------- */
   // گرد کردن اعداد اعشاری برای نمایش (مثلاً 1074.1000000000001 دیده نشه)
   function fmt(n) { return String(Math.round(Number(n) * 100) / 100); }
+    // شمارش متحرک برای اعداد آماری: از مقدار فعلی نرم به مقدار جدید می‌رسه
+  function animateNumber(el, newVal, opts) {
+    if (!el) return;
+    opts = opts || {};
+    const decimals = opts.decimals || 0;
+    const duration = opts.duration || 650;
+    const target = Number(newVal);
+    if (isNaN(target)) { el.textContent = newVal; return; }
+    const startText = (el.textContent || "").replace(/[^\d.\-]/g, "");
+    const start = startText === "" || isNaN(parseFloat(startText)) ? 0 : parseFloat(startText);
+    if (el._numRaf) cancelAnimationFrame(el._numRaf);
+    if (start === target) { el.textContent = target.toFixed(decimals); return; }
+    const t0 = performance.now();
+    function tick(now) {
+      const p = Math.min(1, (now - t0) / duration);
+      const eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = (start + (target - start) * eased).toFixed(decimals);
+      if (p < 1) { el._numRaf = requestAnimationFrame(tick); }
+      else {
+        el.textContent = target.toFixed(decimals);
+        el.classList.remove("num-pop");
+        void el.offsetWidth;
+        el.classList.add("num-pop");
+      }
+    }
+    el._numRaf = requestAnimationFrame(tick);
+  }
 
   // تبدیل ارقام فارسی/عربی به انگلیسی
   function normalizeDigits(s) {
@@ -1142,7 +1177,7 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
     const lastCountEl = document.getElementById("statLastCount");
     try {
       const { count, error } = await supabaseClient.from("profiles").select("username", { count: "exact", head: true });
-      usersEl.textContent = (error || count == null) ? "—" : count;
+      if (error || count == null) usersEl.textContent = "—"; else animateNumber(usersEl, count);
     } catch (e) { usersEl.textContent = "—"; }
 
     try {
@@ -1153,7 +1188,7 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
       lastEl.textContent = last;
       const { count } = await supabaseClient
         .from("orders").select("username", { count: "exact", head: true }).eq("order_date", last);
-      lastCountEl.textContent = count == null ? "—" : count;
+      if (count == null) lastCountEl.textContent = "—"; else animateNumber(lastCountEl, count);
     } catch (e) { lastEl.textContent = "—"; lastCountEl.textContent = "—"; }
   }
 
@@ -1327,9 +1362,9 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
     document.getElementById("previewDate").textContent = autoDateMode
       ? (dateSet.size + " تاریخ مختلف (تشخیص خودکار)")
       : date;
-    document.getElementById("tileOk").textContent = pendingRows.length;
-    document.getElementById("tileMissing").textContent = notFound.length;
-    document.getElementById("tileInvalid").textContent = invalid.length;
+    animateNumber(document.getElementById("tileOk"), pendingRows.length);
+    animateNumber(document.getElementById("tileMissing"), notFound.length);
+    animateNumber(document.getElementById("tileInvalid"), invalid.length);
 
     foldsEl.innerHTML = "";
     if (autoDateMode && dateSet.size) addFold("تاریخ‌های شمسی تشخیص داده‌شده", [...dateSet].sort());
@@ -1499,9 +1534,9 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
     pendingPeriodMeta = { start, end, label };
 
     document.getElementById("periodPreviewLabel").textContent = label + " (" + start + " تا " + end + ")";
-    document.getElementById("periodTileOk").textContent = pendingPeriodRows.length;
-    document.getElementById("periodTileMissing").textContent = notFound.length;
-    document.getElementById("periodTileInvalid").textContent = invalid.length;
+    animateNumber(document.getElementById("periodTileOk"), pendingPeriodRows.length);
+    animateNumber(document.getElementById("periodTileMissing"), notFound.length);
+    animateNumber(document.getElementById("periodTileInvalid"), invalid.length);
 
     periodFoldsEl.innerHTML = "";
     if (notFound.length) addPeriodFold("کاربرهایی که در سایت نیستن (ثبت نمی‌شن)", notFound);
@@ -1743,7 +1778,8 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
       div.appendChild(vals);
       historyEl.appendChild(div);
     });
-    totalEl.textContent = fmt(total);
+    const totalRounded = Math.round(total * 100) / 100;
+    animateNumber(totalEl, totalRounded, { decimals: Number.isInteger(totalRounded) ? 0 : 2 });
   }
 
   async function deleteRecord(username, orderDate) {
@@ -1921,7 +1957,7 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
     }
     let total = 0;
     data.forEach(e => { total += Number(e.amount) || 0; });
-    $("errSumCount").textContent = data.length;
+    animateNumber($("errSumCount"), data.length);
     $("errBadge").textContent = data.length || "";
     $("errSumTotal").textContent = fmtMoney(Math.round(total * 100) / 100);
     if (!data.length) { list.appendChild(hintEl("الان مغایرت بازی وجود نداره")); return; }
@@ -2489,9 +2525,9 @@ function renderBulkUserPreview() {
     list.appendChild(row);
   });
 
-  $("buTileOk").textContent = ok;
-  $("buTileDup").textContent = dupCount;
-  $("buTileInvalid").textContent = invCount;
+  animateNumber($("buTileOk"), ok);
+  animateNumber($("buTileDup"), dupCount);
+  animateNumber($("buTileInvalid"), invCount);
   $("bulkUserPreview").style.display = pendingBulkUsers.length ? "block" : "none";
   $("bulkUserConfirmBtn").textContent = "تأیید و ثبت نهایی (" + ok + " نفر)";
   $("bulkUserConfirmBtn").disabled = ok === 0;
