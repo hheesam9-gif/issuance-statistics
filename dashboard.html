@@ -953,15 +953,20 @@
   const $ = id => document.getElementById(id);
   const BASE_PRICE = 21000; // پایه هر سفارش
 const TARGET_TIERS = [
-  { min: 0,  max: 7,        bonus: 0,     label: "بدون پاداش", color: "#7c83aa" },
-  { min: 8,  max: 14,       bonus: 4000,  label: "۸ تا ۱۴",    color: "#4f7bff" },
-  { min: 15, max: 19,       bonus: 9000,  label: "۱۵ تا ۱۹",   color: "#2fd3a7" },
-  { min: 20, max: 24,       bonus: 12000, label: "۲۰ تا ۲۴",   color: "#fbbf24" },
-  { min: 25, max: 29,       bonus: 14000, label: "۲۵ تا ۲۹",   color: "#f5c542" },
-  { min: 30, max: Infinity, bonus: 16000, label: "۳۰ به بالا", color: "#ff6b7d" }
+  { min: 0,  bonus: 0,     label: "بدون پاداش", color: "#7c83aa" },
+  { min: 8,  bonus: 4000,  label: "۸ تا ۱۴",    color: "#4f7bff" },
+  { min: 15, bonus: 9000,  label: "۱۵ تا ۱۹",   color: "#2fd3a7" },
+  { min: 20, bonus: 12000, label: "۲۰ تا ۲۴",   color: "#fbbf24" },
+  { min: 25, bonus: 14000, label: "۲۵ تا ۲۹",   color: "#f5c542" },
+  { min: 30, bonus: 16000, label: "۳۰ به بالا", color: "#ff6b7d" }
 ];
 function getTier(count) {
-  return TARGET_TIERS.find(t => count >= t.min && count <= t.max) || TARGET_TIERS[0];
+  let result = TARGET_TIERS[0];
+  for (const t of TARGET_TIERS) {
+    if (count >= t.min) result = t;
+    else break;
+  }
+  return result;
 }
 function dayPay(count) {
   return count * (BASE_PRICE + getTier(count).bonus);
