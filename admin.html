@@ -1244,7 +1244,20 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
       return g("year") + "/" + g("month") + "/" + g("day");
     } catch (e) { return null; }
   }
-
+  // تبدیل تاریخ کوتاه مثل 14-Sep به شمسی (سال = سال جاری میلادی)
+  const EN_MONTHS = { jan:1, feb:2, mar:3, apr:4, may:5, jun:6, jul:7, aug:8, sep:9, oct:10, nov:11, dec:12 };
+  function parseShortDate(s) {
+    const m = /^(\d{1,2})[-\/ ]([A-Za-z]{3})[A-Za-z]*$/.exec(s);
+    if (!m) return null;
+    const mon = EN_MONTHS[m[2].toLowerCase()];
+    if (!mon) return null;
+    const d = parseInt(m[1], 10);
+    const now = new Date();
+    let y = now.getFullYear();
+    // اگه تاریخ بیش از ۴۰ روز در آینده افتاد، یعنی مال سال قبله (مثلاً Dec در ژانویه)
+    if (new Date(Date.UTC(y, mon - 1, d)) > new Date(now.getTime() + 40 * 86400000)) y--;
+    return gregorianToJalaliStr(y, mon, d);
+  }
   const autoDateToggleEl = document.getElementById("autoDateToggle");
   const dateRowWrapEl = document.getElementById("dateRowWrap");
   const bulkTextLabelEl = document.getElementById("bulkTextLabel");
@@ -1343,6 +1356,7 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
     const invalid = [];
     let duplicates = 0;
     const dateSet = new Set();
+   let currentUser; // undefined = هنوز هیچ کاربری دیده نشده، null = کاربر در سایت نیست
 
     raw.split(/\r?\n/).forEach(line => {
       const trimmed = line.trim();
@@ -1361,6 +1375,29 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
       }
 
       // حالت خودکار: نام‌کاربری، تاریخ میلادی، تعداد
+            // فرمت جدید: خط کاربر (نام + مجموع) و زیرش خط‌های «14-Sep عدد»
+      if (parts.length === 2) {
+        const jd = parseShortDate(parts[0]);
+        if (jd) {
+          if (currentUser === undefined) { invalid.push(trimmed); return; }
+          if (currentUser === null) return; // کاربرش تو سایت نیست، قبلاً ثبت شده تو لیست «نیستن»
+          if (!/^-?\d+(\.\d+)?$/.test(parts[1])) { invalid.push(trimmed); return; }
+          dateSet.add(jd);
+          const key = currentUser + "|" + jd;
+          if (matched.has(key)) duplicates++;
+          matched.set(key, { username: currentUser, order_date: jd, order_count: parseFloat(parts[1]) });
+          return;
+        }
+        if (/^-?\d+(\.\d+)?$/.test(parts[1])) {
+          // خط نام کاربر + مجموع؛ مجموع نادیده گرفته می‌شه
+          const real = userMap.get(parts[0].toLowerCase());
+          if (!real) { notFound.push(parts[0]); currentUser = null; }
+          else currentUser = real;
+          return;
+        }
+        invalid.push(trimmed);
+        return;
+      }
       if (parts.length < 3) { invalid.push(trimmed); return; }
       const name = parts[0];
       const dateStr = parts[1];
