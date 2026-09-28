@@ -968,10 +968,18 @@ function getTier(count) {
   }
   return result;
 }
-function dayPay(count) {
-  return count * (BASE_PRICE + getTier(count).bonus);
+
+const FRIDAY_MULT = 1.35;
+
+// (تابع jalaliToGregorian همون کدی که فرستادی)
+
+// (تابع isFriday همون کدی که فرستادی)
+
+function dayPay(count, dateStr) {
+  const base = count * (BASE_PRICE + getTier(count).bonus);
+  return (dateStr && isFriday(dateStr)) ? Math.round(base * FRIDAY_MULT) : base;
 }
-  
+
   /* تیلت و نورافکن روی کارت‌های آمار */
   (function () {
     if (REDUCE || !window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
@@ -1380,7 +1388,8 @@ function dayPay(count) {
         countEl.appendChild(dl);
       }
 countEl.appendChild(el("span", null, fmt(it.count)));
-const payEl = el("span", "row-pay", fmtMoney(dayPay(it.count)) + " ت");
+const fri = isFriday(it.date);
+const payEl = el("span", "row-pay", fmtMoney(dayPay(it.count, it.date)) + " ت" + (fri ? " ×۱.۳۵" : ""));
 
       div.appendChild(fill);
       div.appendChild(dateEl);
@@ -1768,7 +1777,7 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closePayou
     const total = counts.reduce((a, b) => a + b, 0);
     const max = Math.max(...counts);
     const avg = total / counts.length;
-const totalPay = asc.reduce((sum, r, i) => sum + dayPay(counts[i]), 0);
+const totalPay = asc.reduce((sum, r, i) => sum + dayPay(counts[i], r.order_date), 0);
 totalPayoutValue = totalPay;
 payoutBtn.disabled = false;
     $("stats").hidden = false;
