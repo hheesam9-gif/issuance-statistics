@@ -834,6 +834,8 @@
 .w-chip.wx { --wc: var(--text-dim); }
 .ord-note { margin-top: 6px; font-size: 11.5px; color: var(--text-dim); line-height: 1.8; }
 @media (prefers-reduced-motion: reduce) { .ord-card { animation: none; } }
+  .modal-box { scrollbar-width: none; }
+.modal-box::-webkit-scrollbar { display: none; }
 </style>
 </head>
 <body>
@@ -1864,7 +1866,6 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closePayou
     const used = new Set();
     const items = [];
 
-    // اول: دو نیمه با همون شماره سفارش => یک سفارش کامل
     const byNo = new Map();
     rows.forEach(r => {
       if (!byNo.has(r.order_number)) byNo.set(r.order_number, []);
@@ -1879,7 +1880,6 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closePayou
       items.push({ kind: "same", parts: [a, b], date: later.order_date, key: ordKey(later) });
     });
 
-    // بعد: بقیه‌ی 0.7 و 0.3 ها به ترتیب زمان جفت بشن
     const left = rows.filter(r => !used.has(rk(r)));
     const big = left.filter(r => isW(r, 0.7)).sort(sorter);
     const small = left.filter(r => isW(r, 0.3)).sort(sorter);
@@ -1890,18 +1890,15 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closePayou
       const later = ordKey(a) >= ordKey(b) ? a : b;
       items.push({ kind: "pair", parts: [a, b], date: later.order_date, key: ordKey(later) });
     }
+
     rows.forEach(r => {
       if (used.has(rk(r))) return;
       items.push({ kind: isW(r, 1) ? "one" : "lone", parts: [r], date: r.order_date, key: ordKey(r) });
     });
-    rows.forEach(r => {
-      if (used.has(r.order_number)) return;
-      items.push({ kind: isW(r, 1) ? "one" : "lone", parts: [r], date: r.order_date, key: ordKey(r) });
-    });
+
     items.sort((a, b) => b.key.localeCompare(a.key));
     return items;
   }
-
   function wChip(r) {
     const cls = isW(r, 1) ? "w1" : isW(r, 0.7) ? "w07" : isW(r, 0.3) ? "w03" : "wx";
     return el("span", "w-chip " + cls, fmt(r.weight));
