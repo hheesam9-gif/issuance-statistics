@@ -708,6 +708,10 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
               <span class="menu-item-label">مغایرت‌های باز</span>
               <span class="menu-item-badge" id="errBadge"></span>
             </button>
+            <button type="button" class="menu-item" id="ordOpen" role="menuitem">
+              <span class="menu-item-icon">🧾</span>
+              <span class="menu-item-label">ثبت شماره سفارش‌ها</span>
+            </button>
             <button type="button" class="menu-item" id="usersOpen" role="menuitem">
               <span class="menu-item-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0 1 14 0v1"/></svg></span>
               <span class="menu-item-label">مدیریت نمایندگان</span>
@@ -1026,6 +1030,42 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
 
     <div class="actions" style="margin-top:18px;">
       <button type="button" class="secondary full" id="errCloseBtn">بستن</button>
+    </div>
+  </div>
+</div>
+  <!-- پنجره ثبت شماره سفارش‌ها -->
+<div class="modal" id="ordersModal" role="dialog" aria-modal="true">
+  <div class="modal-box" style="max-width:640px; text-align:right;">
+    <div class="card-head">
+      <div class="card-icon" style="font-size:20px;">🧾</div>
+      <div>
+        <h2>ثبت شماره سفارش‌ها</h2>
+        <p>ستون‌های اکسل رو پیست کن؛ هر سفارش به اسم نماینده‌اش ثبت می‌شه</p>
+      </div>
+    </div>
+
+    <textarea id="ordText" spellcheck="false" style="min-height:160px;"
+      placeholder="305292231&#9;شخص ثالث&#9;0&#9;0&#9;financial suggestion submit&#9;2026/9/24, 14:01&#9;f-sarabadani&#9;1&#9;&#9;0&#9;0&#9;0&#9;0&#9;0.7"></textarea>
+    <div class="paste-meta"><span id="ordLineCount"></span></div>
+    <div class="actions"><button type="button" id="ordCheckBtn">بررسی لیست</button></div>
+
+    <div id="ordPreview" style="display:none; margin-top:16px;">
+      <div class="tiles">
+        <div class="tile ok"><div class="n" id="ordTileOk">0</div><div class="lb">آماده ثبت</div></div>
+        <div class="tile warn"><div class="n" id="ordTileMissing">0</div><div class="lb">در سایت نیستن</div></div>
+        <div class="tile bad"><div class="n" id="ordTileInvalid">0</div><div class="lb">خط نامعتبر</div></div>
+      </div>
+      <div id="ordFolds"></div>
+      <div class="history" id="ordList" style="max-height:280px; margin-top:12px;"></div>
+      <div class="actions">
+        <button type="button" id="ordSaveBtn">ثبت نهایی</button>
+        <button type="button" class="secondary" id="ordCancelBtn">لغو</button>
+      </div>
+    </div>
+
+    <div id="ordMsg" role="status" aria-live="polite" style="text-align:center; font-size:13px; min-height:18px; margin-top:10px; color:var(--text-dim);"></div>
+    <div class="actions" style="margin-top:14px;">
+      <button type="button" class="secondary full" id="ordCloseBtn">بستن</button>
     </div>
   </div>
 </div>
@@ -2154,7 +2194,7 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
    // Escape: بستن پنجره‌ها یا پنل کاربر
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
-    const open = ["wipeModal", "usersModal", "annModal", "errorsModal"]
+    const open = ["wipeModal", "usersModal", "annModal", "errorsModal", "ordersModal"]
       .map($).find(m => m.classList.contains("show"));
     if (open) open.classList.remove("show");
     else if (panelEl.classList.contains("show")) closeUserPanel();
@@ -2698,6 +2738,7 @@ $("usersModal").addEventListener("click", (e) => { if (e.target === $("usersModa
 }
 bindModal("annOpen", "annModal", "annCloseBtn", loadAnnouncements);
 bindModal("errOpen", "errorsModal", "errCloseBtn", loadAllErrors);
+  bindModal("ordOpen", "ordersModal", "ordCloseBtn");
   function showMainTab(name) {
   if (name !== "stats" && name !== "period") name = "stats";
   document.querySelectorAll("[data-pane]").forEach(p => { p.hidden = p.dataset.pane !== name; });
@@ -2748,6 +2789,172 @@ function updateMenuBadge() {
 ["annBadge", "errBadge"].forEach(id =>
   new MutationObserver(updateMenuBadge).observe($(id), { childList: true, characterData: true, subtree: true })
 );
+  /* =========================================================
+   ثبت شماره سفارش‌ها (جدول order_refs)
+   ========================================================= */
+let pendingOrders = [];
+
+function setOrdMsg(text, cls) {
+  const el = $("ordMsg");
+  el.textContent = text;
+  el.style.color = cls === "error" ? "var(--error)" : cls === "ok" ? "var(--ok)" : "var(--text-dim)";
+}
+
+// جفت کردن: هر 0.7 با یک 0.3 => یک سفارش کامل (بر اساس ترتیب زمان)
+function pairOrders(rows) {
+  const key = r => (r.order_date || "") + " " + (r.order_time || "");
+  const sorter = (a, b) => key(a).localeCompare(key(b));
+  const is = (r, w) => Math.abs(Number(r.weight) - w) < 0.001;
+  const big = rows.filter(r => is(r, 0.7)).sort(sorter);
+  const small = rows.filter(r => is(r, 0.3)).sort(sorter);
+  const n = Math.min(big.length, small.length);
+  const pairs = [];
+  const used = new Set();
+  for (let i = 0; i < n; i++) {
+    pairs.push([big[i], small[i]]);
+    used.add(big[i].order_number); used.add(small[i].order_number);
+  }
+  const rest = rows.filter(r => !used.has(r.order_number));
+  return { pairs, rest };
+}
+
+$("ordText").addEventListener("input", () => {
+  const n = $("ordText").value.split(/\r?\n/).filter(l => l.trim()).length;
+  $("ordLineCount").textContent = n ? n + " خط وارد شده" : "";
+});
+
+$("ordCheckBtn").addEventListener("click", async () => {
+  setOrdMsg("");
+  $("ordPreview").style.display = "none";
+  pendingOrders = [];
+
+  const raw = normalizeDigits($("ordText").value);
+  if (!raw.trim()) { setOrdMsg("لیست خالیه؛ داده‌ی اکسل رو پیست کن", "error"); return; }
+
+  $("ordCheckBtn").disabled = true;
+  setOrdMsg("در حال بررسی کاربران...");
+  let usernames;
+  try { usernames = await fetchAllUsernames(); }
+  catch (e) { setOrdMsg("خواندن کاربران ناموفق بود: " + (e.message || e), "error"); $("ordCheckBtn").disabled = false; return; }
+  $("ordCheckBtn").disabled = false;
+  setOrdMsg("");
+
+  const userMap = new Map(usernames.map(u => [String(u).trim().toLowerCase(), u]));
+  const matched = new Map();
+  const notFound = [];
+  const invalid = [];
+
+  raw.split(/\r?\n/).forEach(line => {
+    if (!line.trim()) return;
+    const p = line.split("\t").map(x => x.trim());
+    if (p.length < 8) { invalid.push(line.trim()); return; }
+
+    const orderNo = p[0];
+    const type = p[1];
+    const status = p[4];
+    const dt = p[5];
+    const uname = p[6];
+    const weight = parseFloat(p[p.length - 1]);
+
+    const dm = /^(\d{4})\/(\d{1,2})\/(\d{1,2}),?\s*(\d{1,2}:\d{2})?$/.exec(dt);
+    if (!/^\d+$/.test(orderNo) || !dm || isNaN(weight)) { invalid.push(line.trim()); return; }
+    const jalali = gregorianToJalaliStr(parseInt(dm[1], 10), parseInt(dm[2], 10), parseInt(dm[3], 10));
+    if (!jalali) { invalid.push(line.trim()); return; }
+
+    const real = userMap.get(uname.toLowerCase());
+    if (!real) { notFound.push(uname); return; }
+
+    matched.set(orderNo, {
+      order_number: orderNo,
+      username: real,
+      order_type: type,
+      order_status: status,
+      order_date: jalali,
+      order_time: dm[4] || "",
+      weight: Math.round(weight * 100) / 100
+    });
+  });
+
+  pendingOrders = [...matched.values()];
+  animateNumber($("ordTileOk"), pendingOrders.length);
+  animateNumber($("ordTileMissing"), notFound.length);
+  animateNumber($("ordTileInvalid"), invalid.length);
+
+  const folds = $("ordFolds");
+  folds.innerHTML = "";
+  const addF = (title, items) => {
+    const d = mk("details", "fold");
+    d.appendChild(mk("summary", null, title));
+    d.appendChild(mk("div", "bulk-list", items.join("  |  ")));
+    folds.appendChild(d);
+  };
+  if (notFound.length) addF("کاربرهایی که در سایت نیستن (ثبت نمی‌شن)", [...new Set(notFound)]);
+  if (invalid.length) addF("خط‌های نامعتبر (نادیده گرفته شد)", invalid);
+
+  // پیش‌نمایش گروه‌بندی‌شده بر اساس نماینده
+  const list = $("ordList");
+  list.replaceChildren();
+  const byUser = new Map();
+  pendingOrders.forEach(r => {
+    if (!byUser.has(r.username)) byUser.set(r.username, []);
+    byUser.get(r.username).push(r);
+  });
+  [...byUser.entries()].sort((a, b) => a[0].localeCompare(b[0])).forEach(([u, rows]) => {
+    const { pairs, rest } = pairOrders(rows);
+    const row = mk("div", "row");
+    const left = mk("span", "d", u);
+    left.style.direction = "ltr";
+    const parts = [];
+    pairs.forEach(([a, b]) => parts.push("✔ سفارش کامل: " + a.order_number + " (0.7) + " + b.order_number + " (0.3)"));
+    rest.forEach(r => parts.push(r.order_number + " ← " + fmt(r.weight)));
+    const right = mk("span", null, parts.join("  |  "));
+    right.style.cssText = "font-size:12px; direction:ltr; text-align:left;";
+    row.appendChild(left);
+    row.appendChild(right);
+    list.appendChild(row);
+  });
+
+  $("ordSaveBtn").textContent = "ثبت نهایی " + pendingOrders.length + " سفارش";
+  $("ordSaveBtn").disabled = pendingOrders.length === 0;
+  $("ordPreview").style.display = "block";
+  if (!pendingOrders.length) setOrdMsg("هیچ سفارش معتبری پیدا نشد", "error");
+});
+
+$("ordCancelBtn").addEventListener("click", () => {
+  pendingOrders = [];
+  $("ordPreview").style.display = "none";
+  setOrdMsg("");
+});
+
+$("ordSaveBtn").addEventListener("click", async () => {
+  if (!pendingOrders.length) return;
+  $("ordSaveBtn").disabled = true;
+  $("ordCancelBtn").disabled = true;
+  $("ordCheckBtn").disabled = true;
+
+  const size = 200;
+  let done = 0;
+  for (let i = 0; i < pendingOrders.length; i += size) {
+    const batch = pendingOrders.slice(i, i + size);
+    setOrdMsg("در حال ذخیره... " + done + " از " + pendingOrders.length);
+    const { error } = await supabaseClient.from("order_refs").upsert(batch, { onConflict: "order_number" });
+    if (error) {
+      setOrdMsg("ثبت متوقف شد (" + done + " سفارش ثبت شده بود): " + explainError(error), "error");
+      $("ordSaveBtn").disabled = false;
+      $("ordCancelBtn").disabled = false;
+      $("ordCheckBtn").disabled = false;
+      return;
+    }
+    done += batch.length;
+  }
+  setOrdMsg("✔ " + done + " شماره سفارش ثبت شد", "ok");
+  pendingOrders = [];
+  $("ordPreview").style.display = "none";
+  $("ordText").value = "";
+  $("ordLineCount").textContent = "";
+  $("ordCancelBtn").disabled = false;
+  $("ordCheckBtn").disabled = false;
+});
   /* =========================================================
      ورود مدیر (فقط h-abbasi)
      ========================================================= */
