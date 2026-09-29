@@ -770,6 +770,70 @@
   .list-tabs::after, .list-tabs.pulse .ltab-ind::before, .list.swap-in, .list > .e-row, .list > .p-row, .list > .empty { animation: none; }
   .ltab-ind, .list.swap-out { transition: none; }
 }
+  /* ===== پنجره‌ی سفارش‌های من ===== */
+.ord-trigger { color: var(--accent2); }
+.ord-box { max-width: 560px; padding: 22px 20px; }
+.ord-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+.ord-summary:empty { display: none; }
+.ord-sum {
+  background: var(--row-bg); border: 1px solid var(--row-border); border-radius: 14px;
+  padding: 12px 6px; text-align: center;
+}
+.ord-sum b { display: block; font-size: 22px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.ord-sum span { display: block; font-size: 11px; color: var(--text-faint); margin-top: 4px; }
+.ord-sum.full b { color: var(--mint); }
+.ord-sum.wait b { color: var(--warn); }
+
+.ord-day {
+  position: sticky; top: -1px; z-index: 3; margin: 14px 0 8px; padding: 7px 12px;
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 12.5px; color: var(--text-dim); font-variant-numeric: tabular-nums;
+  background: var(--card-bg); border: 1px solid var(--row-border); border-radius: 10px;
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+}
+.ord-day .dd { direction: ltr; font-weight: 700; color: var(--text); letter-spacing: 0.3px; }
+
+.ord-card {
+  position: relative; overflow: hidden; margin-bottom: 8px; padding: 13px 15px 13px 14px;
+  background: var(--row-bg); border: 1px solid var(--row-border); border-radius: 16px;
+  animation: rise 0.5s cubic-bezier(.16,.84,.3,1) backwards;
+  transition: transform 0.25s ease, border-color 0.25s ease;
+}
+.ord-card:hover { transform: translateY(-2px); border-color: var(--accent1); }
+.ord-card::before {
+  content: ""; position: absolute; top: 0; bottom: 0; right: 0; width: 4px;
+  background: var(--stripe, var(--accent2));
+}
+.ord-card.full { --stripe: linear-gradient(180deg, var(--mint), var(--accent2)); }
+.ord-card.full::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(140% 100% at 100% 0%, color-mix(in srgb, var(--mint) 14%, transparent), transparent 65%);
+}
+.ord-card.wait { --stripe: var(--warn); }
+.ord-card > * { position: relative; z-index: 1; }
+
+.ord-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.ord-title b { font-size: 13.5px; font-weight: 700; }
+.ord-card.full .ord-title b { color: var(--mint); }
+.ord-card.wait .ord-title b { color: var(--warn); }
+.ord-time { font-size: 11px; color: var(--text-faint); direction: ltr; font-variant-numeric: tabular-nums; }
+
+.ord-line { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; }
+.ord-line + .ord-line { border-top: 1px dashed var(--divider); }
+.ord-no { direction: ltr; unicode-bidi: isolate; font-size: 15px; font-weight: 700; letter-spacing: 0.6px; font-variant-numeric: tabular-nums; }
+.ord-type { font-size: 11px; color: var(--text-faint); margin-inline-start: 8px; }
+
+.w-chip {
+  min-width: 46px; text-align: center; padding: 4px 10px; border-radius: 999px;
+  font-size: 12.5px; font-weight: 800; direction: ltr; font-variant-numeric: tabular-nums;
+  color: var(--wc); background: color-mix(in srgb, var(--wc) 15%, transparent); border: 1px solid var(--wc);
+}
+.w-chip.w1 { --wc: var(--mint); }
+.w-chip.w07 { --wc: #6d8bff; }
+.w-chip.w03 { --wc: #fbbf24; }
+.w-chip.wx { --wc: var(--text-dim); }
+.ord-note { margin-top: 6px; font-size: 11.5px; color: var(--text-dim); line-height: 1.8; }
+@media (prefers-reduced-motion: reduce) { .ord-card { animation: none; } }
 </style>
 </head>
 <body>
@@ -800,6 +864,9 @@
       <button class="bell" id="bellBtn" type="button" aria-label="اعلان‌ها">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
         <span class="badge" id="bellBadge" hidden>0</span>
+      </button>
+          <button class="bell ord-trigger" id="ordRefBtn" type="button" aria-label="سفارش‌های من">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6"/><path d="M9 12h6"/></svg>
       </button>
     </div>
 
@@ -908,7 +975,16 @@
       <div id="annList"></div>
     </div>
   </div>
-
+  <div class="modal" id="ordRefModal" role="dialog" aria-modal="true" aria-labelledby="ordRefTitle">
+    <div class="modal-box ord-box">
+      <div class="modal-head">
+        <h3 id="ordRefTitle">سفارش‌های من</h3>
+        <button class="close" id="ordRefClose" type="button" aria-label="بستن">✕</button>
+      </div>
+      <div class="ord-summary" id="ordRefSummary"></div>
+      <div id="ordRefBody"></div>
+    </div>
+  </div>
   <div class="modal payout-modal" id="payoutModal" role="dialog" aria-modal="true" aria-labelledby="payoutTitle">
     <div class="modal-box payout-modal-box">
       <button class="close payout-close" id="payoutClose" type="button" aria-label="بستن">✕</button>
@@ -1768,6 +1844,128 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closePayou
   $("tabOrders").addEventListener("click", () => switchListTab("orders"));
   $("tabErrors").addEventListener("click", () => switchListTab("errors"));
   $("tabPeriods").addEventListener("click", () => switchListTab("periods"));
+    /* =========================================================
+     سفارش‌های من (جدول order_refs)
+     ========================================================= */
+  const ordRefModal = $("ordRefModal");
+  const ordRefBody = $("ordRefBody");
+
+  function padTime(t) {
+    const m = /^(\d{1,2}):(\d{2})$/.exec(t || "");
+    return m ? m[1].padStart(2, "0") + ":" + m[2] : "";
+  }
+  function ordKey(r) { return (r.order_date || "") + " " + padTime(r.order_time); }
+  function isW(r, w) { return Math.abs(Number(r.weight) - w) < 0.001; }
+
+  // هر 0.7 با یک 0.3 (به ترتیب زمان) => یک سفارش کامل
+  function buildOrdItems(rows) {
+    const sorter = (a, b) => ordKey(a).localeCompare(ordKey(b));
+    const big = rows.filter(r => isW(r, 0.7)).sort(sorter);
+    const small = rows.filter(r => isW(r, 0.3)).sort(sorter);
+    const n = Math.min(big.length, small.length);
+    const used = new Set();
+    const items = [];
+    for (let i = 0; i < n; i++) {
+      const a = big[i], b = small[i];
+      used.add(a.order_number); used.add(b.order_number);
+      const later = ordKey(a) >= ordKey(b) ? a : b;
+      items.push({ kind: "pair", parts: [a, b], date: later.order_date, key: ordKey(later) });
+    }
+    rows.forEach(r => {
+      if (used.has(r.order_number)) return;
+      items.push({ kind: isW(r, 1) ? "one" : "lone", parts: [r], date: r.order_date, key: ordKey(r) });
+    });
+    items.sort((a, b) => b.key.localeCompare(a.key));
+    return items;
+  }
+
+  function wChip(r) {
+    const cls = isW(r, 1) ? "w1" : isW(r, 0.7) ? "w07" : isW(r, 0.3) ? "w03" : "wx";
+    return el("span", "w-chip " + cls, fmt(r.weight));
+  }
+  function ordLine(r) {
+    const line = el("div", "ord-line");
+    const left = el("div");
+    left.appendChild(el("span", "ord-no", r.order_number));
+    if (r.order_type) left.appendChild(el("span", "ord-type", r.order_type));
+    line.appendChild(left);
+    line.appendChild(wChip(r));
+    return line;
+  }
+
+  function buildOrdCard(it, idx) {
+    const wait = it.kind === "lone";
+    const card = el("div", "ord-card " + (wait ? "wait" : "full"));
+    card.style.animationDelay = Math.min(idx, 8) * 50 + "ms";
+    const title = el("div", "ord-title");
+    const t = it.kind === "pair" ? "✔ یک سفارش کامل (۰.۷ + ۰.۳)"
+            : it.kind === "one" ? "✔ سفارش کامل"
+            : "⏳ سفارش نیمه‌کاره";
+    title.appendChild(el("b", null, t));
+    const tm = padTime(it.parts[it.parts.length - 1].order_time);
+    if (tm) title.appendChild(el("span", "ord-time", tm));
+    card.appendChild(title);
+    it.parts.forEach(r => card.appendChild(ordLine(r)));
+    if (wait) {
+      const w = it.parts[0];
+      card.appendChild(el("div", "ord-note",
+        isW(w, 0.7) ? "منتظر ثبت سفارش ۰.۳ برای کامل شدن" :
+        isW(w, 0.3) ? "منتظر ثبت سفارش ۰.۷ برای کامل شدن" : "مقدار این سفارش: " + fmt(w.weight)));
+    }
+    return card;
+  }
+
+  async function openOrdRefs() {
+    ordRefModal.classList.add("show");
+    ordRefBody.replaceChildren(el("div", "skel"), el("div", "skel"), el("div", "skel"));
+    $("ordRefSummary").replaceChildren();
+
+    const { data, error } = await supabaseClient
+      .from("order_refs")
+      .select("order_number, order_type, order_date, order_time, weight")
+      .ilike("username", currentUsername);
+
+    ordRefBody.replaceChildren();
+    if (error) { ordRefBody.appendChild(el("div", "empty", "خواندن سفارش‌ها ناموفق بود")); return; }
+    if (!data || !data.length) {
+      const empty = el("div", "empty");
+      empty.appendChild(el("b", null, "هنوز شماره سفارشی ثبت نشده"));
+      empty.appendChild(el("span", null, "بعد از ثبت توسط سرپرست، همین‌جا نمایش داده می‌شه."));
+      ordRefBody.appendChild(empty);
+      return;
+    }
+
+    const items = buildOrdItems(data);
+    const fullCount = items.filter(i => i.kind !== "lone").length;
+    const waitCount = items.length - fullCount;
+
+    const sum = $("ordRefSummary");
+    [["full", fullCount, "سفارش کامل"], ["wait", waitCount, "نیمه‌کاره"], ["", data.length, "کل ثبت‌ها"]].forEach(([c, n, l]) => {
+      const box = el("div", "ord-sum " + c);
+      box.appendChild(el("b", null, String(n)));
+      box.appendChild(el("span", null, l));
+      sum.appendChild(box);
+    });
+
+    let lastDate = null, dayCount = 0, idx = 0;
+    const days = new Map();
+    items.forEach(it => {
+      if (!days.has(it.date)) days.set(it.date, []);
+      days.get(it.date).push(it);
+    });
+    days.forEach((list, date) => {
+      const head = el("div", "ord-day");
+      head.appendChild(el("span", "dd", date));
+      head.appendChild(el("span", null, list.length + " مورد"));
+      ordRefBody.appendChild(head);
+      list.forEach(it => ordRefBody.appendChild(buildOrdCard(it, idx++)));
+    });
+  }
+  function closeOrdRefs() { ordRefModal.classList.remove("show"); }
+  $("ordRefBtn").addEventListener("click", openOrdRefs);
+  $("ordRefClose").addEventListener("click", closeOrdRefs);
+  ordRefModal.addEventListener("click", (e) => { if (e.target === ordRefModal) closeOrdRefs(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeOrdRefs(); });
   /* ---------- شروع ---------- */
   async function init() {
     let session;
