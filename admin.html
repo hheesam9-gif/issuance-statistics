@@ -2805,15 +2805,36 @@ function pairOrders(rows) {
   const key = r => (r.order_date || "") + " " + (r.order_time || "");
   const sorter = (a, b) => key(a).localeCompare(key(b));
   const is = (r, w) => Math.abs(Number(r.weight) - w) < 0.001;
-  const big = rows.filter(r => is(r, 0.7)).sort(sorter);
-  const small = rows.filter(r => is(r, 0.3)).sort(sorter);
-  const n = Math.min(big.length, small.length);
-  const pairs = [];
   const used = new Set();
+  const pairs = [];
+
+  // اول: هر دو نیمه با یک شماره سفارش => یک سفارش کامل
+  const byNo = new Map();
+  rows.forEach(r => {
+    if (!byNo.has(r.order_number)) byNo.set(r.order_number, []);
+    byNo.get(r.order_number).push(r);
+  });
+  byNo.forEach(list => {
+    const a = list.find(r => is(r, 0.7));
+    const b = list.find(r => is(r, 0.3));
+    if (a && b) {
+      pairs.push([a, b]);
+      used.add(a.order_number + "|" + a.order_status);
+      used.add(b.order_number + "|" + b.order_status);
+    }
+  });
+
+  // بعد: بقیه‌ی 0.7 و 0.3 ها به ترتیب زمان جفت بشن
+  const left = rows.filter(r => !used.has(r.order_number + "|" + r.order_status));
+  const big = left.filter(r => is(r, 0.7)).sort(sorter);
+  const small = left.filter(r => is(r, 0.3)).sort(sorter);
+  const n = Math.min(big.length, small.length);
   for (let i = 0; i < n; i++) {
     pairs.push([big[i], small[i]]);
-    used.add(big[i].order_number); used.add(small[i].order_number);
+    used.add(big[i].order_number + "|" + big[i].order_status);
+    used.add(small[i].order_number + "|" + small[i].order_status);
   }
+  const rest = rows.filter(r => !used.has(r.order_number + "|" + r.order_status));
   const rest = rows.filter(r => !used.has(r.order_number));
   return { pairs, rest };
 }
@@ -2864,7 +2885,7 @@ $("ordCheckBtn").addEventListener("click", async () => {
     const real = userMap.get(uname.toLowerCase());
     if (!real) { notFound.push(uname); return; }
 
-    matched.set(orderNo, {
+    matched.set(orderNo + "|" + status, {
       order_number: orderNo,
       username: real,
       order_type: type,
@@ -2905,7 +2926,9 @@ $("ordCheckBtn").addEventListener("click", async () => {
     const left = mk("span", "d", u);
     left.style.direction = "ltr";
     const parts = [];
-    pairs.forEach(([a, b]) => parts.push("✔ سفارش کامل: " + a.order_number + " (0.7) + " + b.order_number + " (0.3)"));
+    pairs.forEach(([a, b]) => parts.push(a.order_number === b.order_number
+      ? "✔ یک سفارش کامل: " + a.order_number + " (0.7 + 0.3 = 1)"
+      : "✔ سفارش کامل: " + a.order_number + " (0.7) + " + b.order_number + " (0.3)"));
     rest.forEach(r => parts.push(r.order_number + " ← " + fmt(r.weight)));
     const right = mk("span", null, parts.join("  |  "));
     right.style.cssText = "font-size:12px; direction:ltr; text-align:left;";
@@ -2937,7 +2960,7 @@ $("ordSaveBtn").addEventListener("click", async () => {
   for (let i = 0; i < pendingOrders.length; i += size) {
     const batch = pendingOrders.slice(i, i + size);
     setOrdMsg("در حال ذخیره... " + done + " از " + pendingOrders.length);
-    const { error } = await supabaseClient.from("order_refs").upsert(batch, { onConflict: "order_number" });
+    const { error } = await supabaseClient.from("order_refs").upsert(batch, { onConflict: "order_number,order_status" });
     if (error) {
       setOrdMsg("ثبت متوقف شد (" + done + " سفارش ثبت شده بود): " + explainError(error), "error");
       $("ordSaveBtn").disabled = false;
