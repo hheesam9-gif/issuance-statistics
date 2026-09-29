@@ -2835,7 +2835,7 @@ function pairOrders(rows) {
     used.add(small[i].order_number + "|" + small[i].order_status);
   }
   const rest = rows.filter(r => !used.has(r.order_number + "|" + r.order_status));
-  const rest = rows.filter(r => !used.has(r.order_number));
+
   return { pairs, rest };
 }
 
