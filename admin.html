@@ -1064,6 +1064,14 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
     </div>
 
     <div id="ordMsg" role="status" aria-live="polite" style="text-align:center; font-size:13px; min-height:18px; margin-top:10px; color:var(--text-dim);"></div>
+       <div class="sub-title">
+      <span>سفارش‌های ثبت‌شده</span>
+      <span id="ordSavedCount"></span>
+    </div>
+    <div class="search-box">
+      <input class="ltr" id="ordSearch" type="text" placeholder="شماره سفارش یا نام نماینده..." autocomplete="off" spellcheck="false" />
+    </div>
+    <div class="history" id="ordSavedList" style="max-height:320px;"></div>
     <div class="actions" style="margin-top:14px;">
       <button type="button" class="secondary full" id="ordCloseBtn">بستن</button>
     </div>
@@ -2738,7 +2746,7 @@ $("usersModal").addEventListener("click", (e) => { if (e.target === $("usersModa
 }
 bindModal("annOpen", "annModal", "annCloseBtn", loadAnnouncements);
 bindModal("errOpen", "errorsModal", "errCloseBtn", loadAllErrors);
-  bindModal("ordOpen", "ordersModal", "ordCloseBtn");
+  bindModal("ordOpen", "ordersModal", "ordCloseBtn", () => { $("ordSearch").value = ""; loadSavedOrders(); });
   function showMainTab(name) {
   if (name !== "stats" && name !== "period") name = "stats";
   document.querySelectorAll("[data-pane]").forEach(p => { p.hidden = p.dataset.pane !== name; });
@@ -2976,7 +2984,80 @@ $("ordSaveBtn").addEventListener("click", async () => {
   $("ordText").value = "";
   $("ordLineCount").textContent = "";
   $("ordCancelBtn").disabled = false;
+  $("ordCancelBtn").disabled = false;
   $("ordCheckBtn").disabled = false;
+  loadSavedOrders();
+});
+  /* ---------- لیست سفارش‌های ثبت‌شده: جستجو و حذف ---------- */
+let ordSavedTimer = null;
+
+async function loadSavedOrders() {
+  const list = $("ordSavedList");
+  const term = normalizeDigits($("ordSearch").value.trim());
+  list.replaceChildren(hintEl("در حال بارگذاری..."));
+
+  let q = supabaseClient.from("order_refs")
+    .select("order_number, order_status, order_type, order_date, order_time, username, weight, created_at")
+    .order("created_at", { ascending: false })
+    .limit(200);
+  if (term) {
+    const t = term.replace(/[,()%]/g, "");
+    q = q.or("order_number.ilike.%" + t + "%,username.ilike.%" + t + "%");
+  }
+  const { data, error } = await q;
+  list.replaceChildren();
+  if (error) { list.appendChild(hintEl(explainError(error))); return; }
+  $("ordSavedCount").textContent = data.length ? data.length + " مورد" + (data.length === 200 ? " (۲۰۰ تای آخر)" : "") : "";
+  if (!data.length) { list.appendChild(hintEl(term ? "چیزی پیدا نشد" : "هنوز سفارشی ثبت نشده")); return; }
+
+  data.forEach(r => {
+    const row = mk("div", "row");
+    row.style.cssText = "flex-direction:column; align-items:stretch; gap:6px;";
+
+    const top = mk("div");
+    top.style.cssText = "display:flex; justify-content:space-between; align-items:center; gap:8px;";
+    const no = mk("b", null, r.order_number);
+    no.style.cssText = "direction:ltr; letter-spacing:0.5px;";
+    const del = mk("button", "delete-btn", "🗑️");
+    del.type = "button";
+    del.title = "حذف این سفارش";
+    del.addEventListener("click", () => deleteSavedOrder(r));
+    top.appendChild(no);
+    top.appendChild(del);
+
+    const mid = mk("div");
+    mid.style.cssText = "display:flex; justify-content:space-between; gap:8px; font-size:12px;";
+    const who = mk("span", null, r.username);
+    who.style.cssText = "direction:ltr; font-weight:bold; color:var(--accent2); cursor:pointer;";
+    who.title = "رفتن به این نماینده";
+    who.addEventListener("click", () => { $("ordersModal").classList.remove("show"); openUser(r.username); });
+    const w = mk("span", null, "مقدار: " + fmt(r.weight));
+    w.style.color = "var(--ok)";
+    mid.appendChild(who);
+    mid.appendChild(w);
+
+    const bot = mk("div", "d", r.order_date + (r.order_time ? "  " + r.order_time : "") + "  ·  " + (r.order_type || "") + "  ·  " + (r.order_status || ""));
+    bot.style.cssText = "font-size:11px; direction:ltr; text-align:right;";
+
+    row.appendChild(top);
+    row.appendChild(mid);
+    row.appendChild(bot);
+    list.appendChild(row);
+  });
+}
+
+async function deleteSavedOrder(r) {
+  if (!confirm("سفارش " + r.order_number + " (" + r.username + "، مقدار " + fmt(r.weight) + ") حذف بشه؟")) return;
+  const { error } = await supabaseClient.from("order_refs").delete()
+    .eq("order_number", r.order_number).eq("order_status", r.order_status);
+  if (error) { toast("حذف نشد: " + explainError(error), "error"); return; }
+  toast("سفارش حذف شد", "ok");
+  loadSavedOrders();
+}
+
+$("ordSearch").addEventListener("input", () => {
+  clearTimeout(ordSavedTimer);
+  ordSavedTimer = setTimeout(loadSavedOrders, 300);
 });
   /* =========================================================
      ورود مدیر (فقط h-abbasi)
