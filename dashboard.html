@@ -1860,17 +1860,40 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closePayou
   // هر 0.7 با یک 0.3 (به ترتیب زمان) => یک سفارش کامل
   function buildOrdItems(rows) {
     const sorter = (a, b) => ordKey(a).localeCompare(ordKey(b));
-    const big = rows.filter(r => isW(r, 0.7)).sort(sorter);
-    const small = rows.filter(r => isW(r, 0.3)).sort(sorter);
-    const n = Math.min(big.length, small.length);
+    const rk = r => r.order_number + "|" + (r.order_status || "");
     const used = new Set();
     const items = [];
+
+    // اول: دو نیمه با همون شماره سفارش => یک سفارش کامل
+    const byNo = new Map();
+    rows.forEach(r => {
+      if (!byNo.has(r.order_number)) byNo.set(r.order_number, []);
+      byNo.get(r.order_number).push(r);
+    });
+    byNo.forEach(list => {
+      const a = list.find(r => isW(r, 0.7));
+      const b = list.find(r => isW(r, 0.3));
+      if (!a || !b) return;
+      used.add(rk(a)); used.add(rk(b));
+      const later = ordKey(a) >= ordKey(b) ? a : b;
+      items.push({ kind: "same", parts: [a, b], date: later.order_date, key: ordKey(later) });
+    });
+
+    // بعد: بقیه‌ی 0.7 و 0.3 ها به ترتیب زمان جفت بشن
+    const left = rows.filter(r => !used.has(rk(r)));
+    const big = left.filter(r => isW(r, 0.7)).sort(sorter);
+    const small = left.filter(r => isW(r, 0.3)).sort(sorter);
+    const n = Math.min(big.length, small.length);
     for (let i = 0; i < n; i++) {
       const a = big[i], b = small[i];
-      used.add(a.order_number); used.add(b.order_number);
+      used.add(rk(a)); used.add(rk(b));
       const later = ordKey(a) >= ordKey(b) ? a : b;
       items.push({ kind: "pair", parts: [a, b], date: later.order_date, key: ordKey(later) });
     }
+    rows.forEach(r => {
+      if (used.has(rk(r))) return;
+      items.push({ kind: isW(r, 1) ? "one" : "lone", parts: [r], date: r.order_date, key: ordKey(r) });
+    });
     rows.forEach(r => {
       if (used.has(r.order_number)) return;
       items.push({ kind: isW(r, 1) ? "one" : "lone", parts: [r], date: r.order_date, key: ordKey(r) });
@@ -1898,7 +1921,8 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closePayou
     const card = el("div", "ord-card " + (wait ? "wait" : "full"));
     card.style.animationDelay = Math.min(idx, 8) * 50 + "ms";
     const title = el("div", "ord-title");
-    const t = it.kind === "pair" ? "✔ یک سفارش کامل (۰.۷ + ۰.۳)"
+    const t = it.kind === "same" ? "✔ یک سفارش کامل (۰.۷ + ۰.۳ = ۱)"
+            : it.kind === "pair" ? "✔ یک سفارش کامل (۰.۷ + ۰.۳)"
             : it.kind === "one" ? "✔ سفارش کامل"
             : "⏳ سفارش نیمه‌کاره";
     title.appendChild(el("b", null, t));
@@ -1922,7 +1946,7 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closePayou
 
     const { data, error } = await supabaseClient
       .from("order_refs")
-      .select("order_number, order_type, order_date, order_time, weight")
+      .select("order_number, order_status, order_type, order_date, order_time, weight")
       .ilike("username", currentUsername);
 
     ordRefBody.replaceChildren();
