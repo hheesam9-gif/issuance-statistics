@@ -772,7 +772,14 @@
 }
   /* ===== پنجره‌ی سفارش‌های من ===== */
 .ord-trigger { color: var(--accent2); }
-.ord-box { max-width: 560px; padding: 22px 20px; }
+.ord-box { max-width: 560px; padding: 22px 20px; display: flex; flex-direction: column; overflow: hidden; }
+.ord-box .modal-head, .ord-box .ord-summary { flex: none; }
+#ordRefBody {
+  flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  padding-inline: 2px; scrollbar-width: thin; scrollbar-color: var(--row-border) transparent;
+}
+#ordRefBody::-webkit-scrollbar { width: 5px; }
+#ordRefBody::-webkit-scrollbar-thumb { background: var(--row-border); border-radius: 10px; }
 .ord-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
 .ord-summary:empty { display: none; }
 .ord-sum {
@@ -782,6 +789,10 @@
 .ord-sum b { display: block; font-size: 22px; font-weight: 900; font-variant-numeric: tabular-nums; }
 .ord-sum span { display: block; font-size: 11px; color: var(--text-faint); margin-top: 4px; }
 .ord-sum.full b { color: var(--mint); }
+button.ord-sum { font-family: inherit; color: var(--text); cursor: pointer; transition: border-color .2s ease, transform .15s ease, background .2s ease; }
+button.ord-sum:hover { border-color: var(--accent1); }
+button.ord-sum:active { transform: scale(0.97); }
+.ord-sum.active { border-color: var(--accent1); background: var(--row-bg-hover); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent1) 22%, transparent); }
 .ord-sum.wait b { color: var(--warn); }
 
 .ord-day {
@@ -1939,8 +1950,59 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closePayou
     return card;
   }
 
+  let ordAllItems = [];
+  let ordTotalRows = 0;
+  let ordFilter = "all";
+
+  function renderOrdSummary() {
+    const fullCount = ordAllItems.filter(i => i.kind !== "lone").length;
+    const waitCount = ordAllItems.length - fullCount;
+    const sum = $("ordRefSummary");
+    sum.replaceChildren();
+    [["full", fullCount, "سفارش کامل", "full"], ["wait", waitCount, "نیمه‌کاره", "wait"], ["", ordTotalRows, "کل ثبت‌ها", "all"]].forEach(([c, n, l, f]) => {
+      const box = el("button", "ord-sum " + c + (ordFilter === f ? " active" : ""));
+      box.type = "button";
+      box.appendChild(el("b", null, String(n)));
+      box.appendChild(el("span", null, l));
+      box.addEventListener("click", () => {
+        ordFilter = (ordFilter === f) ? "all" : f;
+        renderOrdSummary();
+        renderOrdList(true);
+      });
+      sum.appendChild(box);
+    });
+  }
+
+  function renderOrdList(scrollTop) {
+    ordRefBody.replaceChildren();
+    let items = ordAllItems;
+    if (ordFilter === "wait") items = items.filter(i => i.kind === "lone");
+    else if (ordFilter === "full") items = items.filter(i => i.kind !== "lone");
+
+    if (!items.length) {
+      ordRefBody.appendChild(el("div", "empty", ordFilter === "wait" ? "سفارش نیمه‌کاره‌ای وجود نداره 👌" : "موردی پیدا نشد"));
+      return;
+    }
+
+    let idx = 0;
+    const days = new Map();
+    items.forEach(it => {
+      if (!days.has(it.date)) days.set(it.date, []);
+      days.get(it.date).push(it);
+    });
+    days.forEach((list, date) => {
+      const head = el("div", "ord-day");
+      head.appendChild(el("span", "dd", date));
+      head.appendChild(el("span", null, list.length + " مورد"));
+      ordRefBody.appendChild(head);
+      list.forEach(it => ordRefBody.appendChild(buildOrdCard(it, idx++)));
+    });
+    if (scrollTop) ordRefBody.scrollTop = 0;
+  }
+
   async function openOrdRefs() {
     ordRefModal.classList.add("show");
+    ordFilter = "all";
     ordRefBody.replaceChildren(el("div", "skel"), el("div", "skel"), el("div", "skel"));
     $("ordRefSummary").replaceChildren();
 
@@ -1959,32 +2021,12 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closePayou
       return;
     }
 
-    const items = buildOrdItems(data);
-    const fullCount = items.filter(i => i.kind !== "lone").length;
-    const waitCount = items.length - fullCount;
-
-    const sum = $("ordRefSummary");
-    [["full", fullCount, "سفارش کامل"], ["wait", waitCount, "نیمه‌کاره"], ["", data.length, "کل ثبت‌ها"]].forEach(([c, n, l]) => {
-      const box = el("div", "ord-sum " + c);
-      box.appendChild(el("b", null, String(n)));
-      box.appendChild(el("span", null, l));
-      sum.appendChild(box);
-    });
-
-    let lastDate = null, dayCount = 0, idx = 0;
-    const days = new Map();
-    items.forEach(it => {
-      if (!days.has(it.date)) days.set(it.date, []);
-      days.get(it.date).push(it);
-    });
-    days.forEach((list, date) => {
-      const head = el("div", "ord-day");
-      head.appendChild(el("span", "dd", date));
-      head.appendChild(el("span", null, list.length + " مورد"));
-      ordRefBody.appendChild(head);
-      list.forEach(it => ordRefBody.appendChild(buildOrdCard(it, idx++)));
-    });
+    ordAllItems = buildOrdItems(data);
+    ordTotalRows = data.length;
+    renderOrdSummary();
+    renderOrdList(true);
   }
+
   function closeOrdRefs() { ordRefModal.classList.remove("show"); }
   $("ordRefBtn").addEventListener("click", openOrdRefs);
   $("ordRefClose").addEventListener("click", closeOrdRefs);
