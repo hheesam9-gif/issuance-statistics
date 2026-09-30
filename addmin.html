@@ -299,6 +299,40 @@
         padding: 0 10px;
       }
     }
+    .summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-top: 20px;
+}
+.summary-item {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px;
+  text-align: center;
+}
+.summary-item span { font-size: 13px; color: #64748b; }
+.summary-item b {
+  display: block;
+  font-size: 22px;
+  color: #2563eb;
+  margin-top: 4px;
+}
+.filter-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 15px;
+}
+.filter-row input { width: auto; flex: 1; min-width: 150px; margin: 0; }
+.jalali { display: block; font-size: 12px; color: #64748b; margin-top: 3px; }
+.changed td { background: #fef9c3 !important; }
+
+@media (max-width: 700px) {
+  .summary-grid { grid-template-columns: repeat(2, 1fr); }
+}
   </style>
 </head>
 
@@ -468,6 +502,7 @@
             id="newCount"
             min="0"
             placeholder="تعداد صدور"
+            onkeydown="if(event.key === 'Enter') addStat()"
             style="flex:1; min-width:180px;"
           >
 
@@ -477,12 +512,27 @@
           >
             ثبت آمار
           </button>
+          <button class="gray-btn" onclick="setDate(0)">امروز</button>
+<button class="gray-btn" onclick="setDate(-1)">دیروز</button>
 
         </div>
 
       </div>
 
+<div class="summary-grid">
+  <div class="summary-item"><span>مجموع صدور</span><b id="sumTotal">0</b></div>
+  <div class="summary-item"><span>روزهای ثبت‌شده</span><b id="sumDays">0</b></div>
+  <div class="summary-item"><span>میانگین روزانه</span><b id="sumAvg">0</b></div>
+  <div class="summary-item"><span>بیشترین روز</span><b id="sumMax">0</b></div>
+</div>
 
+<div class="filter-row">
+  <input type="date" id="filterFrom" title="از تاریخ">
+  <input type="date" id="filterTo" title="تا تاریخ">
+  <button class="blue-btn" onclick="renderStats()">اعمال فیلتر</button>
+  <button class="gray-btn" onclick="clearFilter()">حذف فیلتر</button>
+  <button class="green-btn" onclick="exportCSV()">📥 خروجی اکسل</button>
+</div>
       <!-- TABLE -->
 
       <div class="stats-table-wrapper">
@@ -832,7 +882,7 @@
 
 
     await loadStats();
-
+    setDate(0);
   }
 
 
@@ -840,158 +890,145 @@
      LOAD STATS
   ===================================================== */
 
-  async function loadStats() {
+let currentData = [];
 
-    if (!selectedUsername) {
-      return;
-    }
+function toJalali(d) {
+  return new Date(d + "T00:00:00").toLocaleDateString("fa-IR");
+}
 
+async function loadStats() {
+  if (!selectedUsername) return;
 
-    const tbody =
-      document.getElementById("statsBody");
+  const tbody = document.getElementById("statsBody");
+  tbody.innerHTML =
+    '<tr><td colspan="3">در حال دریافت اطلاعات...</td></tr>';
 
+  const { data, error } = await supabaseClient
+    .from("orders")
+    .select("username, order_date, order_count")
+    .eq("username", selectedUsername)
+    .order("order_date", { ascending: false });
 
+  if (error) {
+    console.error(error);
     tbody.innerHTML =
-      '<tr><td colspan="3">در حال دریافت اطلاعات...</td></tr>';
-
-
-    const {
-      data,
-      error
-    } = await supabaseClient
-      .from("orders")
-      .select("username, order_date, order_count")
-      .eq("username", selectedUsername)
-      .order("order_date", {
-        ascending: false
-      });
-
-
-    if (error) {
-
-      console.error(error);
-
-      tbody.innerHTML =
-        '<tr><td colspan="3">خطا در دریافت آمار</td></tr>';
-
-      return;
-    }
-
-
-    if (!data || data.length === 0) {
-
-      tbody.innerHTML =
-        '<tr><td colspan="3">برای این کاربر آماری ثبت نشده است.</td></tr>';
-
-      return;
-    }
-
-
-    tbody.innerHTML = "";
-
-
-    data.forEach(order => {
-
-      const tr =
-        document.createElement("tr");
-
-
-      const dateTd =
-        document.createElement("td");
-
-      dateTd.textContent =
-        order.order_date;
-
-
-      const countTd =
-        document.createElement("td");
-
-
-      const countInput =
-        document.createElement("input");
-
-      countInput.type = "number";
-
-      countInput.min = "0";
-
-      countInput.value =
-        order.order_count ?? 0;
-
-      countInput.className =
-        "number-input";
-
-
-      countTd.appendChild(
-        countInput
-      );
-
-
-      const actionTd =
-        document.createElement("td");
-
-
-      const saveBtn =
-        document.createElement("button");
-
-      saveBtn.textContent =
-        "ذخیره";
-
-      saveBtn.className =
-        "green-btn action-btn";
-
-
-      saveBtn.onclick =
-        () =>
-          updateStat(
-            order.order_date,
-            countInput.value
-          );
-
-
-      const deleteBtn =
-        document.createElement("button");
-
-      deleteBtn.textContent =
-        "حذف";
-
-      deleteBtn.className =
-        "red-btn action-btn";
-
-
-      deleteBtn.onclick =
-        () =>
-          deleteStat(
-            order.order_date
-          );
-
-
-      actionTd.appendChild(
-        saveBtn
-      );
-
-      actionTd.appendChild(
-        deleteBtn
-      );
-
-
-      tr.appendChild(
-        dateTd
-      );
-
-      tr.appendChild(
-        countTd
-      );
-
-      tr.appendChild(
-        actionTd
-      );
-
-
-      tbody.appendChild(tr);
-
-    });
-
+      '<tr><td colspan="3">خطا در دریافت آمار</td></tr>';
+    return;
   }
+
+  currentData = data || [];
+  renderStats();
+}
+
+function getFiltered() {
+  const from = document.getElementById("filterFrom").value;
+  const to = document.getElementById("filterTo").value;
+  return currentData.filter(o =>
+    (!from || o.order_date >= from) &&
+    (!to || o.order_date <= to)
+  );
+}
+
+function renderStats() {
+  const rows = getFiltered();
+  const tbody = document.getElementById("statsBody");
+
+  // خلاصه آمار
+  const counts = rows.map(o => Number(o.order_count) || 0);
+  const total = counts.reduce((a, b) => a + b, 0);
+  document.getElementById("sumTotal").textContent = total.toLocaleString("fa-IR");
+  document.getElementById("sumDays").textContent = rows.length.toLocaleString("fa-IR");
+  document.getElementById("sumAvg").textContent =
+    rows.length ? (total / rows.length).toLocaleString("fa-IR", { maximumFractionDigits: 1 }) : "۰";
+  document.getElementById("sumMax").textContent =
+    (counts.length ? Math.max(...counts) : 0).toLocaleString("fa-IR");
+
+  if (rows.length === 0) {
+    tbody.innerHTML =
+      '<tr><td colspan="3">آماری برای نمایش وجود ندارد.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = "";
+
+  rows.forEach(order => {
+    const tr = document.createElement("tr");
+
+    const dateTd = document.createElement("td");
+    dateTd.innerHTML =
+      order.order_date +
+      '<span class="jalali">' + toJalali(order.order_date) + "</span>";
+
+    const countTd = document.createElement("td");
+    const countInput = document.createElement("input");
+    countInput.type = "number";
+    countInput.min = "0";
+    countInput.value = order.order_count ?? 0;
+    countInput.className = "number-input";
+    countInput.oninput = () => {
+      tr.classList.toggle(
+        "changed",
+        String(countInput.value) !== String(order.order_count ?? 0)
+      );
+    };
+    countInput.onkeydown = e => {
+      if (e.key === "Enter") updateStat(order.order_date, countInput.value);
+    };
+    countTd.appendChild(countInput);
+
+    const actionTd = document.createElement("td");
+
+    const saveBtn = document.createElement("button");
+    saveBtn.textContent = "ذخیره";
+    saveBtn.className = "green-btn action-btn";
+    saveBtn.onclick = () => updateStat(order.order_date, countInput.value);
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.textContent = "حذف";
+    deleteBtn.className = "red-btn action-btn";
+    deleteBtn.onclick = () => deleteStat(order.order_date);
+
+    actionTd.appendChild(saveBtn);
+    actionTd.appendChild(deleteBtn);
+
+    tr.appendChild(dateTd);
+    tr.appendChild(countTd);
+    tr.appendChild(actionTd);
+    tbody.appendChild(tr);
+  });
+}
+
+function clearFilter() {
+  document.getElementById("filterFrom").value = "";
+  document.getElementById("filterTo").value = "";
+  renderStats();
+}
+
+function setDate(offset) {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  const z = n => String(n).padStart(2, "0");
+  document.getElementById("newDate").value =
+    d.getFullYear() + "-" + z(d.getMonth() + 1) + "-" + z(d.getDate());
+  document.getElementById("newCount").focus();
+}
+
+function exportCSV() {
+  const rows = getFiltered();
+  if (rows.length === 0) {
+    showMessage("داده‌ای برای خروجی وجود ندارد.");
+    return;
+  }
+  let csv = "\uFEFFusername,order_date,order_count\n";
+  rows.forEach(o => {
+    csv += o.username + "," + o.order_date + "," + o.order_count + "\n";
+  });
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "orders-" + selectedUsername + ".csv";
+  a.click();
+}
 
 
   /* =====================================================
@@ -1043,7 +1080,15 @@
 
       return;
     }
+    const existing = currentData.find(o => o.order_date === date);
 
+    if (existing) {
+      const ok = confirm(
+        "برای این تاریخ قبلاً " + existing.order_count +
+        " صدور ثبت شده است. با عدد جدید جایگزین شود؟"
+      );
+      if (!ok) return;
+    }
 
     const {
       error
@@ -1229,7 +1274,8 @@
   function clearSelectedUser() {
 
     selectedUsername = null;
-
+    document.getElementById("filterFrom").value = "";
+    document.getElementById("filterTo").value = "";
     document
       .getElementById("statsCard")
       .style.display = "none";
