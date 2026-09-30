@@ -1881,15 +1881,18 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closePayou
     });
 
     const left = rows.filter(r => !used.has(rk(r)));
-    const big = left.filter(r => isW(r, 0.7)).sort(sorter);
+    const bigLeft = left.filter(r => isW(r, 0.7)).sort(sorter);
     const small = left.filter(r => isW(r, 0.3)).sort(sorter);
-    const n = Math.min(big.length, small.length);
-    for (let i = 0; i < n; i++) {
-      const a = big[i], b = small[i];
+    small.forEach(b => {
+      let idx = -1;
+      for (let i = bigLeft.length - 1; i >= 0; i--) {
+        if (ordKey(bigLeft[i]) <= ordKey(b)) { idx = i; break; }
+      }
+      if (idx === -1) return;
+      const a = bigLeft.splice(idx, 1)[0];
       used.add(rk(a)); used.add(rk(b));
-      const later = ordKey(a) >= ordKey(b) ? a : b;
-      items.push({ kind: "pair", parts: [a, b], date: later.order_date, key: ordKey(later) });
-    }
+      items.push({ kind: "pair", parts: [a, b], date: b.order_date, key: ordKey(b) });
+    });
 
     rows.forEach(r => {
       if (used.has(rk(r))) return;
