@@ -532,6 +532,7 @@
   <button class="blue-btn" onclick="renderStats()">اعمال فیلتر</button>
   <button class="gray-btn" onclick="clearFilter()">حذف فیلتر</button>
   <button class="green-btn" onclick="exportCSV()">📥 خروجی اکسل</button>
+    <button class="red-btn" onclick="deleteAllStats()">🗑 حذف همه آمار</button>
 </div>
       <!-- TABLE -->
 
@@ -1266,7 +1267,57 @@ function exportCSV() {
 
   }
 
+  /* =====================================================
+     DELETE ALL STATS
+  ===================================================== */
 
+  async function deleteAllStats() {
+
+    if (!selectedUsername) {
+      return;
+    }
+
+    if (currentData.length === 0) {
+      showMessage("آماری برای حذف وجود ندارد.");
+      return;
+    }
+
+    const typed = prompt(
+      "با این کار همه آمار «" + selectedUsername + "» (" +
+      currentData.length +
+      " رکورد) برای همیشه حذف می‌شود.\n\n" +
+      "برای تأیید، نام کاربری را دقیقاً تایپ کنید:"
+    );
+
+    if (typed === null) {
+      return;
+    }
+
+    if (typed.trim() !== selectedUsername) {
+      showMessage("نام کاربری مطابقت نداشت. حذفی انجام نشد.");
+      return;
+    }
+
+    const { error } = await supabaseClient
+      .from("orders")
+      .delete()
+      .eq("username", selectedUsername);
+
+    if (error) {
+      console.error(error);
+      showMessage("خطا در حذف: " + error.message);
+      return;
+    }
+
+    showMessage("همه آمار این کاربر حذف شد.");
+
+    await loadStats();
+  }
+
+
+  /* =====================================================
+     CLEAR SELECTED USER
+  ===================================================== */
   /* =====================================================
      CLEAR SELECTED USER
   ===================================================== */
