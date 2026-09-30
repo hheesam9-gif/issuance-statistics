@@ -1069,7 +1069,11 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
       <span id="ordSavedCount"></span>
     </div>
     <div class="search-box">
-      <input class="ltr" id="ordSearch" type="text" placeholder="شماره سفارش یا نام نماینده..." autocomplete="off" spellcheck="false" />
+      <input class="ltr" id="ordSearch" type="text" placeholder="شماره سفارش، نام نماینده یا تاریخ (مثلاً 1405/07/02)..." autocomplete="off" spellcheck="false" />
+    </div>
+    <div class="actions" style="margin:0 0 10px;">
+      <button type="button" class="secondary" id="ordExportBtn">📥 خروجی اکسل</button>
+      <button type="button" class="danger-btn" id="ordDeleteAllBtn">🗑 حذف همه سفارش‌ها</button>
     </div>
     <div class="history" id="ordSavedList" style="max-height:320px;"></div>
     <div class="actions" style="margin-top:14px;">
@@ -2905,6 +2909,19 @@ $("ordCheckBtn").addEventListener("click", async () => {
   });
 
   pendingOrders = [...matched.values()];
+
+  let existingCount = 0;
+  try {
+    const nums = [...new Set(pendingOrders.map(r => r.order_number))];
+    const existingKeys = new Set();
+    for (let i = 0; i < nums.length; i += 150) {
+      const { data } = await supabaseClient
+        .from("order_refs").select("order_number, order_status")
+        .in("order_number", nums.slice(i, i + 150));
+      (data || []).forEach(r => existingKeys.add(r.order_number + "|" + r.order_status));
+    }
+    existingCount = pendingOrders.filter(r => existingKeys.has(r.order_number + "|" + r.order_status)).length;
+  } catch (e) {}
   animateNumber($("ordTileOk"), pendingOrders.length);
   animateNumber($("ordTileMissing"), notFound.length);
   animateNumber($("ordTileInvalid"), invalid.length);
@@ -2919,6 +2936,9 @@ $("ordCheckBtn").addEventListener("click", async () => {
   };
   if (notFound.length) addF("کاربرهایی که در سایت نیستن (ثبت نمی‌شن)", [...new Set(notFound)]);
   if (invalid.length) addF("خط‌های نامعتبر (نادیده گرفته شد)", invalid);
+  if (existingCount) {
+    folds.appendChild(mk("div", "note", existingCount + " سفارش از قبل ثبت شده؛ با ثبت نهایی جایگزین می‌شن (تکراری اضافه نمی‌شه)"));
+  }
 
   // پیش‌نمایش گروه‌بندی‌شده بر اساس نماینده
   const list = $("ordList");
@@ -3002,7 +3022,7 @@ async function loadSavedOrders() {
     .limit(200);
   if (term) {
     const t = term.replace(/[,()%]/g, "");
-    q = q.or("order_number.ilike.%" + t + "%,username.ilike.%" + t + "%");
+    q = q.or("order_number.ilike.%" + t + "%,username.ilike.%" + t + "%,order_date.ilike.%" + t + "%");
   }
   const { data, error } = await q;
   list.replaceChildren();
@@ -3058,6 +3078,69 @@ async function deleteSavedOrder(r) {
 $("ordSearch").addEventListener("input", () => {
   clearTimeout(ordSavedTimer);
   ordSavedTimer = setTimeout(loadSavedOrders, 300);
+});
+
+async function fetchAllOrderRefs() {
+  const rows = [];
+  const size = 1000;
+  let from = 0;
+  while (true) {
+    const { data, error } = await supabaseClient
+      .from("order_refs")
+      .select("order_number, order_status, order_type, order_date, order_time, username, weight")
+      .order("order_number", { ascending: true })
+      .order("order_status", { ascending: true })
+      .range(from, from + size - 1);
+    if (error) throw error;
+    rows.push(...data);
+    if (data.length < size) break;
+    from += size;
+  }
+  return rows;
+}
+
+$("ordExportBtn").addEventListener("click", async () => {
+  const btn = $("ordExportBtn");
+  btn.disabled = true;
+  try {
+    const rows = await fetchAllOrderRefs();
+    if (!rows.length) { toast("سفارشی برای خروجی وجود نداره", "error"); btn.disabled = false; return; }
+    const csv = "\ufefforder_number,username,type,status,date,time,weight\n" +
+      rows.map(r => [r.order_number, r.username, r.order_type, r.order_status, r.order_date, r.order_time, r.weight].map(csvCell).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "order-numbers-" + (jalaliOf(new Date()).replace(/\//g, "-") || "date") + ".csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    toast("خروجی " + rows.length + " سفارش دانلود شد", "ok");
+  } catch (e) {
+    toast("خروجی گرفته نشد: " + explainError(e), "error");
+  }
+  btn.disabled = false;
+});
+
+$("ordDeleteAllBtn").addEventListener("click", async () => {
+  const { count, error: cErr } = await supabaseClient
+    .from("order_refs").select("order_number", { count: "exact", head: true });
+  if (cErr) { toast("خواندن تعداد ناموفق بود: " + explainError(cErr), "error"); return; }
+  if (!count) { toast("سفارشی برای حذف وجود نداره", "error"); return; }
+
+  const typed = prompt(
+    "با این کار همه‌ی " + count + " شماره سفارش (برای همه‌ی نماینده‌ها) برای همیشه حذف می‌شه.\n" +
+    "پیشنهاد: اول دکمه‌ی «خروجی اکسل» رو بزن.\n\n" +
+    "برای تأیید، کلمه‌ی «حذف» رو تایپ کن:"
+  );
+  if (typed === null) return;
+  if (typed.trim() !== "حذف") { toast("تأیید نشد؛ چیزی حذف نشد", "error"); return; }
+
+  const { error } = await supabaseClient.from("order_refs").delete().not("order_number", "is", null);
+  if (error) { toast("حذف نشد: " + explainError(error), "error"); return; }
+  toast("همه‌ی شماره سفارش‌ها حذف شد", "ok");
+  loadSavedOrders();
 });
   /* =========================================================
      ورود مدیر (فقط h-abbasi)
