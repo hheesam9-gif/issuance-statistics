@@ -3033,18 +3033,20 @@ $("ordCheckBtn").addEventListener("click", async () => {
     const real = userMap.get(uname.toLowerCase());
     if (!real) { notFound.push(uname); return; }
 
-    matched.set(orderNo + "|" + status, {
-      order_number: orderNo,
-      username: real,
-      order_type: type,
-      order_status: status,
-      order_date: jalali,
-      order_time: dm[4] || "",
-      weight: Math.round(weight * 100) / 100
-    });
+matched.set(orderNo + "|" + status, {
+  order_number: orderNo,
+  username: real,
+  order_type: "",
+  order_status: status,   // فقط برای کلید یکتا نگه داشته شده
+  order_date: jalali,
+  order_time: "",
+  weight: Math.round(weight * 100) / 100
+});
   });
 
   pendingOrders = [...matched.values()];
+  $("ordText").value = "";
+  $("ordLineCount").textContent = "";
 
   let existingCount = 0;
   try {
@@ -3084,7 +3086,7 @@ $("ordCheckBtn").addEventListener("click", async () => {
     if (!byUser.has(r.username)) byUser.set(r.username, []);
     byUser.get(r.username).push(r);
   });
-  [...byUser.entries()].sort((a, b) => a[0].localeCompare(b[0])).forEach(([u, rows]) => {
+  [...byUser.entries()].sort((a, b) => a[0].localeCompare(b[0])).slice(0, 50).forEach(([u, rows]) => {
     const { pairs, rest } = pairOrders(rows);
     const row = mk("div", "row");
     const left = mk("span", "d", u);
@@ -3100,7 +3102,7 @@ $("ordCheckBtn").addEventListener("click", async () => {
     row.appendChild(right);
     list.appendChild(row);
   });
-
+  if (byUser.size > 50) list.appendChild(hintEl("فقط ۵۰ نماینده‌ی اول نمایش داده شد؛ همه‌ی موارد ثبت می‌شن"));
   $("ordSaveBtn").textContent = "ثبت نهایی " + pendingOrders.length + " سفارش";
   $("ordSaveBtn").disabled = pendingOrders.length === 0;
   $("ordPreview").style.display = "block";
@@ -3140,7 +3142,7 @@ $("ordSaveBtn").addEventListener("click", async () => {
   $("ordText").value = "";
   $("ordLineCount").textContent = "";
   $("ordCancelBtn").disabled = false;
-  $("ordCancelBtn").disabled = false;
+  $("ordSaveBtn").disabled = false;
   $("ordCheckBtn").disabled = false;
   loadSavedOrders();
 });
@@ -3192,7 +3194,7 @@ async function loadSavedOrders() {
     mid.appendChild(who);
     mid.appendChild(w);
 
-    const bot = mk("div", "d", r.order_date + (r.order_time ? "  " + r.order_time : "") + "  ·  " + (r.order_type || "") + "  ·  " + (r.order_status || ""));
+    const bot = mk("div", "d", r.order_date);
     bot.style.cssText = "font-size:11px; direction:ltr; text-align:right;";
 
     row.appendChild(top);
