@@ -1319,6 +1319,10 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
   }
   // تبدیل تاریخ کوتاه مثل 14-Sep به شمسی (سال = سال جاری میلادی)
   const EN_MONTHS = { jan:1, feb:2, mar:3, apr:4, may:5, jun:6, jul:7, aug:8, sep:9, oct:10, nov:11, dec:12 };
+    // خط جمع ماه مثل «Sep 24.3» یا «Oct 64.9» (فقط نام ماه، بدون روز)
+  function isMonthTotalName(s) {
+    return Object.prototype.hasOwnProperty.call(EN_MONTHS, String(s).toLowerCase().slice(0, 3)) && /^[A-Za-z]{3,9}$/.test(s);
+  }
   function parseShortDate(s) {
     const m = /^(\d{1,2})[-\/ ]([A-Za-z]{3})[A-Za-z]*$/.exec(s);
     if (!m) return null;
@@ -1450,6 +1454,8 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
       // حالت خودکار: نام‌کاربری، تاریخ میلادی، تعداد
             // فرمت جدید: خط کاربر (نام + مجموع) و زیرش خط‌های «14-Sep عدد»
       if (parts.length === 2) {
+        // خط جمع ماه (Sep / Oct ...): نادیده گرفته می‌شه و کاربر فعلی تغییر نمی‌کنه
+        if (isMonthTotalName(parts[0])) return;
         const jd = parseShortDate(parts[0]);
         if (jd) {
           if (currentUser === undefined) { invalid.push(trimmed); return; }
