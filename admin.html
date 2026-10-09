@@ -27,6 +27,7 @@
   } catch (e) {}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   * { box-sizing: border-box; }
   :root {
@@ -1066,7 +1067,8 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
     </div>
 
     <textarea id="ordText" spellcheck="false" style="min-height:160px;"
-      placeholder="305292231&#9;شخص ثالث&#9;0&#9;0&#9;financial suggestion submit&#9;2026/9/24, 14:01&#9;f-sarabadani&#9;1&#9;&#9;0&#9;0&#9;0&#9;0&#9;0.7"></textarea>
+     placeholder="304572166&#9;2026/9/16, 17:22&#9;m-rahati&#9;0.3"></textarea>
+    <input type="file" id="ordFile" accept=".xlsx,.xls,.csv,.tsv,.txt" style="margin-top:8px;" />
     <div class="paste-meta"><span id="ordLineCount"></span></div>
     <div class="actions"><button type="button" id="ordCheckBtn">بررسی لیست</button></div>
 
@@ -2986,7 +2988,23 @@ function pairOrders(rows) {
 
   return { pairs, rest };
 }
-
+$("ordFile").addEventListener("change", async (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  setOrdMsg("در حال خواندن فایل...");
+  try {
+    const buf = await f.arrayBuffer();
+    const wb = XLSX.read(buf, { type: "array" });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: "" });
+    $("ordText").value = rows.map(r => r.join("\t")).join("\n");
+    $("ordText").dispatchEvent(new Event("input"));
+    setOrdMsg("✔ " + rows.length + " ردیف خوانده شد؛ حالا «بررسی لیست» رو بزن", "ok");
+  } catch (err) {
+    setOrdMsg("خواندن فایل ناموفق بود: " + err.message, "error");
+  }
+  e.target.value = "";
+});
 $("ordText").addEventListener("input", () => {
   const n = $("ordText").value.split(/\r?\n/).filter(l => l.trim()).length;
   $("ordLineCount").textContent = n ? n + " خط وارد شده" : "";
@@ -3013,36 +3031,36 @@ $("ordCheckBtn").addEventListener("click", async () => {
   const notFound = [];
   const invalid = [];
 
-  raw.split(/\r?\n/).forEach(line => {
-    if (!line.trim()) return;
-    const p = line.split("\t").map(x => x.trim());
-    if (p.length < 8) { invalid.push(line.trim()); return; }
+raw.split(/\r?\n/).forEach(line => {
+  if (!line.trim()) return;
+  const p = line.split("\t").map(x => x.trim());
+  if (p.length < 4) { invalid.push(line.trim()); return; }
 
-    const orderNo = p[0];
-    const type = p[1];
-    const status = p[4];
-    const dt = p[5];
-    const uname = p[6];
-    const weight = parseFloat(p[p.length - 1]);
+  const orderNo = p[0];
+  const dt = p[1];
+  const uname = p[2];
+  const weight = parseFloat(p[3]);
 
-    const dm = /^(\d{4})\/(\d{1,2})\/(\d{1,2}),?\s*(\d{1,2}:\d{2})?$/.exec(dt);
-    if (!/^\d+$/.test(orderNo) || !dm || isNaN(weight)) { invalid.push(line.trim()); return; }
-    const jalali = gregorianToJalaliStr(parseInt(dm[1], 10), parseInt(dm[2], 10), parseInt(dm[3], 10));
-    if (!jalali) { invalid.push(line.trim()); return; }
+  const dm = /^(\d{4})\/(\d{1,2})\/(\d{1,2})/.exec(dt);
+  if (!/^\d+$/.test(orderNo) || !dm || isNaN(weight)) { invalid.push(line.trim()); return; }
 
-    const real = userMap.get(uname.toLowerCase());
-    if (!real) { notFound.push(uname); return; }
+  const jalali = gregorianToJalaliStr(parseInt(dm[1], 10), parseInt(dm[2], 10), parseInt(dm[3], 10));
+  if (!jalali) { invalid.push(line.trim()); return; }
 
-matched.set(orderNo + "|" + status, {
-  order_number: orderNo,
-  username: real,
-  order_type: "",
-  order_status: status,   // فقط برای کلید یکتا نگه داشته شده
-  order_date: jalali,
-  order_time: "",
-  weight: Math.round(weight * 100) / 100
-});
+  const real = userMap.get(uname.toLowerCase());
+  if (!real) { notFound.push(uname); return; }
+
+  const w = Math.round(weight * 100) / 100;
+  matched.set(orderNo + "|" + w, {
+    order_number: orderNo,
+    username: real,
+    order_type: "",
+    order_status: String(w),
+    order_date: jalali,
+    order_time: "",
+    weight: w
   });
+});
 
   pendingOrders = [...matched.values()];
   $("ordText").value = "";
