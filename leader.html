@@ -40,8 +40,7 @@ input{direction:ltr;text-align:right}
 .prog{height:6px;border-radius:9px;background:var(--in);overflow:hidden;margin-top:8px}.prog i{display:block;height:100%;background:linear-gradient(90deg,var(--a1),var(--ok))}
 .two{display:grid;grid-template-columns:1fr 200px;gap:14px}.donut{text-align:center}.s{font-size:12px;color:var(--dim);margin-top:6px}
 .up{color:var(--ok)}.dn{color:var(--err)}
-.hero{border-radius:18px;padding:22px;min-height:150px;background:linear-gradient(160deg,rgba(109,91,255,.55),rgba(30,20,90,.8)),var(--bg);border:1px solid var(--bd);position:relative;overflow:hidden}
-.hero h2{margin:0 0 6px;font-size:22px}.hero p{margin:0;font-size:13px;color:#d8dcff}.hero svg{position:absolute;left:0;bottom:0;width:60%;opacity:.55}
+.hero{display:block;width:100%;height:auto;border-radius:18px;border:1px solid var(--bd);box-shadow:0 12px 30px rgba(60,40,160,.35)}
 .mrow{display:flex;align-items:center;gap:8px;padding:8px 6px;border-bottom:1px solid var(--bd);font-size:12px;cursor:pointer}.mrow:hover{background:var(--row)}
 .mrow .mn{flex:1;direction:ltr;text-align:right;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis}.mrow small{display:block;color:var(--dim);font-weight:400}
 .mrow .n{direction:ltr;font-variant-numeric:tabular-nums;color:var(--dim)}
@@ -93,7 +92,7 @@ td.n,th.n{direction:ltr;text-align:center;font-variant-numeric:tabular-nums}tr.c
       </div>
     </div>
     <div class="col">
-      <div class="hero"><h2>سرگروه</h2><p>رهبری خوب، نتیجه‌های بزرگ می‌سازد.</p><svg viewBox="0 0 200 100"><polygon points="0,100 60,30 90,60 130,10 200,100" fill="#8b7bff"/></svg></div>
+      <img class="hero" src="leader-hero.jpg" alt="سرگروه">
       <div class="card"><h3>اعضای گروه</h3><input id="mq" placeholder="جستجوی نام کاربری..." style="margin-bottom:8px"><div class="sc2" id="mlist" style="max-height:340px"></div></div>
       <div class="card"><h3>دسترسی‌های سرگروه</h3><ul class="acc"><li>مشاهده گزارش‌های همه کارشناسان</li><li>اصلاح مستقیم گزارش‌ها</li><li>تغییر تارگت روزانه و کلی</li><li>خروجی اکسل از گزارش‌ها</li></ul></div>
     </div>
