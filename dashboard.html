@@ -2222,6 +2222,7 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closePayou
     $("avatar").textContent = initials(username);
 
     currentUsername = username;
+    await loadTiers();  
     loadNotices();
     loadRank();
     loadPeriods();
