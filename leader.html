@@ -11,78 +11,101 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box}
-:root{--bg:#0b0e1e;--card:rgba(19,23,46,.8);--bd:rgba(255,255,255,.09);--text:#eef1fb;--dim:#9aa3c7;--in:rgba(8,10,26,.6);--row:rgba(255,255,255,.05);--a1:#6d5bff;--a2:#4f7bff;--ok:#4ade80;--err:#ff6b7d;--warn:#fbbf24}
-[data-theme=light]{--bg:#e9ecf7;--card:rgba(255,255,255,.85);--bd:rgba(110,115,180,.2);--text:#1b1f3a;--dim:#5a6088;--in:rgba(238,241,255,.9);--row:rgba(90,96,136,.07)}
-body{margin:0;font-family:Vazirmatn,Tahoma,sans-serif;background:radial-gradient(900px 400px at 85% -10%,rgba(109,91,255,.28),transparent),var(--bg);color:var(--text);padding:calc(18px + env(safe-area-inset-top,0px)) 16px 40px;min-height:100dvh}
-.wrap{max-width:1000px;margin:auto}
-header{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
-h1{font-size:20px;margin:0}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:20px;padding:20px;backdrop-filter:blur(14px)}
+:root{--bg:#080b1c;--card:rgba(19,23,52,.72);--bd:rgba(255,255,255,.09);--text:#eef1fb;--dim:#9aa3c7;--in:rgba(8,10,26,.6);--row:rgba(255,255,255,.05);--a1:#6d5bff;--a2:#4f7bff;--ok:#2fd3a7;--err:#ff6b7d;--warn:#fbbf24}
+[data-theme=light]{--bg:#e9ecf7;--card:rgba(255,255,255,.88);--bd:rgba(110,115,180,.2);--text:#1b1f3a;--dim:#5a6088;--in:rgba(238,241,255,.9);--row:rgba(90,96,136,.07)}
+body{margin:0;font-family:Vazirmatn,Tahoma,sans-serif;background:radial-gradient(900px 500px at 90% -10%,rgba(109,91,255,.35),transparent),radial-gradient(700px 500px at 0% 100%,rgba(79,123,255,.2),transparent),var(--bg);color:var(--text);min-height:100dvh}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:calc(12px + env(safe-area-inset-top,0px)) 20px 12px;border-bottom:1px solid var(--bd)}
+.brand{display:flex;align-items:center;gap:10px}.logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(140deg,var(--a1),var(--a2));display:flex;align-items:center;justify-content:center;font-size:20px}
+.brand b{font-size:16px;display:block}.brand small,.clk{font-size:12px;color:var(--dim)}
+.usr{display:flex;align-items:center;gap:12px}.usr .av2{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--a1),var(--a2));display:flex;align-items:center;justify-content:center}
+.shell{display:flex;align-items:flex-start;gap:0}
+#nav{width:210px;flex:none;padding:16px 12px;border-left:1px solid var(--bd);min-height:calc(100dvh - 68px);position:sticky;top:0;display:flex;flex-direction:column;gap:6px}
+#nav button{display:flex;align-items:center;gap:10px;width:100%;background:transparent;border:0;color:var(--text);font-weight:400;padding:12px 14px;border-radius:12px;text-align:right}
+#nav button:hover{background:var(--row)}#nav button.on{background:linear-gradient(135deg,var(--a1),var(--a2));font-weight:700;color:#fff}
+#nav hr{border:0;border-top:1px solid var(--bd);width:100%;margin:8px 0}
+main{flex:1;min-width:0;padding:16px 18px 40px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:18px;padding:18px;backdrop-filter:blur(14px)}
+.card h3{font-size:15px;margin:0 0 12px}
 button{padding:10px 16px;border:0;border-radius:11px;background:linear-gradient(135deg,var(--a1),var(--a2));color:#fff;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
 button.sec{background:var(--row);border:1px solid var(--bd);color:var(--text);font-weight:400}
-button.del{background:none;color:var(--err);padding:4px 8px}
-button:disabled{opacity:.5}
+button.del{background:none;color:var(--err);padding:4px 8px}button:disabled{opacity:.5}
+button.ed{background:rgba(79,123,255,.2);border:1px solid rgba(79,123,255,.5);color:#a9c0ff;padding:5px 12px;font-weight:400}
 input,select{width:100%;padding:10px 12px;border-radius:11px;border:1px solid var(--bd);background:var(--in);color:var(--text);font:inherit;font-size:13px}
 input{direction:ltr;text-align:right}
-.tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
-.tabs button{flex:1;background:var(--row);border:1px solid var(--bd);color:var(--dim);font-weight:400}
-.tabs button.on{background:linear-gradient(135deg,var(--a1),var(--a2));color:#fff;font-weight:700}
-.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.bar>*{flex:1 1 140px}
-.gsel{display:flex;gap:8px;align-items:center;margin-bottom:14px}.gsel label{font-size:13px;color:var(--dim);white-space:nowrap}.gsel select{max-width:320px;font-weight:700}
-.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}.chips button{background:var(--row);border:1px solid var(--bd);color:var(--text);font-weight:400;border-radius:99px;padding:8px 16px}.chips button.on{background:linear-gradient(135deg,var(--a1),var(--a2));color:#fff;font-weight:700}.chips button small{opacity:.7;margin-right:4px}
-.sum{font-size:12px;color:var(--dim);margin:6px 2px 10px}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
-.kpi{background:var(--row);border:1px solid var(--bd);border-radius:14px;padding:14px}
-.kpi .l{font-size:12px;color:var(--dim)}.kpi .v{font-size:24px;font-weight:700;margin:4px 0;font-variant-numeric:tabular-nums}.kpi .s{font-size:12px;color:var(--dim)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}.chips button{background:var(--row);border:1px solid var(--bd);color:var(--text);font-weight:400;border-radius:99px;padding:8px 16px}.chips button.on{background:linear-gradient(135deg,var(--a1),var(--a2));color:#fff;font-weight:700}.chips small{opacity:.7;margin-right:4px}
+.dash{display:grid;grid-template-columns:1fr 340px;gap:14px;align-items:start}.col{display:flex;flex-direction:column;gap:14px;min-width:0}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.kpi{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:14px;position:relative}
+.kpi .ic{position:absolute;top:12px;left:12px;font-size:20px;opacity:.9}.kpi .l{font-size:12px;color:var(--dim);margin-top:2px}.kpi .v{font-size:26px;font-weight:700;margin:6px 0;font-variant-numeric:tabular-nums}.kpi .s{font-size:11px;color:var(--dim)}
+.prog{height:6px;border-radius:9px;background:var(--in);overflow:hidden;margin-top:8px}.prog i{display:block;height:100%;background:linear-gradient(90deg,var(--a1),var(--ok))}
+.two{display:grid;grid-template-columns:1fr 200px;gap:14px}.donut{text-align:center}.s{font-size:12px;color:var(--dim);margin-top:6px}
 .up{color:var(--ok)}.dn{color:var(--err)}
-.prog{height:6px;border-radius:9px;background:var(--in);overflow:hidden;margin-top:6px}.prog i{display:block;height:100%;background:linear-gradient(90deg,var(--a1),#2fd3a7)}
-.chart{margin:4px 0 16px;overflow-x:auto}.chart h3,.card h3{font-size:14px;margin:0 0 8px}
-.chip{display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px}
-.c-ok{background:rgba(74,222,128,.15);color:var(--ok)}.c-mid{background:rgba(79,123,255,.18);color:#8fb0ff}.c-bad{background:rgba(251,191,36,.16);color:var(--warn)}.c-zero{background:rgba(255,107,125,.15);color:var(--err)}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th,td{padding:9px 8px;text-align:right;border-bottom:1px solid var(--bd)}
-td.n,th.n{direction:ltr;text-align:center;font-variant-numeric:tabular-nums}
-tr.click{cursor:pointer}tr.click:hover{background:var(--row)}
-.scroll{max-height:460px;overflow:auto}
-.row{display:flex;gap:8px;align-items:center;background:var(--row);border:1px solid var(--bd);border-radius:11px;padding:8px 10px;margin-bottom:6px}
-.row .d{flex:1;direction:ltr;text-align:right;color:var(--dim)}.row input{width:90px;text-align:center}
+.hero{border-radius:18px;padding:22px;min-height:150px;background:linear-gradient(160deg,rgba(109,91,255,.55),rgba(30,20,90,.8)),var(--bg);border:1px solid var(--bd);position:relative;overflow:hidden}
+.hero h2{margin:0 0 6px;font-size:22px}.hero p{margin:0;font-size:13px;color:#d8dcff}.hero svg{position:absolute;left:0;bottom:0;width:60%;opacity:.55}
+.mrow{display:flex;align-items:center;gap:8px;padding:8px 6px;border-bottom:1px solid var(--bd);font-size:12px;cursor:pointer}.mrow:hover{background:var(--row)}
+.mrow .mn{flex:1;direction:ltr;text-align:right;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis}.mrow small{display:block;color:var(--dim);font-weight:400}
+.mrow .n{direction:ltr;font-variant-numeric:tabular-nums;color:var(--dim)}
+.av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--a1),var(--a2));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex:none}
+.chip{display:inline-block;padding:2px 10px;border-radius:99px;font-size:11px;white-space:nowrap}
+.c-ok{background:rgba(47,211,167,.16);color:var(--ok)}.c-bad{background:rgba(251,191,36,.16);color:var(--warn)}.c-zero{background:rgba(255,107,125,.15);color:var(--err)}
+.acc{list-style:none;margin:0;padding:0;font-size:12px;display:flex;flex-direction:column;gap:8px}.acc li:before{content:"✔";color:var(--ok);margin-left:8px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.bar>*{flex:1 1 140px}.hd{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px}.hd h3{margin:0}.hd>div{display:flex;gap:8px}.hd select{width:auto}
+.sum{font-size:12px;color:var(--dim);margin:6px 2px 10px}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 8px;text-align:right;border-bottom:1px solid var(--bd)}th{color:var(--dim);font-weight:400;font-size:12px}
+td.n,th.n{direction:ltr;text-align:center;font-variant-numeric:tabular-nums}tr.click{cursor:pointer}tr.click:hover{background:var(--row)}
+.scroll{max-height:420px;overflow:auto}.sc2{max-height:300px;overflow:auto}
+.row{display:flex;gap:8px;align-items:center;background:var(--row);border:1px solid var(--bd);border-radius:11px;padding:8px 10px;margin-bottom:6px}.row .d{flex:1;direction:ltr;text-align:right;color:var(--dim)}.row input{width:90px;text-align:center}
 .msg{min-height:18px;font-size:13px;margin-top:10px;text-align:center;color:var(--dim)}.ok{color:var(--ok)}.er{color:var(--err)}
 [hidden]{display:none!important}
+@media(max-width:1000px){.dash{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:800px){.shell{flex-direction:column}#nav{width:100%;min-height:0;position:static;flex-direction:row;overflow-x:auto;border-left:0;border-bottom:1px solid var(--bd);padding:8px}#nav button{white-space:nowrap;width:auto;padding:9px 12px}#nav hr{display:none}.two{grid-template-columns:1fr}.clk{display:none}}
 </style>
 </head>
 <body>
-<div class="wrap" id="app" hidden>
-  <header>
-    <h1>پنل سرگروه <span id="who" style="font-size:12px;color:var(--dim);direction:ltr;display:inline-block"></span></h1>
-    <button class="sec" id="logout">خروج</button>
-  </header>
-
+<div id="app" hidden>
+<div class="top">
+  <div class="brand"><div class="logo">📊</div><div><b>پنل سرگروه</b><small>مدیریت و نظارت بر گزارش‌ها</small></div></div>
+  <div class="clk" id="clk"></div>
+  <div class="usr"><span>🔔</span><div style="text-align:left"><b style="font-size:13px">سرگروه <span id="who" style="font-size:11px;color:var(--dim);direction:ltr;display:inline-block"></span></b><br><small style="color:var(--dim);font-size:11px">خوش آمدید</small></div><div class="av2">👤</div><button class="sec" id="logout">خروج</button></div>
+</div>
+<div class="shell">
+<div id="nav">
+  <button data-t="dash" class="on">🏠 داشبورد</button>
+  <button data-t="report">📄 گزارش‌ها</button>
+  <button data-t="edit">✎ اصلاح گزارش‌ها</button>
+  <button data-t="target">🎯 تغییر تارگت</button>
+  <button data-t="members">👥 اعضای گروه</button>
+  <button data-t="xls">📥 خروجی اکسل</button>
+</div>
+<main>
   <div class="chips" id="chips"></div><input type="hidden" id="grp" value="">
 
-  <div class="tabs" id="tabs">
-    <button data-t="dash" class="on">داشبورد</button>
-    <button data-t="report">گزارش گروه</button>
-    <button data-t="edit">اصلاح گزارش</button>
-    <button data-t="target">تارگت</button>
-  </div>
-
-  <section data-p="dash">
-    <div class="bar" style="margin-bottom:10px"><select id="dday"></select></div>
-    <div class="kpis" id="kpis"></div>
-    <div class="card chart"><h3 id="chT">عملکرد گروه در ۷ روز اخیر</h3><div id="chart"></div></div>
-    <div class="card">
-      <h3>نیروهای گروه: مقایسه‌ی روز انتخابی با روز قبل</h3>
-      <div class="scroll"><table><thead><tr><th class="n">#</th><th>کارشناس</th><th>نام</th><th class="n">روز قبل</th><th class="n">این روز</th><th class="n">تغییر</th><th class="n">درصد تارگت</th><th>وضعیت</th></tr></thead><tbody id="dtb"></tbody></table></div>
+  <section data-p="dash"><div class="dash">
+    <div class="col">
+      <div class="kpis" id="kpis"></div>
+      <div class="two">
+        <div class="card"><h3 id="chT">عملکرد گروه</h3><div id="chart"></div><div class="s">🟣 تارگت &nbsp; 🟢 انجام‌شده</div></div>
+        <div class="card donut"><h3>درصد تحقق کل گروه</h3><div id="donut"></div></div>
+      </div>
+      <div class="card">
+        <div class="hd"><h3>گزارش‌های روز</h3><div><select id="dday"></select><button class="sec" id="refresh">⟳ بروزرسانی</button></div></div>
+        <div class="sc2"><table><thead><tr><th>نام کاربری</th><th>نام</th><th class="n">تاریخ</th><th class="n">تارگت</th><th class="n">انجام</th><th class="n">درصد</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody id="ttb"></tbody></table></div>
+      </div>
     </div>
+    <div class="col">
+      <div class="hero"><h2>سرگروه</h2><p>رهبری خوب، نتیجه‌های بزرگ می‌سازد.</p><svg viewBox="0 0 200 100"><polygon points="0,100 60,30 90,60 130,10 200,100" fill="#8b7bff"/></svg></div>
+      <div class="card"><h3>اعضای گروه</h3><input id="mq" placeholder="جستجوی نام کاربری..." style="margin-bottom:8px"><div class="sc2" id="mlist" style="max-height:340px"></div></div>
+      <div class="card"><h3>دسترسی‌های سرگروه</h3><ul class="acc"><li>مشاهده گزارش‌های همه کارشناسان</li><li>اصلاح مستقیم گزارش‌ها</li><li>تغییر تارگت روزانه و کلی</li><li>خروجی اکسل از گزارش‌ها</li></ul></div>
+    </div>
+  </div></section>
+
+  <section class="card" data-p="members" hidden>
+    <h3>اعضای گروه: مقایسه‌ی روز انتخابی با روز قبل</h3>
+    <div class="scroll"><table><thead><tr><th class="n">#</th><th>کارشناس</th><th>نام</th><th class="n">روز قبل</th><th class="n">این روز</th><th class="n">تغییر</th><th class="n">درصد تارگت</th><th>وضعیت</th></tr></thead><tbody id="dtb"></tbody></table></div>
   </section>
 
   <section class="card" data-p="report" hidden>
-    <div class="bar">
-      <input id="from" placeholder="از تاریخ 1405/07/01">
-      <input id="to" placeholder="تا تاریخ 1405/07/30">
-      <input id="q" placeholder="جستجوی کارشناس...">
-      <button id="xls">📥 خروجی اکسل</button>
-    </div>
+    <div class="bar"><input id="from" placeholder="از تاریخ 1405/07/01"><input id="to" placeholder="تا تاریخ 1405/07/30"><input id="q" placeholder="جستجوی کارشناس..."><button id="xls">📥 خروجی اکسل</button></div>
     <div class="sum" id="sum"></div>
     <div class="scroll"><table><thead><tr><th class="n">#</th><th>کارشناس</th><th>نام</th><th class="n">روز</th><th class="n">میانگین</th><th class="n">مجموع</th></tr></thead><tbody id="tb"></tbody></table></div>
   </section>
@@ -102,10 +125,11 @@ tr.click{cursor:pointer}tr.click:hover{background:var(--row)}
     <div class="bar" style="margin-top:10px"><button class="sec" id="tadd">+ پله جدید</button><button id="tsave">ذخیره پله‌ها</button></div>
   </section>
   <div class="msg" id="msg" role="status"></div>
+</main>
+</div>
 </div>
 
-<script>
-const sb=supabase.createClient("https://jmbpskxloffcrbxiqcdy.supabase.co","eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptYnBza3hsb2ZmY3JieGlxY2R5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MjU3MDgsImV4cCI6MjEwNTQwMTcwOH0.ZFHwX9hg7FxyjcEV4oJRpA2Rgoh0UqL2Xj7D3IO3YMU",{auth:{persistSession:true,autoRefreshToken:true,storage:{
+<script>const sb=supabase.createClient("https://jmbpskxloffcrbxiqcdy.supabase.co","eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptYnBza3hsb2ZmY3JieGlxY2R5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MjU3MDgsImV4cCI6MjEwNTQwMTcwOH0.ZFHwX9hg7FxyjcEV4oJRpA2Rgoh0UqL2Xj7D3IO3YMU",{auth:{persistSession:true,autoRefreshToken:true,storage:{
   getItem:k=>{try{return sessionStorage.getItem(k)||localStorage.getItem(k)}catch(e){return null}},
   setItem:(k,v)=>{let r="false";try{r=localStorage.getItem("remember_pref")||"false"}catch(e){}try{if(r==="true"){localStorage.setItem(k,v);sessionStorage.removeItem(k)}else{sessionStorage.setItem(k,v);localStorage.removeItem(k)}}catch(e){}},
   removeItem:k=>{try{localStorage.removeItem(k)}catch(e){}try{sessionStorage.removeItem(k)}catch(e){}}}}});
@@ -135,9 +159,9 @@ const toks=l=>String(l||"").split(/\s*[-–—]\s*/).map(x=>x.trim()).filter(Boo
 })();
 $("logout").onclick=async()=>{await sb.auth.signOut();try{localStorage.removeItem("remember_pref")}catch(e){}location.replace("index.html")};
 function goTab(t){
-  document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
+  document.querySelectorAll("#nav [data-t]").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
   document.querySelectorAll("[data-p]").forEach(p=>p.hidden=p.dataset.p!==t);say("")}
-$("tabs").onclick=e=>{const t=e.target.dataset.t;if(t)goTab(t)};
+$("nav").onclick=e=>{const b=e.target.closest("[data-t]");if(!b)return;const t=b.dataset.t;if(t==="xls")exportXls();else goTab(t)};
 
 /* ---------- بارگذاری داده ---------- */
 async function loadAgents(){
@@ -163,7 +187,7 @@ async function loadData(){
     if(MYNAME&&names.includes(MYNAME))$("grp").value=MYNAME;
     drawChips(names);
     if(!names.length)say("هیچ سرگروهی پیدا نشد؛ احتمالاً دسترسی خواندن جدول agent_leaders برای سرگروه‌ها بسته است (SQL پایین پیام در چت)","er");
-    $("dday").replaceChildren(...DAYS.slice(0,60).map((d,i)=>{const o=document.createElement("option");o.value=d;o.textContent=(i===0?"آخرین روز ثبت‌شده: ":"روز ")+d;return o}));
+    $("dday").replaceChildren(...DAYS.slice(0,60).map((d,i)=>{const o=document.createElement("option");o.value=d;o.textContent=(i===0?"آخرین روز: ":"روز ")+d;return o}));
     $("ul").replaceChildren(...USERS.map(u=>{const x=document.createElement("option");x.value=u;return x}));
     try{const{data}=await sb.from("app_settings").select("value").eq("key","daily_target").maybeSingle();if(data&&+data.value>0)DT=+data.value}catch(e){}
     $("dt").value=DT;
@@ -176,39 +200,49 @@ const chg=(a,b)=>b?Math.round((a-b)/b*100):(a?100:0);
 const arrow=p=>p>0?'<span class="up">▲ '+p+'%</span>':p<0?'<span class="dn">▼ '+Math.abs(p)+'%</span>':'<span>— 0%</span>';
 
 /* ---------- داشبورد ---------- */
+const stOf=(c,pr)=>c===0?["بدون صدور","c-zero"]:pr>=100?["محقق شد","c-ok"]:pr>=85?["خوب","c-ok"]:["نیاز به توجه","c-bad"];
+const kpi=(ic,l,v,s,p)=>'<div class="kpi"><div class="ic">'+ic+'</div><div class="l">'+l+'</div><div class="v">'+v+'</div><div class="s">'+s+'</div>'+(p==null?'':'<div class="prog"><i style="width:'+Math.min(p,100)+'%"></i></div>')+'</div>';
 function renderDash(){
-  const ms=members(),sel=$("dday").value||DAYS[0],i=DAYS.indexOf(sel),prev=DAYS[i+1];
-  if(!sel){$("kpis").replaceChildren(mk("div","sum","هنوز آماری ثبت نشده"));return}
-  const t=tot(sel,ms),pt=prev?tot(prev,ms):0,tg=ms.length*DT,pc=tg?Math.round(t/tg*100):0,active=ms.filter(u=>(BY.get(sel)||new Map()).get(u)>0).length;
-  $("kpis").innerHTML=
-   '<div class="kpi"><div class="l">کل کارشناسان گروه</div><div class="v">'+ms.length+'</div><div class="s">'+active+' نفر در این روز صدور داشتن</div></div>'+
-   '<div class="kpi"><div class="l">مجموع صدور این روز</div><div class="v">'+fmt(t)+'</div><div class="s">'+sel+'</div></div>'+
-   '<div class="kpi"><div class="l">مجموع روز قبل</div><div class="v">'+fmt(pt)+'</div><div class="s">'+(prev||"—")+' · '+arrow(chg(t,pt))+'</div></div>'+
-   '<div class="kpi"><div class="l">تارگت گروه ('+fmt(DT)+' × '+ms.length+')</div><div class="v">'+fmt(tg)+'</div><div class="s">تحقق: '+pc+'%</div><div class="prog"><i style="width:'+Math.min(pc,100)+'%"></i></div></div>';
-  // نمودار ۷ روز
-  const d7=DAYS.slice(i,i+7).reverse(),vals=d7.map(d=>tot(d,ms)),mx=Math.max(tg,...vals,1)*1.1,W=640,H=210,bw=W/Math.max(d7.length,1);
-  let s='<svg viewBox="0 0 '+W+' '+(H+28)+'" width="100%" style="min-width:420px">';
+  const ms=members(),sel=$("dday").value||DAYS[0];
+  if(!sel){$("kpis").innerHTML='<div class="sum">هنوز آماری ثبت نشده</div>';return}
+  const i=DAYS.indexOf(sel),prev=DAYS[i+1],cm=BY.get(sel)||new Map(),pm=BY.get(prev)||new Map();
+  const t=tot(sel,ms),pt=prev?tot(prev,ms):0,tg=ms.length*DT,pc=tg?Math.round(t/tg*100):0,active=ms.filter(u=>cm.get(u)>0).length;
+  const d7=DAYS.slice(i,i+7).reverse(),vals=d7.map(d=>tot(d,ms)),wt=tg*d7.length,wd=vals.reduce((a,b)=>a+b,0),wp=wt?Math.round(wd/wt*100):0;
+  $("kpis").innerHTML=kpi("👥","کل کارشناسان گروه",ms.length,"همه اعضا")+kpi("✅","گزارش‌های این روز",active,"از "+ms.length+" نفر · "+arrow(chg(t,pt)))+kpi("🎯","تارگت روزانه گروه",fmt(tg),"انجام شده: "+fmt(t)+" ("+pc+"%)",pc)+kpi("📈","تارگت کلی ("+d7.length+" روز)",fmt(wt),"انجام شده: "+fmt(wd)+" ("+wp+"%)",wp);
+  // نمودار
+  const mx=Math.max(tg,...vals,1)*1.1,W=640,H=200,bw=W/Math.max(d7.length,1);
+  let s='<svg viewBox="0 0 '+W+' '+(H+26)+'" width="100%">';
   [0,.25,.5,.75,1].forEach(f=>{const y=H-f*H;s+='<line x1="0" x2="'+W+'" y1="'+y+'" y2="'+y+'" stroke="currentColor" opacity=".1"/><text x="2" y="'+(y-3)+'" font-size="10" fill="currentColor" opacity=".5">'+Math.round(f*mx)+'</text>'});
-  d7.forEach((d,k)=>{const h=vals[k]/mx*H,x=k*bw+bw*.25;
-    s+='<rect x="'+x+'" y="'+(H-h)+'" width="'+bw*.5+'" height="'+h+'" rx="5" fill="'+(d===sel?"#2fd3a7":"#6d5bff")+'"/><text x="'+(x+bw*.25)+'" y="'+(H-h-5)+'" text-anchor="middle" font-size="11" fill="currentColor">'+fmt(vals[k])+'</text><text x="'+(x+bw*.25)+'" y="'+(H+16)+'" text-anchor="middle" font-size="10" fill="currentColor" opacity=".7">'+d.slice(5)+'</text>'});
-  const ty=H-tg/mx*H;
-  s+='<line x1="0" x2="'+W+'" y1="'+ty+'" y2="'+ty+'" stroke="#fbbf24" stroke-dasharray="6 4" stroke-width="2"/><text x="'+(W-4)+'" y="'+(ty-5)+'" text-anchor="end" font-size="11" fill="#fbbf24">تارگت '+fmt(tg)+'</text></svg>';
+  let pts="";
+  d7.forEach((d,k)=>{const x=k*bw+bw*.2,w=bw*.28,h1=tg/mx*H,h2=vals[k]/mx*H;
+    s+='<rect x="'+x+'" y="'+(H-h1)+'" width="'+w+'" height="'+h1+'" rx="4" fill="#6d5bff" opacity=".85"/><rect x="'+(x+w+3)+'" y="'+(H-h2)+'" width="'+w+'" height="'+h2+'" rx="4" fill="#2fd3a7"/><text x="'+(x+w)+'" y="'+(H+16)+'" text-anchor="middle" font-size="10" fill="currentColor" opacity=".7">'+d.slice(5)+'</text>';
+    pts+=(k?" ":"")+(x+w)+","+(H-h2)});
+  s+='<polyline points="'+pts+'" fill="none" stroke="#4f7bff" stroke-width="2"/></svg>';
   $("chart").innerHTML=s;
-  $("chT").textContent="عملکرد "+($("grp").value?"گروه "+$("grp").value:"همه")+" در "+d7.length+" روز اخیر (نمودار زرد = تارگت)";
-  // جدول نفرات
+  $("chT").textContent="عملکرد "+($("grp").value?"گروه "+$("grp").value:"همه")+" در "+d7.length+" روز گذشته";
+  // دونات
+  const C=2*Math.PI*52;
+  $("donut").innerHTML='<svg viewBox="0 0 130 130" width="150"><circle cx="65" cy="65" r="52" fill="none" stroke="currentColor" opacity=".1" stroke-width="12"/><circle cx="65" cy="65" r="52" fill="none" stroke="#2fd3a7" stroke-width="12" stroke-linecap="round" stroke-dasharray="'+(Math.min(wp,100)/100*C)+' '+C+'" transform="rotate(-90 65 65)"/><text x="65" y="73" text-anchor="middle" font-size="26" font-weight="700" fill="currentColor">'+wp+'%</text></svg><div class="s" style="color:#2fd3a7;font-weight:700;direction:ltr">'+fmt(wd)+' / '+fmt(wt)+'</div><div class="s">'+arrow(chg(t,pt))+' نسبت به روز قبل</div>';
+  // ردیف‌ها
+  const rows=ms.map(u=>{const c=cm.get(u)||0,p=pm.get(u)||0,pr=DT?Math.round(c/DT*100):0;return{u,c,p,pr,st:stOf(c,pr),nm:(AG.get(u)||{}).name||""}}).sort((a,b)=>b.c-a.c||a.u.localeCompare(b.u));
+  const q=$("mq").value.trim().toLowerCase(),ml=$("mlist");ml.replaceChildren();
+  rows.filter(r=>!q||r.u.toLowerCase().includes(q)||r.nm.includes(q)).forEach(r=>{
+    const d=mk("div","mrow");d.append(mk("span","av",(r.u[0]||"?").toUpperCase()));
+    const n=mk("span","mn",r.u);n.append(mk("small",null,r.nm));
+    d.append(n,mk("span","n",r.c+" / "+fmt(DT)),mk("span","n",r.pr+"%"),mk("span","chip "+r.st[1],r.st[0]));
+    d.onclick=()=>{$("eu").value=r.u;goTab("edit");showUser(r.u)};ml.appendChild(d)});
+  const tt=$("ttb");tt.replaceChildren();
+  rows.forEach(r=>{const tr=mk("tr"),un=mk("td",null,r.u),sc=mk("td"),ac=mk("td"),eb=mk("button","ed","✎ ویرایش");
+    un.style.direction="ltr";sc.append(mk("span","chip "+r.st[1],r.st[0]));eb.onclick=()=>{$("eu").value=r.u;goTab("edit");showUser(r.u)};ac.append(eb);
+    tr.append(un,mk("td",null,r.nm||"—"),mk("td","n",sel),mk("td","n",fmt(DT)),mk("td","n",fmt(r.c)),mk("td","n",r.pr+"%"),sc,ac);tt.appendChild(tr)});
   const tb=$("dtb");tb.replaceChildren();
-  const rows=ms.map(u=>({u,c:(BY.get(sel)||new Map()).get(u)||0,p:prev?((BY.get(prev)||new Map()).get(u)||0):0})).sort((a,b)=>b.c-a.c||a.u.localeCompare(b.u));
-  rows.forEach((r,k)=>{
-    const pr=DT?Math.round(r.c/DT*100):0,st=r.c===0?["بدون صدور","c-zero"]:pr>=100?["محقق شد","c-ok"]:pr>=70?["خوب","c-mid"]:["نیاز به توجه","c-bad"];
-    const tr=mk("tr","click");
-    const dtd=mk("td","n");dtd.innerHTML=arrow(chg(r.c,r.p));
-    const stt=mk("td"),ch=mk("span","chip "+st[1],st[0]);stt.appendChild(ch);
-    const un=mk("td",null,r.u);un.style.direction="ltr";
-    tr.append(mk("td","n",k+1),un,mk("td",null,(AG.get(r.u)||{}).name||"—"),mk("td","n",fmt(r.p)),mk("td","n",fmt(r.c)),dtd,mk("td","n",pr+"%"),stt);
-    tr.onclick=()=>{$("eu").value=r.u;goTab("edit");showUser(r.u)};
-    tb.appendChild(tr)});
+  rows.forEach((r,k)=>{const tr=mk("tr","click"),dtd=mk("td","n"),stt=mk("td"),un=mk("td",null,r.u);dtd.innerHTML=arrow(chg(r.c,r.p));stt.append(mk("span","chip "+r.st[1],r.st[0]));un.style.direction="ltr";
+    tr.append(mk("td","n",k+1),un,mk("td",null,r.nm||"—"),mk("td","n",fmt(r.p)),mk("td","n",fmt(r.c)),dtd,mk("td","n",r.pr+"%"),stt);
+    tr.onclick=()=>{$("eu").value=r.u;goTab("edit");showUser(r.u)};tb.appendChild(tr)});
 }
-$("dday").addEventListener("input",renderDash);
+$("dday").addEventListener("input",renderDash);$("mq").addEventListener("input",renderDash);
+$("refresh").onclick=()=>loadData();
+(function clock(){const d=new Date();try{$("clk").textContent=new Intl.DateTimeFormat("fa-IR-u-ca-persian",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(d)+" — "+new Intl.DateTimeFormat("fa-IR",{hour:"2-digit",minute:"2-digit"}).format(d)}catch(e){}setTimeout(clock,30000)})();
 
 /* ---------- گزارش گروه ---------- */
 function agg(){
@@ -237,7 +271,7 @@ function drawChips(names){
     const b=mk("button",v===cur?"on":"",t);b.append(mk("small",null,"("+cnt(v)+")"));
     b.onclick=()=>{$("grp").value=v;drawChips(names);renderAll()};box.appendChild(b)});
 }
-$("xls").onclick=()=>{
+function exportXls(){
   const rows=agg();
   const s1=rows.map((x,i)=>({"رتبه":i+1,"کارشناس":x.u,"نام":(AG.get(x.u)||{}).name||"","سرگروه":(AG.get(x.u)||{}).label||"","روز":x.days,"میانگین":x.days?Math.round(x.total/x.days*100)/100:0,"مجموع":Math.round(x.total*100)/100}));
   const f=dk($("from").value)||0,t=dk($("to").value)||99999999,names=new Set(rows.map(r=>r.u));
@@ -247,7 +281,8 @@ $("xls").onclick=()=>{
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(s1),"خلاصه");
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(s2),"جزئیات روزانه");
   XLSX.writeFile(wb,"group-report.xlsx");
-};
+}
+$("xls").onclick=exportXls;
 
 /* ---------- اصلاح مستقیم ---------- */
 function showUser(u){
