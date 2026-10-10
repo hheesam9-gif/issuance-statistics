@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0b0e1e">
+<title>پنل سرگروه</title>
+<script>try{if(localStorage.getItem("site_theme")==="light")document.documentElement.setAttribute("data-theme","light");}catch(e){}</script>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box}
+:root{--bg:#0b0e1e;--card:rgba(19,23,46,.8);--bd:rgba(255,255,255,.09);--text:#eef1fb;--dim:#9aa3c7;--in:rgba(8,10,26,.6);--row:rgba(255,255,255,.05);--a1:#6d5bff;--a2:#4f7bff;--ok:#4ade80;--err:#ff6b7d}
+[data-theme=light]{--bg:#e9ecf7;--card:rgba(255,255,255,.85);--bd:rgba(110,115,180,.2);--text:#1b1f3a;--dim:#5a6088;--in:rgba(238,241,255,.9);--row:rgba(90,96,136,.07)}
+body{margin:0;font-family:Vazirmatn,Tahoma,sans-serif;background:var(--bg);color:var(--text);padding:calc(18px + env(safe-area-inset-top,0px)) 16px 40px;min-height:100dvh}
+.wrap{max-width:900px;margin:auto}
+header{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+h1{font-size:20px;margin:0}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:20px;padding:20px}
+button{padding:10px 16px;border:0;border-radius:11px;background:linear-gradient(135deg,var(--a1),var(--a2));color:#fff;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+button.sec{background:var(--row);border:1px solid var(--bd);color:var(--text);font-weight:400}
+button.del{background:none;color:var(--err);padding:4px 8px}
+button:disabled{opacity:.5}
+input,select{width:100%;padding:10px 12px;border-radius:11px;border:1px solid var(--bd);background:var(--in);color:var(--text);font:inherit;font-size:13px;direction:ltr;text-align:right}
+.tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.tabs button{flex:1;background:var(--row);border:1px solid var(--bd);color:var(--dim);font-weight:400}
+.tabs button.on{background:linear-gradient(135deg,var(--a1),var(--a2));color:#fff;font-weight:700}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.bar>*{flex:1 1 140px}
+.sum{font-size:12px;color:var(--dim);margin:6px 2px 10px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:9px 8px;text-align:right;border-bottom:1px solid var(--bd)}
+td.n,th.n{direction:ltr;text-align:center;font-variant-numeric:tabular-nums}
+tr.click{cursor:pointer}tr.click:hover{background:var(--row)}
+.scroll{max-height:460px;overflow:auto}
+.row{display:flex;gap:8px;align-items:center;background:var(--row);border:1px solid var(--bd);border-radius:11px;padding:8px 10px;margin-bottom:6px}
+.row .d{flex:1;direction:ltr;text-align:right;color:var(--dim)}.row input{width:90px;text-align:center}
+.msg{min-height:18px;font-size:13px;margin-top:10px;text-align:center;color:var(--dim)}.ok{color:var(--ok)}.er{color:var(--err)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap" id="app" hidden>
+  <header>
+    <h1>پنل سرگروه <span id="who" style="font-size:12px;color:var(--dim);direction:ltr;display:inline-block"></span></h1>
+    <button class="sec" id="logout">خروج</button>
+  </header>
+  <div class="tabs" id="tabs">
+    <button data-t="report" class="on">گزارش گروه</button>
+    <button data-t="edit">اصلاح گزارش</button>
+    <button data-t="target">تارگت</button>
+  </div>
+
+  <section class="card" data-p="report">
+    <div class="bar">
+      <input id="from" placeholder="از تاریخ 1405/07/01">
+      <input id="to" placeholder="تا تاریخ 1405/07/30">
+      <input id="q" placeholder="جستجوی کارشناس...">
+      <button id="xls">📥 خروجی اکسل</button>
+    </div>
+    <div class="sum" id="sum"></div>
+    <div class="scroll"><table><thead><tr><th class="n">#</th><th>کارشناس</th><th class="n">روز</th><th class="n">میانگین</th><th class="n">مجموع</th></tr></thead><tbody id="tb"></tbody></table></div>
+  </section>
+
+  <section class="card" data-p="edit" hidden>
+    <div class="bar"><input id="eu" list="ul" placeholder="نام کاربری کارشناس"><datalist id="ul"></datalist><button id="eload">نمایش</button></div>
+    <div class="bar"><input id="ed" placeholder="تاریخ 1405/07/15"><input id="ec" type="number" step="any" placeholder="تعداد"><button id="eadd">ثبت / جایگزینی</button></div>
+    <div id="hist"></div>
+  </section>
+
+  <section class="card" data-p="target" hidden>
+    <div class="sum">پله‌های پاداش هر روز. «از تعداد» و «پاداش هر سفارش (تومان)» را تغییر بدهید؛ روی پنل همه‌ی نماینده‌ها اعمال می‌شود.</div>
+    <div id="tiers"></div>
+    <div class="bar" style="margin-top:10px"><button class="sec" id="tadd">+ پله جدید</button><button id="tsave">ذخیره تارگت</button></div>
+  </section>
+  <div class="msg" id="msg" role="status"></div>
+</div>
+
+<script>
+const sb=supabase.createClient("https://jmbpskxloffcrbxiqcdy.supabase.co","eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptYnBza3hsb2ZmY3JieGlxY2R5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MjU3MDgsImV4cCI6MjEwNTQwMTcwOH0.ZFHwX9hg7FxyjcEV4oJRpA2Rgoh0UqL2Xj7D3IO3YMU",{auth:{persistSession:true,autoRefreshToken:true,storage:{
+  getItem:k=>{try{return sessionStorage.getItem(k)||localStorage.getItem(k)}catch(e){return null}},
+  setItem:(k,v)=>{let r="false";try{r=localStorage.getItem("remember_pref")||"false"}catch(e){}try{if(r==="true"){localStorage.setItem(k,v);sessionStorage.removeItem(k)}else{sessionStorage.setItem(k,v);localStorage.removeItem(k)}}catch(e){}},
+  removeItem:k=>{try{localStorage.removeItem(k)}catch(e){}try{sessionStorage.removeItem(k)}catch(e){}}}}});
+const $=id=>document.getElementById(id);
+const nd=s=>String(s).replace(/[۰-۹]/g,d=>d.charCodeAt(0)-0x06F0).replace(/[٠-٩]/g,d=>d.charCodeAt(0)-0x0660).replace(/٫/g,".").trim();
+const dk=s=>{const m=/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/.exec(nd(s));return m?+m[1]*10000+ +m[2]*100+ +m[3]:0};
+const fmt=n=>String(Math.round(Number(n)*100)/100);
+const say=(t,c)=>{$("msg").textContent=t;$("msg").className="msg "+(c||"")};
+const mk=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
+async function fetchAll(table,cols){const r=[];let f=0;for(;;){const{data,error}=await sb.from(table).select(cols).range(f,f+999);if(error)throw error;r.push(...data);if(data.length<1000)break;f+=1000}return r}
+const touch=()=>sb.from("app_settings").upsert({key:"last_report_update",value:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:"key"});
+
+let ORD=[],USERS=[],cur="";
+
+/* ---------- گیت: فقط سرگروه ---------- */
+(async()=>{
+  try{
+    const{data:{session}}=await sb.auth.getSession();
+    if(!session){location.replace("index.html");return}
+    const{data:ok}=await sb.rpc("is_leader");
+    if(!ok){location.replace("dashboard.html");return}
+    $("who").textContent=(session.user.email||"").split("@")[0];
+    $("app").hidden=false;
+    await Promise.all([loadData(),loadTiers()]);
+  }catch(e){location.replace("index.html")}
+})();
+$("logout").onclick=async()=>{await sb.auth.signOut();try{localStorage.removeItem("remember_pref")}catch(e){}location.replace("index.html")};
+$("tabs").onclick=e=>{const t=e.target.dataset.t;if(!t)return;
+  document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
+  document.querySelectorAll("[data-p]").forEach(p=>p.hidden=p.dataset.p!==t);say("")};
+
+/* ---------- گزارش گروه ---------- */
+async function loadData(){
+  say("در حال بارگذاری...");
+  try{
+    const[o,p]=await Promise.all([fetchAll("orders","username,order_date,order_count"),fetchAll("profiles","username")]);
+    ORD=o;USERS=p.map(x=>x.username).sort();
+    $("ul").replaceChildren(...USERS.map(u=>{const x=document.createElement("option");x.value=u;return x}));
+    say("");renderReport();
+  }catch(e){say("خواندن اطلاعات ناموفق بود: "+e.message,"er")}
+}
+function agg(){
+  const f=dk($("from").value)||0,t=dk($("to").value)||99999999,q=$("q").value.trim().toLowerCase();
+  const m=new Map(USERS.map(u=>[u,{u,days:0,total:0}]));
+  ORD.forEach(r=>{const k=dk(r.order_date);if(k<f||k>t)return;const x=m.get(r.username);if(!x)return;x.days++;x.total+=Number(r.order_count)||0});
+  return[...m.values()].filter(x=>!q||x.u.toLowerCase().includes(q)).sort((a,b)=>b.total-a.total||a.u.localeCompare(b.u));
+}
+function renderReport(){
+  const rows=agg(),tb=$("tb");tb.replaceChildren();
+  let sum=0;
+  rows.forEach((x,i)=>{sum+=x.total;
+    const tr=mk("tr","click");
+    tr.append(mk("td","n",i+1),mk("td",null,x.u),mk("td","n",x.days),mk("td","n",x.days?fmt(x.total/x.days):"—"),mk("td","n",fmt(x.total)));
+    tr.querySelector("td:nth-child(2)").style.direction="ltr";
+    tr.onclick=()=>{$("eu").value=x.u;document.querySelector('[data-t="edit"]').click();showUser(x.u)};
+    tb.appendChild(tr)});
+  $("sum").textContent=rows.length+" کارشناس · مجموع گروه: "+fmt(sum);
+}
+["from","to","q"].forEach(i=>$(i).addEventListener("input",renderReport));
+$("xls").onclick=()=>{
+  const rows=agg();
+  const s1=rows.map((x,i)=>({"رتبه":i+1,"کارشناس":x.u,"روز":x.days,"میانگین":x.days?Math.round(x.total/x.days*100)/100:0,"مجموع":Math.round(x.total*100)/100}));
+  const f=dk($("from").value)||0,t=dk($("to").value)||99999999,names=new Set(rows.map(r=>r.u));
+  const s2=ORD.filter(r=>{const k=dk(r.order_date);return k>=f&&k<=t&&names.has(r.username)}).sort((a,b)=>a.username.localeCompare(b.username)||dk(a.order_date)-dk(b.order_date))
+    .map(r=>({"کارشناس":r.username,"تاریخ":r.order_date,"تعداد":Number(r.order_count)}));
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(s1),"خلاصه");
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(s2),"جزئیات روزانه");
+  XLSX.writeFile(wb,"group-report.xlsx");
+};
+
+/* ---------- اصلاح مستقیم ---------- */
+function showUser(u){
+  cur=u;const h=$("hist");h.replaceChildren();
+  const list=ORD.filter(r=>r.username===u).sort((a,b)=>dk(b.order_date)-dk(a.order_date));
+  if(!list.length){h.appendChild(mk("div","sum","آماری ثبت نشده"));return}
+  list.forEach(r=>{
+    const row=mk("div","row"),inp=mk("input");inp.type="number";inp.step="any";inp.value=fmt(r.order_count);
+    const sv=mk("button",null,"ذخیره"),dl=mk("button","del","🗑️");
+    sv.onclick=()=>save(u,r.order_date,inp.value);
+    dl.onclick=async()=>{if(!confirm("رکورد "+r.order_date+" حذف شود؟"))return;
+      const{error}=await sb.from("orders").delete().eq("username",u).eq("order_date",r.order_date);
+      if(error){say(error.message,"er");return}
+      ORD=ORD.filter(x=>!(x.username===u&&x.order_date===r.order_date));touch();showUser(u);renderReport();say("حذف شد","ok")};
+    row.append(mk("span","d",r.order_date),inp,sv,dl);h.appendChild(row)});
+}
+async function save(u,date,val){
+  const c=parseFloat(nd(val));
+  if(!u||!/^\d{4}\/\d{2}\/\d{2}$/.test(date)||isNaN(c)){say("نام کاربری، تاریخ (1405/07/15) و تعداد را درست وارد کنید","er");return}
+  if(!USERS.includes(u)){say("این کارشناس در سایت نیست","er");return}
+  const{error}=await sb.from("orders").upsert({username:u,order_date:date,order_count:c},{onConflict:"username,order_date"});
+  if(error){say("ثبت نشد: "+error.message,"er");return}
+  const i=ORD.findIndex(x=>x.username===u&&x.order_date===date);
+  if(i>=0)ORD[i].order_count=c;else ORD.push({username:u,order_date:date,order_count:c});
+  touch();showUser(u);renderReport();say("✔ ثبت شد","ok");
+}
+$("eload").onclick=()=>showUser($("eu").value.trim());
+$("eadd").onclick=()=>save($("eu").value.trim(),nd($("ed").value),$("ec").value);
+
+/* ---------- تارگت ---------- */
+const COLORS=["#7c83aa","#4f7bff","#2fd3a7","#fbbf24","#f5c542","#ff6b7d","#c084fc","#fb923c"];
+let TIERS=[{min:0,bonus:0},{min:8,bonus:4000},{min:15,bonus:9000},{min:20,bonus:12000},{min:25,bonus:14000},{min:30,bonus:16000}];
+async function loadTiers(){
+  try{const{data}=await sb.from("app_settings").select("value").eq("key","target_tiers").maybeSingle();
+    if(data&&data.value){const t=typeof data.value==="string"?JSON.parse(data.value):data.value;if(Array.isArray(t)&&t.length)TIERS=t.map(x=>({min:+x.min,bonus:+x.bonus}))}}catch(e){}
+  drawTiers();
+}
+function drawTiers(){
+  const box=$("tiers");box.replaceChildren();
+  TIERS.forEach((t,i)=>{
+    const row=mk("div","row"),a=mk("input"),b=mk("input"),dl=mk("button","del","🗑️");
+    a.type=b.type="number";a.value=t.min;b.value=t.bonus;a.placeholder="از تعداد";b.placeholder="پاداش";
+    a.oninput=()=>t.min=+a.value;b.oninput=()=>t.bonus=+b.value;
+    a.style.width=b.style.width="120px";if(i===0)a.disabled=true;
+    dl.onclick=()=>{if(i===0)return;TIERS.splice(i,1);drawTiers()};
+    row.append(mk("span","d","پله "+(i+1)),a,b,dl);box.appendChild(row)});
+}
+$("tadd").onclick=()=>{TIERS.push({min:(TIERS[TIERS.length-1].min||0)+5,bonus:0});drawTiers()};
+$("tsave").onclick=async()=>{
+  const t=TIERS.map(x=>({min:+x.min,bonus:+x.bonus})).sort((a,b)=>a.min-b.min);
+  if(t[0].min!==0||t.some((x,i)=>isNaN(x.min)||isNaN(x.bonus)||x.bonus<0||(i&&x.min===t[i-1].min))){say("پله اول باید از 0 باشد، مقادیر عدد و بدون تکرار","er");return}
+  const out=t.map((x,i)=>({min:x.min,bonus:x.bonus,color:COLORS[i%COLORS.length],
+    label:i===0&&x.bonus===0?"بدون پاداش":(i===t.length-1?x.min+" به بالا":x.min+" تا "+(t[i+1].min-1))}));
+  const{error}=await sb.from("app_settings").upsert({key:"target_tiers",value:JSON.stringify(out),updated_at:new Date().toISOString()},{onConflict:"key"});
+  if(error){say("ذخیره نشد: "+error.message,"er");return}
+  TIERS=t;drawTiers();say("✔ تارگت ذخیره شد و روی پنل نماینده‌ها اعمال می‌شود","ok");
+};
+</script>
+</body>
+</html>
