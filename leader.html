@@ -29,6 +29,7 @@ input{direction:ltr;text-align:right}
 .tabs button.on{background:linear-gradient(135deg,var(--a1),var(--a2));color:#fff;font-weight:700}
 .bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.bar>*{flex:1 1 140px}
 .gsel{display:flex;gap:8px;align-items:center;margin-bottom:14px}.gsel label{font-size:13px;color:var(--dim);white-space:nowrap}.gsel select{max-width:320px;font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}.chips button{background:var(--row);border:1px solid var(--bd);color:var(--text);font-weight:400;border-radius:99px;padding:8px 16px}.chips button.on{background:linear-gradient(135deg,var(--a1),var(--a2));color:#fff;font-weight:700}.chips button small{opacity:.7;margin-right:4px}
 .sum{font-size:12px;color:var(--dim);margin:6px 2px 10px}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
 .kpi{background:var(--row);border:1px solid var(--bd);border-radius:14px;padding:14px}
@@ -56,7 +57,7 @@ tr.click{cursor:pointer}tr.click:hover{background:var(--row)}
     <button class="sec" id="logout">خروج</button>
   </header>
 
-  <div class="gsel"><label for="grp">سرگروه:</label><select id="grp"><option value="">همه‌ی کارشناسان</option></select></div>
+  <div class="chips" id="chips"></div><input type="hidden" id="grp" value="">
 
   <div class="tabs" id="tabs">
     <button data-t="dash" class="on">داشبورد</button>
@@ -159,13 +160,14 @@ async function loadData(){
     BY=new Map();ORD.forEach(r=>{if(!BY.has(r.order_date))BY.set(r.order_date,new Map());BY.get(r.order_date).set(r.username,Number(r.order_count)||0)});
     DAYS=[...BY.keys()].sort((a,b)=>dk(b)-dk(a));
     const names=[...new Set([...AG.values()].flatMap(x=>x.tk))].sort((x,y)=>x.localeCompare(y,"fa"));
-    $("grp").replaceChildren(...[["","همه‌ی کارشناسان"],...names.map(n=>[n,"گروه "+n])].map(([v,t])=>{const o=document.createElement("option");o.value=v;o.textContent=t;return o}));
     if(MYNAME&&names.includes(MYNAME))$("grp").value=MYNAME;
+    drawChips(names);
+    if(!names.length)say("هیچ سرگروهی پیدا نشد؛ احتمالاً دسترسی خواندن جدول agent_leaders برای سرگروه‌ها بسته است (SQL پایین پیام در چت)","er");
     $("dday").replaceChildren(...DAYS.slice(0,60).map((d,i)=>{const o=document.createElement("option");o.value=d;o.textContent=(i===0?"آخرین روز ثبت‌شده: ":"روز ")+d;return o}));
     $("ul").replaceChildren(...USERS.map(u=>{const x=document.createElement("option");x.value=u;return x}));
     try{const{data}=await sb.from("app_settings").select("value").eq("key","daily_target").maybeSingle();if(data&&+data.value>0)DT=+data.value}catch(e){}
     $("dt").value=DT;
-    say("");renderAll();
+    renderAll();
   }catch(e){say("خواندن اطلاعات ناموفق بود: "+e.message,"er")}
 }
 const members=()=>{const g=$("grp").value;return USERS.filter(u=>!g||((AG.get(u)||{}).tk||[]).includes(g))};
@@ -228,7 +230,13 @@ function renderReport(){
 }
 function renderAll(){renderDash();renderReport()}
 ["from","to","q"].forEach(i=>$(i).addEventListener("input",renderReport));
-$("grp").addEventListener("input",renderAll);
+function drawChips(names){
+  const box=$("chips"),cur=$("grp").value;box.replaceChildren();
+  const cnt=n=>USERS.filter(u=>!n||((AG.get(u)||{}).tk||[]).includes(n)).length;
+  [["","همه"],...names.map(n=>[n,n])].forEach(([v,t])=>{
+    const b=mk("button",v===cur?"on":"",t);b.append(mk("small",null,"("+cnt(v)+")"));
+    b.onclick=()=>{$("grp").value=v;drawChips(names);renderAll()};box.appendChild(b)});
+}
 $("xls").onclick=()=>{
   const rows=agg();
   const s1=rows.map((x,i)=>({"رتبه":i+1,"کارشناس":x.u,"نام":(AG.get(x.u)||{}).name||"","سرگروه":(AG.get(x.u)||{}).label||"","روز":x.days,"میانگین":x.days?Math.round(x.total/x.days*100)/100:0,"مجموع":Math.round(x.total*100)/100}));
