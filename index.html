@@ -746,12 +746,17 @@ input:focus + .icon { stroke: var(--accent2); }
     stageEl.classList.add("shake");
     submitting = false;
   }
-   let leaderMode = false;
-   document.getElementById("leaderBtn").addEventListener("click", () => { leaderMode = true; form.requestSubmit(); });
+  let leaderMode = false;
+  loginBtn.addEventListener("click", () => { leaderMode = false; });
+  document.getElementById("leaderBtn").addEventListener("click", () => { leaderMode = true; form.requestSubmit(); });
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (submitting) return;
     submitting = true;
+
+    const asLeader = leaderMode;
+    leaderMode = false;
 
     const username = document.getElementById("username").value.trim();
     const password = passwordEl.value;
@@ -774,11 +779,13 @@ input:focus + .icon { stroke: var(--accent2); }
       failLogin("اتصال برقرار نشد، دوباره تلاش کنید");
       return;
     }
-   if (leaderMode) {
-     const { data: ok } = await supabaseClient.rpc("is_leader");
-     if (!ok) { await supabaseClient.auth.signOut(); failLogin("این حساب سرگروه نیست"); return; }
-   }
+
     if (result.error) { failLogin("نام کاربری یا رمز عبور اشتباه است"); return; }
+
+    if (asLeader) {
+      const { data: ok } = await supabaseClient.rpc("is_leader");
+      if (!ok) { await supabaseClient.auth.signOut(); failLogin("این حساب سرگروه نیست"); return; }
+    }
 
     localStorage.setItem("current_username", username);
     setBtn("success", "ورود موفق");
@@ -786,14 +793,19 @@ input:focus + .icon { stroke: var(--accent2); }
 
     await saveCredential(username, password);
     setTimeout(() => stageEl.classList.add("leaving"), 450);
-    setTimeout(() => window.location.replace("dashboard.html"), 900);
+    setTimeout(() => window.location.replace(asLeader ? "leader.html" : "dashboard.html"), 900);
   });
-  /* اگر قبلاً وارد شده، مستقیم برو داشبورد — فقط یک‌بار، بدون افزودن به تاریخچه */
+
+  /* اگر قبلاً وارد شده، به پنل مناسب برو */
   (async () => {
     try {
       const { data: { session } } = await supabaseClient.auth.getSession();
-      if (session) { window.location.replace("dashboard.html"); return; }
-    } catch (e) { /* اگر بررسی سشن خطا داد، همین‌جا بمان و فرم را نشان بده */ }
+      if (session) {
+        const { data: ok } = await supabaseClient.rpc("is_leader");
+        window.location.replace(ok ? "leader.html" : "dashboard.html");
+        return;
+      }
+    } catch (e) { /* همین‌جا بمان و فرم را نشان بده */ }
     trySilentFill();
   })();
 </script>
