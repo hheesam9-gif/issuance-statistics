@@ -77,6 +77,7 @@ td.n,th.n{direction:ltr;text-align:center;font-variant-numeric:tabular-nums}tr.c
 .scroll{max-height:440px;overflow:auto}.sc2{max-height:320px;overflow:auto}
 ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-thumb{background:var(--bd);border-radius:9px}
 .row{display:flex;gap:8px;align-items:center;background:var(--row);border:1px solid var(--bd);border-radius:13px;padding:8px 12px;margin-bottom:7px}.row .d{flex:1;direction:ltr;text-align:right;color:var(--dim)}.row input{width:100px;text-align:center}
+.tl{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--dim)}.tl input{width:150px}
 .uhead{display:flex;align-items:center;gap:12px;margin:4px 0 14px}.uhead .av{width:46px;height:46px;font-size:17px}.uhead b{font-size:16px}.uhead small{display:block;color:var(--dim)}.uhead .tt{margin-right:auto;background:var(--row);border:1px solid var(--bd);border-radius:99px;padding:6px 14px;font-size:12px}
 .seg{display:flex;gap:4px;padding:4px;background:var(--row);border:1px solid var(--bd);border-radius:14px;margin-bottom:14px}.seg button{flex:1;padding:9px;border:0;border-radius:11px;background:transparent;color:var(--dim);cursor:pointer;font-size:13px;transition:.2s}.seg button.on{background:linear-gradient(135deg,var(--a1),var(--a2));color:#fff;font-weight:700;box-shadow:var(--glow)}.seg em{font-style:normal;background:rgba(255,255,255,.25);border-radius:9px;padding:0 6px;font-size:11px}.seg em:empty{display:none}
 .ef{display:flex;flex-direction:column;gap:8px}.ef .t2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -169,7 +170,7 @@ td.n,th.n{direction:ltr;text-align:center;font-variant-numeric:tabular-nums}tr.c
     <h3><i class="ic" data-i="chart"></i>پله‌های پاداش</h3>
     <div class="sum">«از تعداد» و «پاداش هر سفارش (تومان)» را تغییر بدهید؛ روی پنل همه‌ی نماینده‌ها اعمال می‌شود.</div>
     <div id="tiers"></div>
-    <div class="bar" style="margin-top:10px"><button class="btn g" id="tadd"><i class="ic" data-i="plus" style="width:16px;height:16px"></i>پله جدید</button><button class="btn" id="tsave"><i class="ic" data-i="save" style="width:16px;height:16px"></i>ذخیره پله‌ها</button></div>
+    <div class="bar" style="margin-top:10px"><button class="btn g" id="treset">بازگردانی پیش‌فرض</button><button class="btn g" id="tadd"><i class="ic" data-i="plus" style="width:16px;height:16px"></i>پله جدید</button><button class="btn" id="tsave"><i class="ic" data-i="save" style="width:16px;height:16px"></i>ذخیره پله‌ها</button></div>
   </section>
 </main>
 </div>
@@ -431,7 +432,8 @@ $("dtsave").onclick=async()=>{
   DT=v;renderDash();say("✔ تارگت روزانه ذخیره شد","ok");
 };
 const COLORS=["#7c83aa","#4f7bff","#2fd3a7","#fbbf24","#f5c542","#ff6b7d","#c084fc","#fb923c"];
-let TIERS=[{min:0,bonus:0},{min:8,bonus:4000},{min:15,bonus:9000},{min:20,bonus:12000},{min:25,bonus:14000},{min:30,bonus:16000}];
+const DEF=[{min:0,bonus:0},{min:8,bonus:4000},{min:15,bonus:9000},{min:20,bonus:12000},{min:25,bonus:14000},{min:30,bonus:16000}];
+let TIERS=DEF.map(x=>({...x}));
 async function loadTiers(){
   try{const{data}=await sb.from("app_settings").select("value").eq("key","target_tiers").maybeSingle();
     if(data&&data.value){const t=typeof data.value==="string"?JSON.parse(data.value):data.value;if(Array.isArray(t)&&t.length)TIERS=t.map(x=>({min:+x.min,bonus:+x.bonus}))}}catch(e){}
@@ -443,14 +445,18 @@ function drawTiers(){
     const row=mk("div","row"),a=mk("input"),b=mk("input"),dl=mk("button","ib");dl.innerHTML=ic("trash");
     a.type=b.type="number";a.value=t.min;b.value=t.bonus;a.placeholder="از تعداد";b.placeholder="پاداش";
     a.oninput=()=>t.min=+a.value;b.oninput=()=>t.bonus=+b.value;
-    a.style.width=b.style.width="120px";if(i===0)a.disabled=true;
+    if(i===0)a.disabled=true;const lab=(t,el)=>{const w=mk("label","tl",t);w.append(el);return w};
     dl.onclick=()=>{if(i===0)return;TIERS.splice(i,1);drawTiers()};
-    row.append(mk("span","d","پله "+(i+1)),a,b,dl);box.appendChild(row)});
+    row.append(mk("span","d","پله "+(i+1)),lab("از تعداد",a),lab("پاداش هر سفارش (تومان)",b),dl);box.appendChild(row)});
 }
+$("treset").onclick=()=>{TIERS=DEF.map(x=>({...x}));drawTiers();say("پله‌ها به پیش‌فرض برگشت؛ برای اعمال «ذخیره پله‌ها» را بزن","ok")};
 $("tadd").onclick=()=>{TIERS.push({min:(TIERS[TIERS.length-1].min||0)+5,bonus:0});drawTiers()};
 $("tsave").onclick=async()=>{
   const t=TIERS.map(x=>({min:+x.min,bonus:+x.bonus})).sort((a,b)=>a.min-b.min);
   if(t[0].min!==0||t.some((x,i)=>isNaN(x.min)||isNaN(x.bonus)||x.bonus<0||(i&&x.min===t[i-1].min))){say("پله اول باید از 0 باشد، مقادیر عدد و بدون تکرار","er");return}
+  const low=t.find(x=>x.bonus>0&&x.bonus<100);
+  if(low&&!confirm("پاداش "+low.bonus+" خیلی کمه؛ این مبلغ «تومان» است (مثلاً 4000). مطمئنی؟"))return;
+  if(!confirm("این پله‌ها روی پنل همه‌ی نماینده‌ها اعمال می‌شه. ذخیره بشه؟"))return;
   const out=t.map((x,i)=>({min:x.min,bonus:x.bonus,color:COLORS[i%COLORS.length],label:i===0&&x.bonus===0?"بدون پاداش":(i===t.length-1?x.min+" به بالا":x.min+" تا "+(t[i+1].min-1))}));
   const{error}=await sb.from("app_settings").upsert({key:"target_tiers",value:JSON.stringify(out),updated_at:new Date().toISOString()},{onConflict:"key"});
   if(error){say("ذخیره نشد: "+explain(error),"er");return}
