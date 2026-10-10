@@ -701,5 +701,88 @@ input:hover,select:hover,textarea:hover{border-color:rgba(122,92,255,.45)}
   }
 })();
 </script>
+  <!-- ===== پچ لیست زنده‌ی کارشناس‌ها در جستجو: بعد از پچ‌های قبلی و قبل از </body> بچسبان ===== -->
+<style>
+.sugg{position:absolute;top:calc(100% + 8px);right:0;left:0;z-index:30;max-height:340px;overflow:auto;padding:6px;border-radius:18px;background:rgba(16,19,46,.96);backdrop-filter:blur(20px);border:1px solid rgba(122,92,255,.45);box-shadow:0 24px 60px rgba(0,0,0,.5);transform-origin:top;animation:dd .25s cubic-bezier(.2,.8,.2,1)}
+[data-theme=light] .sugg{background:rgba(255,255,255,.97);box-shadow:0 24px 60px rgba(60,60,140,.25)}
+@keyframes dd{from{opacity:0;transform:translateY(-8px) scale(.98)}}
+.sg-h{padding:6px 12px 8px;font-size:11px;color:var(--dim)}
+.sg-i{display:flex;align-items:center;gap:12px;padding:8px 12px;border-radius:13px;cursor:pointer;transition:background .15s,transform .15s}
+.sg-i:hover,.sg-i.act{background:linear-gradient(135deg,rgba(122,92,255,.28),rgba(61,139,255,.18));transform:translateX(-3px)}
+.sg-i .av{width:36px;height:36px;font-size:13px}
+.sg-t{flex:1;min-width:0}
+.sg-t b{display:block;direction:ltr;text-align:right;font-size:13px;overflow:hidden;text-overflow:ellipsis}
+.sg-t small{display:block;color:var(--dim);font-size:12px}
+.sg-t mark{background:rgba(251,191,36,.35);color:inherit;border-radius:4px;padding:0 2px}
+.sg-n{direction:ltr;font-variant-numeric:tabular-nums;font-size:12px;padding:3px 10px;border-radius:99px;background:rgba(47,211,167,.15);color:var(--ok);white-space:nowrap}
+.sg-n.z{background:rgba(255,93,122,.15);color:var(--err)}
+.sg-e{padding:24px;text-align:center;color:var(--dim);font-size:13px}
+</style>
+
+<script>
+(function(){
+  const inp=document.getElementById("eu");if(!inp)return;
+  inp.removeAttribute("list");inp.setAttribute("autocomplete","off");
+  inp.placeholder="نام کاربری یا اسم کارشناس را بنویس...";
+  const bar=inp.parentElement;bar.style.position="relative";
+  const box=document.createElement("div");box.className="sugg";box.hidden=true;bar.appendChild(box);
+  const norm=s=>nd(s).toLowerCase().replace(/ي/g,"ی").replace(/ك/g,"ک");
+  let items=[],act=-1;
+
+  const hl=(el,text,q)=>{
+    const n=norm(text),i=q?n.indexOf(q):-1;
+    if(i<0||n.length!==text.length){el.textContent=text;return}
+    el.append(text.slice(0,i));
+    const m=document.createElement("mark");m.textContent=text.slice(i,i+q.length);
+    el.append(m,text.slice(i+q.length));
+  };
+  const close=()=>{box.hidden=true;act=-1};
+  const pick=u=>{inp.value=u;close();showUser(u)};
+  const mkEl=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
+
+  function render(){
+    const q=norm(inp.value),g=$("grp").value;
+    const dm=BY.get(DAYS[0])||new Map();
+    let pool;try{pool=members()}catch(e){pool=USERS}
+    const sc=x=>{const u=norm(x.u),n=norm(x.n);return u.startsWith(q)||n.startsWith(q)?0:1};
+    items=pool.map(u=>({u,n:(AG.get(u)||{}).name||""}))
+      .filter(x=>!q||norm(x.u).includes(q)||norm(x.n).includes(q))
+      .sort((a,b)=>sc(a)-sc(b)||a.u.localeCompare(b.u)).slice(0,60);
+    box.replaceChildren();act=-1;
+    if(!items.length){box.append(mkEl("div","sg-e","کارشناسی با این مشخصات پیدا نشد"));box.hidden=false;return}
+    box.append(mkEl("div","sg-h",items.length+" کارشناس"+(g?" · گروه "+g:"")+(DAYS[0]?" · آمار آخرین روز: "+DAYS[0]:"")));
+    items.forEach((x,i)=>{
+      const row=mkEl("div","sg-i"),t=mkEl("div","sg-t"),b=mkEl("b"),s=mkEl("small");
+      hl(b,x.u,q);hl(s,x.n||"—",q);t.append(b,s);
+      const c=dm.get(x.u)||0,n=mkEl("span","sg-n"+(c>0?"":" z"),String(Math.round(c*100)/100));
+      row.append(mkEl("span","av",(x.u[0]||"?").toUpperCase()),t,n);
+      row.onpointerdown=e=>{e.preventDefault();pick(x.u)};
+      row.onpointerenter=()=>setAct(i);
+      box.append(row);
+    });
+    box.hidden=false;
+  }
+  function setAct(i){
+    const rows=box.querySelectorAll(".sg-i");if(!rows.length)return;
+    act=(i+rows.length)%rows.length;
+    rows.forEach((r,k)=>r.classList.toggle("act",k===act));
+    rows[act].scrollIntoView({block:"nearest"});
+  }
+
+  inp.addEventListener("focus",render);
+  inp.addEventListener("input",render);
+  inp.addEventListener("keydown",e=>{
+    if(e.key==="ArrowDown"){e.preventDefault();if(box.hidden)render();setAct(act+1)}
+    else if(e.key==="ArrowUp"){e.preventDefault();setAct(act-1)}
+    else if(e.key==="Enter"){
+      if(!box.hidden&&items.length&&(act>=0||items.length===1)){e.preventDefault();pick(items[Math.max(act,0)].u)}
+      else{close();showUser(inp.value.trim())}
+    }
+    else if(e.key==="Escape")close();
+  });
+  document.addEventListener("pointerdown",e=>{if(!bar.contains(e.target))close()});
+  const ld=$("eload");if(ld)ld.addEventListener("click",close);
+})();
+</script>
 </body>
 </html>
