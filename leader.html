@@ -432,5 +432,153 @@ $("dtsave").onclick=async()=>{
   DT=v;renderDash();say("✔ تارگت روزانه ذخیره شد","ok");
 };
 </script>
+  <!-- ===== پچ افکت‌های پنل سرگروه: کل این فایل را دقیقاً قبل از </body> فایل اصلی بچسبان ===== -->
+<style>
+@property --ang{syntax:"<angle>";initial-value:0deg;inherits:false}
+::selection{background:rgba(122,92,255,.45);color:#fff}
+.b3{width:42vmax;height:42vmax;top:28%;left:32%;background:rgba(236,72,153,.16);animation:dr 44s ease-in-out infinite alternate}
+
+/* نوار بالا */
+.top{box-shadow:0 10px 40px rgba(0,0,0,.25)}
+.top:after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:linear-gradient(90deg,transparent,var(--a1),var(--a2),var(--ok),transparent);background-size:200% 100%;animation:fl2 6s linear infinite;opacity:.85}
+@keyframes fl2{to{background-position:-200% 0}}
+.logo{animation:pl 3s ease-in-out infinite}
+@keyframes pl{50%{box-shadow:0 0 0 7px rgba(122,92,255,.14),0 8px 34px rgba(90,80,255,.65)}}
+.brand b{background:linear-gradient(90deg,#fff,#b9a9ff,#6fb0ff,#fff);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:fl2 8s linear infinite}
+[data-theme=light] .brand b{background-image:linear-gradient(90deg,#3b2fb0,#2a6bd8,#3b2fb0);background-size:200% 100%}
+.bell{transition:.25s}.bell:hover{border-color:var(--a1);box-shadow:var(--glow);transform:rotate(-8deg)}
+.bell em{animation:pu 1.8s infinite}
+@keyframes pu{0%{box-shadow:0 0 0 0 rgba(255,93,122,.7)}70%,100%{box-shadow:0 0 0 9px transparent}}
+
+/* منو */
+#nav{background:linear-gradient(180deg,rgba(255,255,255,.04),transparent)}
+#nav button i.ic{transition:.25s}
+#nav button:hover i.ic{transform:scale(1.2) rotate(-6deg)}
+#nav button.on i.ic{filter:drop-shadow(0 0 6px #fff)}
+
+/* کارت‌ها: نورافکن موس + حاشیه چرخان */
+.card,.kpi{background:radial-gradient(420px circle at var(--mx,50%) var(--my,-40%),rgba(122,92,255,.17),transparent 45%),var(--card)}
+.card:after,.kpi:after{content:"";position:absolute;inset:0;border-radius:inherit;padding:1.5px;background:conic-gradient(from var(--ang),transparent 0 62%,var(--a1),var(--a2),var(--ok),transparent);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:spin 5s linear infinite;opacity:0;transition:opacity .4s;pointer-events:none}
+.card:hover:after,.kpi:hover:after{opacity:1}
+@keyframes spin{to{--ang:360deg}}
+.card{animation:up .6s cubic-bezier(.2,.8,.2,1) backwards}
+.kpis .kpi{animation:up .6s cubic-bezier(.2,.8,.2,1) backwards;transition:transform .15s ease-out,border-color .3s}
+.kpis .kpi:nth-child(2){animation-delay:.08s}.kpis .kpi:nth-child(3){animation-delay:.16s}.kpis .kpi:nth-child(4){animation-delay:.24s}
+@keyframes up{from{opacity:0;transform:translateY(18px)}}
+section[data-p]:not([hidden]){animation:sw .45s cubic-bezier(.2,.8,.2,1)}
+@keyframes sw{from{opacity:0;transform:translateY(14px) scale(.99)}}
+.kpi .ki{box-shadow:0 8px 20px rgba(0,0,0,.3);transition:.3s}
+.kpi:hover .ki{transform:translateY(-3px) rotate(-6deg) scale(1.1)}
+.kpi .v{background:linear-gradient(180deg,var(--text),var(--dim));-webkit-background-clip:text;background-clip:text;color:transparent}
+.card h3 i.ic{filter:drop-shadow(0 0 6px rgba(61,139,255,.7))}
+
+/* نوار پیشرفت و نمودار */
+.prog i{position:relative;overflow:hidden}
+.prog i:after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);transform:translateX(-100%);animation:sh 2.4s infinite}
+@keyframes sh{to{transform:translateX(100%)}}
+#chart rect{transform-box:fill-box;transform-origin:bottom;animation:bar .9s cubic-bezier(.2,.8,.2,1) backwards;transition:filter .2s}
+@keyframes bar{from{transform:scaleY(0)}}
+#chart g:hover rect{filter:brightness(1.3) drop-shadow(0 0 8px rgba(122,92,255,.7))}
+#chart polyline{filter:drop-shadow(0 0 6px #4f7bff);animation:fd 1.2s .5s backwards}
+@keyframes fd{from{opacity:0}}
+#donut circle:nth-of-type(2){animation:dn 1.3s cubic-bezier(.2,.8,.2,1) backwards}
+@keyframes dn{from{stroke-dasharray:0 400}}
+
+/* لیست‌ها و جدول‌ها */
+.mrow,tbody tr{animation:rw .45s ease backwards}
+.mrow:nth-child(n+2),tbody tr:nth-child(n+2){animation-delay:.03s}
+.mrow:nth-child(n+4),tbody tr:nth-child(n+4){animation-delay:.07s}
+.mrow:nth-child(n+7),tbody tr:nth-child(n+7){animation-delay:.11s}
+.mrow:nth-child(n+10),tbody tr:nth-child(n+10){animation-delay:.15s}
+@keyframes rw{from{opacity:0;transform:translateX(14px)}}
+thead th{position:sticky;top:0;z-index:2;background:rgba(14,17,42,.92);backdrop-filter:blur(8px)}
+[data-theme=light] thead th{background:rgba(240,242,255,.95)}
+tbody tr:hover td:first-child{box-shadow:inset -3px 0 0 var(--a1)}
+.mrow:hover{box-shadow:inset -3px 0 0 var(--a1)}
+.row,.ei,.chip{transition:.25s}
+.row:hover{border-color:var(--a1);transform:translateX(-3px)}
+.ei:hover{transform:translateX(-4px);box-shadow:0 10px 26px rgba(251,191,36,.14)}
+.c-zero:before{animation:bk 1.4s infinite}
+@keyframes bk{50%{opacity:.25}}
+.chips button:active{transform:scale(.95)}
+input:hover,select:hover,textarea:hover{border-color:rgba(122,92,255,.45)}
+
+/* تصویر و اسکرول */
+.hero{animation:fl 7s ease-in-out infinite;transition:filter .4s,box-shadow .4s}
+.hero:hover{filter:saturate(1.25) brightness(1.06);box-shadow:0 22px 54px rgba(122,92,255,.55)}
+@keyframes fl{50%{transform:translateY(-6px)}}
+::-webkit-scrollbar-thumb{background:linear-gradient(var(--a1),var(--a2))}
+
+/* موج روی دکمه */
+.btn .rp{position:absolute;border-radius:50%;background:rgba(255,255,255,.45);transform:scale(0);animation:rp .65s ease-out forwards;pointer-events:none}
+.btn.g .rp{background:rgba(122,92,255,.3)}
+@keyframes rp{to{transform:scale(1);opacity:0}}
+</style>
+
+<script>
+(function(){
+  const rm=matchMedia("(prefers-reduced-motion:reduce)").matches;
+  const bg=document.querySelector(".bg");
+
+  /* لکه‌ی نوری سوم */
+  if(bg){const b=document.createElement("div");b.className="bl b3";bg.insertBefore(b,bg.querySelector(".dots"))}
+
+  /* نورافکن موس + چرخش سه‌بعدی کارت‌های KPI */
+  document.addEventListener("pointermove",e=>{
+    const c=e.target.closest&&e.target.closest(".card,.kpi");if(!c)return;
+    const r=c.getBoundingClientRect();
+    c.style.setProperty("--mx",(e.clientX-r.left)+"px");c.style.setProperty("--my",(e.clientY-r.top)+"px");
+    if(c.classList.contains("kpi")&&e.pointerType==="mouse"&&!rm){
+      const x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;
+      c.style.transform="perspective(700px) rotateY("+(-x*10)+"deg) rotateX("+(y*10)+"deg) translateY(-4px)";
+    }
+  });
+  document.addEventListener("pointerout",e=>{
+    const c=e.target.closest&&e.target.closest(".kpi");
+    if(c&&!c.contains(e.relatedTarget))c.style.transform="";
+  });
+
+  /* موج روی دکمه‌ها */
+  document.addEventListener("pointerdown",e=>{
+    const b=e.target.closest&&e.target.closest(".btn");if(!b)return;
+    const r=b.getBoundingClientRect(),s=document.createElement("span"),d=Math.max(r.width,r.height)*2;
+    s.className="rp";
+    s.style.cssText="width:"+d+"px;height:"+d+"px;left:"+(e.clientX-r.left-d/2)+"px;top:"+(e.clientY-r.top-d/2)+"px";
+    b.appendChild(s);setTimeout(()=>s.remove(),650);
+  });
+
+  /* ذرات شناور متصل به هم، با واکنش به موس */
+  if(rm||!bg)return;
+  const cv=document.createElement("canvas"),x=cv.getContext("2d"),m={x:-999,y:-999};
+  cv.style.cssText="position:absolute;inset:0;width:100%;height:100%";bg.appendChild(cv);
+  let P=[];
+  const init=()=>{
+    const dpr=Math.min(devicePixelRatio||1,2);
+    cv.width=innerWidth*dpr;cv.height=innerHeight*dpr;x.setTransform(dpr,0,0,dpr,0,0);
+    const n=Math.min(70,Math.round(innerWidth*innerHeight/22000));
+    P=Array.from({length:n},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3}));
+  };
+  init();addEventListener("resize",init);
+  addEventListener("pointermove",e=>{m.x=e.clientX;m.y=e.clientY});
+  (function f(){
+    if(!document.hidden){
+      x.clearRect(0,0,innerWidth,innerHeight);
+      const c=document.documentElement.dataset.theme==="light"?"90,80,200":"160,150,255";
+      for(let i=0;i<P.length;i++){
+        const p=P[i];p.x+=p.vx;p.y+=p.vy;
+        if(p.x<0||p.x>innerWidth)p.vx*=-1;if(p.y<0||p.y>innerHeight)p.vy*=-1;
+        x.fillStyle="rgba("+c+",.6)";x.beginPath();x.arc(p.x,p.y,1.6,0,6.283);x.fill();
+        for(let j=i+1;j<P.length;j++){
+          const q=P[j],d=Math.hypot(p.x-q.x,p.y-q.y);
+          if(d<130){x.strokeStyle="rgba("+c+","+(.18*(1-d/130))+")";x.beginPath();x.moveTo(p.x,p.y);x.lineTo(q.x,q.y);x.stroke()}
+        }
+        const dm=Math.hypot(p.x-m.x,p.y-m.y);
+        if(dm<170){x.strokeStyle="rgba(61,139,255,"+(.4*(1-dm/170))+")";x.beginPath();x.moveTo(p.x,p.y);x.lineTo(m.x,m.y);x.stroke()}
+      }
+    }
+    requestAnimationFrame(f);
+  })();
+})();
+</script>
 </body>
 </html>
