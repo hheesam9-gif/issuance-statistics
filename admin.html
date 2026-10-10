@@ -730,6 +730,10 @@ button.sort-btn.active { background: linear-gradient(135deg, var(--accent1), var
               <span class="menu-item-label">ثبت شماره سفارش‌ها</span>
             </button>
             <button type="button" class="menu-item" id="usersOpen" role="menuitem">
+              <button type="button" class="menu-item" id="ldOpen" role="menuitem">
+              <span class="menu-item-icon">👥</span>
+              <span class="menu-item-label">سرگروه‌های نمایندگان</span>
+            </button>
               <span class="menu-item-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0 1 14 0v1"/></svg></span>
               <span class="menu-item-label">مدیریت نمایندگان</span>
             </button>
@@ -1120,6 +1124,49 @@ button.sort-btn.active { background: linear-gradient(135deg, var(--accent1), var
     <div class="history" id="ordSavedList" style="max-height:320px;"></div>
     <div class="actions" style="margin-top:14px;">
       <button type="button" class="secondary full" id="ordCloseBtn">بستن</button>
+    </div>
+  </div>
+</div>
+  <div class="modal" id="leadersModal" role="dialog" aria-modal="true">
+  <div class="modal-box" style="max-width:640px; text-align:right;">
+    <div class="card-head">
+      <div class="card-icon" style="font-size:20px;">👥</div>
+      <div>
+        <h2>سرگروه‌های نمایندگان</h2>
+        <p>ستون‌های اکسل رو پیست کن: نام‌کاربری، نام‌کاربری، اسم، سرگروه‌ها</p>
+      </div>
+    </div>
+
+    <textarea id="ldText" spellcheck="false" style="min-height:150px;"
+      placeholder="amir.rezaei&#9;amir.rezaei&#9;امیرحسین&#9;فیروز - شاهمیر"></textarea>
+    <div class="paste-meta"><span id="ldLineCount"></span></div>
+    <div class="actions"><button type="button" id="ldCheckBtn">بررسی لیست</button></div>
+
+    <div id="ldPreview" style="display:none; margin-top:16px;">
+      <div class="tiles">
+        <div class="tile ok"><div class="n" id="ldTileOk">0</div><div class="lb">آماده ثبت</div></div>
+        <div class="tile warn"><div class="n" id="ldTileMissing">0</div><div class="lb">در سایت نیستن</div></div>
+        <div class="tile bad"><div class="n" id="ldTileInvalid">0</div><div class="lb">خط نامعتبر</div></div>
+      </div>
+      <div id="ldFolds"></div>
+      <div class="history" id="ldPreviewList" style="max-height:220px; margin-top:12px;"></div>
+      <div class="actions">
+        <button type="button" id="ldSaveBtn">ثبت نهایی</button>
+        <button type="button" class="secondary" id="ldCancelBtn">لغو</button>
+      </div>
+    </div>
+
+    <div id="ldMsg" role="status" aria-live="polite" style="text-align:center; font-size:13px; min-height:18px; margin-top:10px; color:var(--text-dim);"></div>
+
+    <div class="sub-title"><span>ثبت‌شده‌ها</span><span id="ldSavedCount"></span></div>
+    <div class="chips" id="ldChips" style="margin:0 0 10px;"></div>
+    <div class="search-box">
+      <input id="ldSearch" type="text" placeholder="جستجو: نام‌کاربری، اسم یا سرگروه..." autocomplete="off" spellcheck="false" />
+    </div>
+    <div class="history" id="ldSavedList" style="max-height:300px;"></div>
+
+    <div class="actions" style="margin-top:14px;">
+      <button type="button" class="secondary full" id="ldCloseBtn">بستن</button>
     </div>
   </div>
 </div>
@@ -2304,7 +2351,7 @@ async function searchUsers() {
    // Escape: بستن پنجره‌ها یا پنل کاربر
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
-    const open = ["wipeModal", "usersModal", "annModal", "errorsModal", "ordersModal"]
+    const open = ["wipeModal", "usersModal", "annModal", "errorsModal", "ordersModal", "leadersModal"]
       .map($).find(m => m.classList.contains("show"));
     if (open) open.classList.remove("show");
     else if (panelEl.classList.contains("show")) closeUserPanel();
@@ -2958,6 +3005,7 @@ $("usersModal").addEventListener("click", (e) => { if (e.target === $("usersModa
 bindModal("annOpen", "annModal", "annCloseBtn", loadAnnouncements);
 bindModal("errOpen", "errorsModal", "errCloseBtn", loadAllErrors);
   bindModal("ordOpen", "ordersModal", "ordCloseBtn", () => { $("ordSearch").value = ""; loadSavedOrders(); });
+  bindModal("ldOpen", "leadersModal", "ldCloseBtn", () => { $("ldSearch").value = ""; loadSavedLeaders(); });
   function showMainTab(name) {
   if (name !== "stats" && name !== "period") name = "stats";
   document.querySelectorAll("[data-pane]").forEach(p => { p.hidden = p.dataset.pane !== name; });
@@ -3367,6 +3415,215 @@ $("ordDeleteAllBtn").addEventListener("click", async () => {
   toast("همه‌ی شماره سفارش‌ها حذف شد", "ok");
   loadSavedOrders();
 });
+  /* =========================================================
+   سرگروه‌های نمایندگان (جدول agent_leaders)
+   ========================================================= */
+let pendingLeaders = [];
+let allLeaderRows = [];
+
+function setLdMsg(text, cls) {
+  const el = $("ldMsg");
+  el.textContent = text;
+  el.style.color = cls === "error" ? "var(--error)" : cls === "ok" ? "var(--ok)" : "var(--text-dim)";
+}
+
+// جدا کردن سرگروه‌ها: "فیروز - شاهمیر" یا با ، ; , 
+function splitLeaders(s) {
+  return String(s || "").split(/\s+[-–—]\s+|[،,؛;|]/).map(x => x.trim()).filter(Boolean);
+}
+
+$("ldText").addEventListener("input", () => {
+  const n = $("ldText").value.split(/\r?\n/).filter(l => l.trim()).length;
+  $("ldLineCount").textContent = n ? n + " خط وارد شده" : "";
+});
+
+$("ldCheckBtn").addEventListener("click", async () => {
+  setLdMsg("");
+  $("ldPreview").style.display = "none";
+  pendingLeaders = [];
+  const raw = $("ldText").value;
+  if (!raw.trim()) { setLdMsg("لیست خالیه؛ داده‌ی اکسل رو پیست کن", "error"); return; }
+
+  $("ldCheckBtn").disabled = true;
+  setLdMsg("در حال بررسی کاربران...");
+  let usernames;
+  try { usernames = await fetchAllUsernames(); }
+  catch (e) { setLdMsg("خواندن کاربران ناموفق بود: " + (e.message || e), "error"); $("ldCheckBtn").disabled = false; return; }
+  $("ldCheckBtn").disabled = false;
+  setLdMsg("");
+
+  const userMap = new Map(usernames.map(u => [String(u).trim().toLowerCase(), u]));
+  const matched = new Map();
+  const notFound = [], invalid = [];
+  let dup = 0;
+
+  raw.split(/\r?\n/).forEach(line => {
+    const t = line.trim();
+    if (!t) return;
+    // اکسل با Tab جدا می‌کنه؛ اگه Tab نبود با ۲ فاصله یا بیشتر
+    let p = t.split("\t").map(x => x.trim());
+    if (p.length < 3) p = t.split(/\s{2,}/).map(x => x.trim());
+    if (p.length < 3) { invalid.push(t); return; }
+
+    const uname = p[0].replace(/^"|"$/g, "").toLowerCase();
+    if (uname === "username") return; // سطر عنوان
+    let firstName, leadersRaw;
+    if (p.length >= 4) { firstName = p[2]; leadersRaw = p.slice(3).join(" - "); }
+    else { firstName = p[1]; leadersRaw = p[2]; }
+
+    const leaders = splitLeaders(leadersRaw);
+    if (!leaders.length) { invalid.push(t); return; }
+
+    const real = userMap.get(uname);
+    if (!real) { notFound.push(uname); return; }
+    if (matched.has(real)) dup++;
+    matched.set(real, { username: real, first_name: firstName, leaders: leaders, updated_at: new Date().toISOString() });
+  });
+
+  pendingLeaders = [...matched.values()];
+  animateNumber($("ldTileOk"), pendingLeaders.length);
+  animateNumber($("ldTileMissing"), notFound.length);
+  animateNumber($("ldTileInvalid"), invalid.length);
+
+  const folds = $("ldFolds");
+  folds.innerHTML = "";
+  const addF = (title, items) => {
+    const d = mk("details", "fold");
+    d.appendChild(mk("summary", null, title));
+    d.appendChild(mk("div", "bulk-list", items.join("  |  ")));
+    folds.appendChild(d);
+  };
+  if (notFound.length) addF("کاربرهایی که در سایت نیستن (ثبت نمی‌شن)", [...new Set(notFound)]);
+  if (invalid.length) addF("خط‌های نامعتبر (نادیده گرفته شد)", invalid);
+  if (dup) folds.appendChild(mk("div", "note", dup + " نام تکراری بود؛ آخرین مقدار ثبت می‌شه"));
+
+  const list = $("ldPreviewList");
+  list.replaceChildren();
+  pendingLeaders.slice(0, 100).forEach(r => {
+    const row = mk("div", "row");
+    const left = mk("span", "d", r.username);
+    left.style.direction = "ltr";
+    const right = mk("span", null, r.first_name + " ← " + r.leaders.join(" ، "));
+    right.style.fontSize = "12px";
+    row.appendChild(left);
+    row.appendChild(right);
+    list.appendChild(row);
+  });
+  if (pendingLeaders.length > 100) list.appendChild(hintEl("فقط ۱۰۰ مورد اول نمایش داده شد؛ همه ثبت می‌شن"));
+
+  $("ldSaveBtn").textContent = "ثبت نهایی " + pendingLeaders.length + " نفر";
+  $("ldSaveBtn").disabled = pendingLeaders.length === 0;
+  $("ldPreview").style.display = "block";
+  if (!pendingLeaders.length) setLdMsg("هیچ مورد معتبری پیدا نشد", "error");
+});
+
+$("ldCancelBtn").addEventListener("click", () => {
+  pendingLeaders = [];
+  $("ldPreview").style.display = "none";
+  setLdMsg("");
+});
+
+$("ldSaveBtn").addEventListener("click", async () => {
+  if (!pendingLeaders.length) return;
+  $("ldSaveBtn").disabled = true; $("ldCancelBtn").disabled = true; $("ldCheckBtn").disabled = true;
+
+  const size = 200;
+  let done = 0;
+  for (let i = 0; i < pendingLeaders.length; i += size) {
+    const batch = pendingLeaders.slice(i, i + size);
+    setLdMsg("در حال ذخیره... " + done + " از " + pendingLeaders.length);
+    const { error } = await supabaseClient.from("agent_leaders").upsert(batch, { onConflict: "username" });
+    if (error) {
+      setLdMsg("ثبت متوقف شد (" + done + " نفر ثبت شده بود): " + explainError(error), "error");
+      $("ldSaveBtn").disabled = false; $("ldCancelBtn").disabled = false; $("ldCheckBtn").disabled = false;
+      return;
+    }
+    done += batch.length;
+  }
+  setLdMsg("✔ سرگروه " + done + " نماینده ثبت شد", "ok");
+  pendingLeaders = [];
+  $("ldPreview").style.display = "none";
+  $("ldText").value = "";
+  $("ldLineCount").textContent = "";
+  $("ldSaveBtn").disabled = false; $("ldCancelBtn").disabled = false; $("ldCheckBtn").disabled = false;
+  loadSavedLeaders();
+});
+
+/* ---------- لیست ثبت‌شده‌ها ---------- */
+async function loadSavedLeaders() {
+  const list = $("ldSavedList");
+  list.replaceChildren(hintEl("در حال بارگذاری..."));
+  const rows = [];
+  const size = 1000;
+  let from = 0;
+  try {
+    while (true) {
+      const { data, error } = await supabaseClient
+        .from("agent_leaders").select("username, first_name, leaders")
+        .order("username", { ascending: true }).range(from, from + size - 1);
+      if (error) throw error;
+      rows.push(...data);
+      if (data.length < size) break;
+      from += size;
+    }
+  } catch (e) { list.replaceChildren(hintEl(explainError(e))); return; }
+  allLeaderRows = rows;
+  renderSavedLeaders();
+}
+
+function renderSavedLeaders() {
+  const list = $("ldSavedList");
+  const term = $("ldSearch").value.trim().toLowerCase();
+  list.replaceChildren();
+
+  // چیپ‌های سرگروه‌ها با تعداد نماینده
+  const counts = new Map();
+  allLeaderRows.forEach(r => (r.leaders || []).forEach(l => counts.set(l, (counts.get(l) || 0) + 1)));
+  const chips = $("ldChips");
+  chips.replaceChildren();
+  [...counts.entries()].sort((a, b) => b[1] - a[1]).forEach(([name, n]) => {
+    const b = mk("button", "chip-btn", name + " (" + n + ")");
+    b.type = "button";
+    b.addEventListener("click", () => { $("ldSearch").value = name; renderSavedLeaders(); });
+    chips.appendChild(b);
+  });
+
+  const filtered = !term ? allLeaderRows : allLeaderRows.filter(r =>
+    r.username.toLowerCase().includes(term) ||
+    String(r.first_name || "").toLowerCase().includes(term) ||
+    (r.leaders || []).some(l => l.toLowerCase().includes(term)));
+
+  $("ldSavedCount").textContent = filtered.length ? filtered.length + " مورد" : "";
+  if (!filtered.length) { list.appendChild(hintEl(term ? "چیزی پیدا نشد" : "هنوز چیزی ثبت نشده")); return; }
+
+  filtered.slice(0, 300).forEach(r => {
+    const row = mk("div", "row");
+    const left = mk("span", "d", r.username + (r.first_name ? " — " + r.first_name : ""));
+    left.style.direction = "ltr";
+    const vals = mk("span", "vals");
+    const lead = mk("b", null, (r.leaders || []).join(" ، "));
+    lead.style.fontSize = "12px";
+    const del = mk("button", "delete-btn", "🗑️");
+    del.type = "button";
+    del.title = "حذف";
+    del.addEventListener("click", async () => {
+      if (!confirm("سرگروه‌های «" + r.username + "» حذف بشه؟")) return;
+      const { error } = await supabaseClient.from("agent_leaders").delete().eq("username", r.username);
+      if (error) { toast("حذف نشد: " + explainError(error), "error"); return; }
+      toast("حذف شد", "ok");
+      loadSavedLeaders();
+    });
+    vals.appendChild(lead);
+    vals.appendChild(del);
+    row.appendChild(left);
+    row.appendChild(vals);
+    list.appendChild(row);
+  });
+  if (filtered.length > 300) list.appendChild(hintEl("فقط ۳۰۰ مورد اول نمایش داده شد؛ جستجو کنید"));
+}
+
+let ldTimer = null;
+$("ldSearch").addEventListener("input", () => { clearTimeout(ldTimer); ldTimer = setTimeout(renderSavedLeaders, 200); });
   /* =========================================================
      ورود مدیر (فقط h-abbasi)
      ========================================================= */
