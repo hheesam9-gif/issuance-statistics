@@ -625,6 +625,21 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
 .menu-item.danger .menu-item-icon svg { stroke: var(--error); }
 .menu-item.danger:hover { background: rgba(255, 90, 110, 0.12); }
 .menu-divider { height: 1px; background: var(--row-border); margin: 6px 4px; }
+  /* کارت مدیریت تکی: هم‌قد کارت کناری نشه تا جای خالی نمونه */
+.card[data-pane="stats"]:last-of-type { align-self: start; }
+#userList { max-height: 460px; }
+
+.sort-bar { display: flex; gap: 6px; padding: 4px; margin-bottom: 14px; background: var(--row-bg); border: 1px solid var(--row-border); border-radius: 13px; }
+button.sort-btn { flex: 1; padding: 9px 10px; border-radius: 10px; background: transparent; color: var(--text-dim); font-weight: normal; font-size: 13px; }
+button.sort-btn:hover { filter: none; color: var(--text); }
+button.sort-btn.active { background: linear-gradient(135deg, var(--accent1), var(--accent2)); color: #fff; font-weight: bold; }
+
+.user-meta { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-dim); font-variant-numeric: tabular-nums; direction: ltr; }
+.rank-chip { min-width: 34px; text-align: center; padding: 3px 9px; border-radius: 999px; font-weight: bold; color: #fff; background: linear-gradient(135deg, var(--accent1), var(--accent2)); }
+.rank-chip.r1 { background: linear-gradient(135deg, #f5c542, #d8912a); color: #3b2a05; }
+.rank-chip.r2 { background: linear-gradient(135deg, #d5dbee, #8c95b5); color: #23273d; }
+.rank-chip.r3 { background: linear-gradient(135deg, #e6a071, #b0683a); }
+.rank-chip.none { background: var(--row-bg); border: 1px solid var(--row-border); color: var(--text-dim); }
 </style>
 </head>
 <body>
@@ -853,7 +868,10 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
         <input id="searchInput" type="text" placeholder="نام کاربری رو تایپ کنید..." autocomplete="off" spellcheck="false" />
         <button id="searchBtn">جستجو</button>
       </div>
-
+      <div class="sort-bar" id="sortBar">
+        <button type="button" class="sort-btn active" data-sort="name">🔤 ترتیب الفبا</button>
+        <button type="button" class="sort-btn" data-sort="rank">🏆 رتبه‌بندی</button>
+      </div>
       <div id="userList"></div>
 
       <div class="panel" id="panel">
@@ -1826,41 +1844,83 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
     selectedUsername = null;
   }
 
-  async function searchUsers() {
-    const term = document.getElementById("searchInput").value.trim();
-    userListEl.replaceChildren(hintEl("در حال جستجو..."));
+let userSort = (function () { try { return localStorage.getItem("admin_user_sort") || "name"; } catch (e) { return "name"; } })();
 
-    let query = supabaseClient.from("profiles").select("username").order("username", { ascending: true });
-    if (term) query = query.ilike("username", "%" + term + "%");
+function syncSortBar() {
+  document.querySelectorAll("#sortBar .sort-btn").forEach(b => b.classList.toggle("active", b.dataset.sort === userSort));
+}
+document.querySelectorAll("#sortBar .sort-btn").forEach(b => b.addEventListener("click", () => {
+  userSort = b.dataset.sort;
+  try { localStorage.setItem("admin_user_sort", userSort); } catch (e) {}
+  syncSortBar();
+  searchUsers();
+}));
+syncSortBar();
 
-    const { data, error } = await query;
-    userListEl.replaceChildren();
+async function searchUsers() {
+  const term = document.getElementById("searchInput").value.trim();
+  userListEl.replaceChildren(hintEl("در حال جستجو..."));
 
-    if (error || !data || data.length === 0) {
-      userListEl.appendChild(hintEl("کاربری پیدا نشد"));
-      return;
-    }
+  let query = supabaseClient.from("profiles").select("username").order("username", { ascending: true });
+  if (term) query = query.ilike("username", "%" + term + "%");
 
-    data.forEach(user => {
-      const row = document.createElement("div");
-      row.className = "user-row";
-      if (user.username === selectedUsername) row.classList.add("selected");
-      const nameEl = document.createElement("span");
-      nameEl.className = "name";
-      nameEl.textContent = user.username;
-      row.appendChild(nameEl);
-      row.addEventListener("click", () => {
-        // کلیک دوباره روی کاربری که پنلش بازه => بسته می‌شه
-        if (selectedUsername === user.username && panelEl.classList.contains("show")) {
-          closeUserPanel();
-        } else {
-          selectUser(user.username, row);
-        }
-      });
-      userListEl.appendChild(row);
-    });
+  const { data, error } = await query;
+  userListEl.replaceChildren();
+
+  if (error || !data || data.length === 0) {
+    userListEl.appendChild(hintEl("کاربری پیدا نشد"));
+    return;
   }
 
+  const users = data.map(u => ({ username: u.username, total: 0, rank: null }));
+
+  if (userSort === "rank") {
+    let totals = new Map();
+    try { totals = await fetchAllOrderTotals(); }
+    catch (e) { toast("خواندن آمار برای رتبه‌بندی ناموفق بود", "error"); }
+
+    // رتبه‌ی عمومی بین همه (نه فقط نتایج جستجو)؛ هم‌امتیازها هم‌رتبه‌ان
+    const ranked = [...totals.entries()].filter(([, t]) => t > 0).sort((a, b) => b[1] - a[1]);
+    const rankOf = new Map();
+    let prev = null, rank = 0;
+    ranked.forEach(([name, t], i) => {
+      if (t !== prev) { rank = i + 1; prev = t; }
+      rankOf.set(name, rank);
+    });
+    users.forEach(u => { u.total = totals.get(u.username) || 0; u.rank = rankOf.get(u.username) || null; });
+    users.sort((a, b) => ((a.rank ?? Infinity) - (b.rank ?? Infinity)) || a.username.localeCompare(b.username));
+  }
+
+  users.forEach(user => {
+    const row = document.createElement("div");
+    row.className = "user-row";
+    if (user.username === selectedUsername) row.classList.add("selected");
+
+    const nameEl = document.createElement("span");
+    nameEl.className = "name";
+    nameEl.textContent = user.username;
+    row.appendChild(nameEl);
+
+    if (userSort === "rank") {
+      const meta = document.createElement("span");
+      meta.className = "user-meta";
+      const total = document.createElement("span");
+      total.textContent = fmt(user.total);
+      const chip = document.createElement("span");
+      chip.className = "rank-chip " + (user.rank ? (user.rank <= 3 ? "r" + user.rank : "") : "none");
+      chip.textContent = user.rank ? "#" + user.rank : "—";
+      meta.appendChild(total);
+      meta.appendChild(chip);
+      row.appendChild(meta);
+    }
+
+    row.addEventListener("click", () => {
+      if (selectedUsername === user.username && panelEl.classList.contains("show")) closeUserPanel();
+      else selectUser(user.username, row);
+    });
+    userListEl.appendChild(row);
+  });
+}
   async function selectUser(username, rowEl) {
     document.querySelectorAll(".user-row").forEach(r => r.classList.remove("selected"));
     rowEl.classList.add("selected");
@@ -1924,6 +1984,7 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
   }
 
   async function deleteRecord(username, orderDate) {
+    if (userSort === "rank") searchUsers();
     if (!confirm("مطمئنید می‌خواید رکورد " + orderDate + " حذف بشه؟")) return;
 
     const { error } = await supabaseClient
