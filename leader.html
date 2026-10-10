@@ -580,5 +580,126 @@ input:hover,select:hover,textarea:hover{border-color:rgba(122,92,255,.45)}
   })();
 })();
 </script>
+  <!-- ===== پچ طراحی مجدد تب «اصلاح و مغایرت کارشناس»: بعد از پچ قبلی و قبل از </body> بچسبان ===== -->
+<style>
+@property --ang{syntax:"<angle>";initial-value:0deg;inherits:false}
+@keyframes spin{to{--ang:360deg}}
+
+/* ---- چیدمان کلی ---- */
+[data-p=user]{max-width:1000px;margin-inline:auto;padding:22px}
+
+/* ---- نوار جستجو: یک کپسول یکپارچه ---- */
+[data-p=user]>.bar{flex-wrap:nowrap;align-items:center;gap:6px;padding:6px;background:var(--row);border:1px solid var(--bd);border-radius:18px;margin-bottom:16px;transition:.25s}
+[data-p=user]>.bar:focus-within{border-color:var(--a1);box-shadow:0 0 0 3px rgba(122,92,255,.2),0 10px 30px rgba(90,80,255,.15)}
+[data-p=user]>.bar>*{flex:0 0 auto}
+[data-p=user]>.bar>input{flex:1 1 auto;min-width:0;background:transparent;border-color:transparent;box-shadow:none;font-size:14px}
+[data-p=user]>.bar>input:focus{box-shadow:none;border-color:transparent}
+[data-p=user]>.bar>.btn{padding:11px 22px}
+
+/* ---- سربرگ کارشناس ---- */
+#uhead{padding:14px 18px;background:linear-gradient(135deg,rgba(122,92,255,.14),rgba(61,139,255,.06));border:1px solid var(--bd);border-radius:20px;margin:0 0 16px;animation:up2 .5s cubic-bezier(.2,.8,.2,1) backwards}
+#uhead:empty{display:none}
+#uhead .av{position:relative;margin-inline-end:6px}
+#uhead .av:after{content:"";position:absolute;inset:-5px;border-radius:50%;background:conic-gradient(from var(--ang),var(--a1),var(--a2),var(--ok),var(--a1));-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 2.5px),#000 calc(100% - 2px));mask:radial-gradient(farthest-side,transparent calc(100% - 2.5px),#000 calc(100% - 2px));animation:spin 4s linear infinite}
+#uhead b{font-size:17px}
+#uhead .tt{font-weight:700;font-size:13px;padding:8px 18px;background:linear-gradient(135deg,rgba(122,92,255,.28),rgba(61,139,255,.2));border-color:rgba(122,92,255,.55);box-shadow:0 6px 18px rgba(90,80,255,.2)}
+@keyframes up2{from{opacity:0;transform:translateY(12px)}}
+
+/* ---- سوییچ آمار روزانه / مغایرت‌ها با نشانگر لغزنده ---- */
+#useg{position:relative;padding:5px;background:var(--in);border-radius:17px;margin-bottom:18px;isolation:isolate}
+#useg button{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:13px;font-weight:500;transition:color .3s,transform .2s}
+#useg button:active{transform:scale(.96)}
+#useg button.on{background:transparent!important;box-shadow:none;color:#fff;font-weight:700}
+#useg button:not(.on):hover{color:var(--text)}
+#useg em{background:var(--err);color:#fff;animation:pu3 1.8s infinite}
+@keyframes pu3{0%{box-shadow:0 0 0 0 rgba(255,93,122,.7)}70%,100%{box-shadow:0 0 0 8px transparent}}
+.seg-ind{position:absolute;top:5px;bottom:5px;left:0;z-index:0;border-radius:13px;overflow:hidden;background:linear-gradient(135deg,var(--a1),var(--a2));box-shadow:0 6px 22px rgba(90,80,255,.5);transition:transform .55s cubic-bezier(.34,1.45,.64,1),width .55s cubic-bezier(.34,1.45,.64,1)}
+.seg-ind:after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,.38),transparent 70%);background-size:200% 100%;animation:sg 3s linear infinite}
+@keyframes sg{to{background-position:-200% 0}}
+
+/* ---- انیمیشن تعویض محتوا (جهت‌دار) ---- */
+#ust:not([hidden]){animation:inR .5s cubic-bezier(.2,.8,.2,1)}
+#uer:not([hidden]){animation:inL .5s cubic-bezier(.2,.8,.2,1)}
+@keyframes inR{from{opacity:0;transform:translateX(30px)}}
+@keyframes inL{from{opacity:0;transform:translateX(-30px)}}
+
+/* ---- فرم ثبت آمار ---- */
+#ust>.bar{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;padding:14px;background:var(--row);border:1px dashed rgba(122,92,255,.5);border-radius:18px;margin-bottom:16px}
+#ust>.bar>*{flex:none}
+#ust>.bar>.btn{padding-inline:24px}
+
+/* ---- لیست رکوردها: کارت‌های مرتب دو ستونه ---- */
+#hist{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:10px}
+#hist .sum{grid-column:1/-1;text-align:center;padding:26px}
+#hist .row{position:relative;overflow:hidden;margin:0;padding:12px 14px 14px;gap:10px;border-radius:16px;animation:rw2 .5s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i,0)*40ms)}
+@keyframes rw2{from{opacity:0;transform:translateY(14px) scale(.97)}}
+#hist .row:hover{transform:translateY(-3px);border-color:rgba(122,92,255,.55);box-shadow:0 12px 28px rgba(90,80,255,.18)}
+#hist .row .d{color:var(--text);font-weight:700;font-size:14px;font-variant-numeric:tabular-nums}
+#hist .row .d:before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;margin-inline-start:8px;background:var(--warn);box-shadow:0 0 8px var(--warn)}
+#hist .row.hit .d:before{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+#hist .row input{width:84px;padding:8px;font-weight:700;border-radius:11px}
+#hist .row .btn{opacity:.5;filter:saturate(.4);transition:.25s}
+#hist .row:hover .btn,#hist .row:focus-within .btn{opacity:1;filter:none}
+#hist .row.dirty .btn{opacity:1;filter:none;animation:pu3 1.4s infinite}
+#hist .row .ib{width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:rgba(255,93,122,.1);border-radius:10px;transition:.2s}
+#hist .row .ib:hover{background:var(--err);color:#fff;transform:rotate(-8deg) scale(1.1)}
+#hist .row:after{content:"";position:absolute;bottom:0;right:0;height:3px;width:calc(var(--p,0)*100%);border-radius:3px;background:linear-gradient(270deg,var(--warn),var(--a1));transition:width .8s cubic-bezier(.2,.8,.2,1)}
+#hist .row.hit:after{background:linear-gradient(270deg,var(--ok),var(--a2));box-shadow:0 0 10px var(--ok)}
+
+/* ---- تب مغایرت‌ها ---- */
+#uer>.sum{padding:12px 16px;line-height:2;border-radius:14px;background:rgba(61,139,255,.1);border:1px solid rgba(61,139,255,.3);color:var(--text);margin:0 0 14px}
+#uer>.sum:before{content:"💡 "}
+#uer .ef{padding:16px;background:var(--row);border:1px solid var(--bd);border-radius:18px;transition:.25s}
+#uer .ef:focus-within{border-color:rgba(122,92,255,.55);box-shadow:0 0 0 3px rgba(122,92,255,.14)}
+#uer .ef .btn{align-self:flex-start;padding-inline:26px}
+#uErr{margin-top:6px}
+#uErr .ei{animation:rw2 .5s cubic-bezier(.2,.8,.2,1) backwards}
+
+@media(max-width:700px){
+  [data-p=user]{padding:14px}
+  [data-p=user]>.bar{flex-wrap:wrap}
+  [data-p=user]>.bar>input{flex:1 1 100%}
+  [data-p=user]>.bar>.btn{flex:1 1 100%}
+  #ust>.bar{grid-template-columns:1fr}
+  #hist{grid-template-columns:1fr}
+  #uhead{flex-wrap:wrap}
+}
+</style>
+
+<script>
+(function(){
+  const seg=document.getElementById("useg");
+  if(seg){
+    /* نشانگر لغزنده */
+    const ind=document.createElement("span");ind.className="seg-ind";ind.style.transition="none";seg.prepend(ind);
+    let first=true;
+    const place=()=>{
+      const b=seg.querySelector("button.on");if(!b||!b.offsetWidth)return;
+      ind.style.width=b.offsetWidth+"px";ind.style.transform="translateX("+b.offsetLeft+"px)";
+      if(first){first=false;requestAnimationFrame(()=>requestAnimationFrame(()=>{ind.style.transition=""}))}
+    };
+    const ro=new ResizeObserver(place);
+    ro.observe(seg);seg.querySelectorAll("button").forEach(b=>ro.observe(b));
+    seg.addEventListener("click",()=>requestAnimationFrame(place));
+  }
+
+  /* نوار پیشرفت و ردیف‌های لیست آمار */
+  const h=document.getElementById("hist");
+  if(h){
+    const deco=()=>{
+      let dt=0;try{dt=+DT||0}catch(e){}
+      h.querySelectorAll(".row").forEach((r,i)=>{
+        const v=parseFloat((r.querySelector("input")||{}).value)||0;
+        r.style.setProperty("--i",Math.min(i,12));
+        r.style.setProperty("--p",dt>0?Math.min(v/dt,1):0);
+        r.classList.toggle("hit",dt>0&&v>=dt);
+      });
+    };
+    new MutationObserver(deco).observe(h,{childList:true});
+    h.addEventListener("input",e=>{const r=e.target.closest(".row");if(r)r.classList.add("dirty");deco()});
+    deco();
+  }
+})();
+</script>
 </body>
 </html>
