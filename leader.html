@@ -11,23 +11,33 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box}
-:root{--bg:#0b0e1e;--card:rgba(19,23,46,.8);--bd:rgba(255,255,255,.09);--text:#eef1fb;--dim:#9aa3c7;--in:rgba(8,10,26,.6);--row:rgba(255,255,255,.05);--a1:#6d5bff;--a2:#4f7bff;--ok:#4ade80;--err:#ff6b7d}
+:root{--bg:#0b0e1e;--card:rgba(19,23,46,.8);--bd:rgba(255,255,255,.09);--text:#eef1fb;--dim:#9aa3c7;--in:rgba(8,10,26,.6);--row:rgba(255,255,255,.05);--a1:#6d5bff;--a2:#4f7bff;--ok:#4ade80;--err:#ff6b7d;--warn:#fbbf24}
 [data-theme=light]{--bg:#e9ecf7;--card:rgba(255,255,255,.85);--bd:rgba(110,115,180,.2);--text:#1b1f3a;--dim:#5a6088;--in:rgba(238,241,255,.9);--row:rgba(90,96,136,.07)}
-body{margin:0;font-family:Vazirmatn,Tahoma,sans-serif;background:var(--bg);color:var(--text);padding:calc(18px + env(safe-area-inset-top,0px)) 16px 40px;min-height:100dvh}
-.wrap{max-width:900px;margin:auto}
-header{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+body{margin:0;font-family:Vazirmatn,Tahoma,sans-serif;background:radial-gradient(900px 400px at 85% -10%,rgba(109,91,255,.28),transparent),var(--bg);color:var(--text);padding:calc(18px + env(safe-area-inset-top,0px)) 16px 40px;min-height:100dvh}
+.wrap{max-width:1000px;margin:auto}
+header{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
 h1{font-size:20px;margin:0}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:20px;padding:20px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:20px;padding:20px;backdrop-filter:blur(14px)}
 button{padding:10px 16px;border:0;border-radius:11px;background:linear-gradient(135deg,var(--a1),var(--a2));color:#fff;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
 button.sec{background:var(--row);border:1px solid var(--bd);color:var(--text);font-weight:400}
 button.del{background:none;color:var(--err);padding:4px 8px}
 button:disabled{opacity:.5}
-input,select{width:100%;padding:10px 12px;border-radius:11px;border:1px solid var(--bd);background:var(--in);color:var(--text);font:inherit;font-size:13px;direction:ltr;text-align:right}
+input,select{width:100%;padding:10px 12px;border-radius:11px;border:1px solid var(--bd);background:var(--in);color:var(--text);font:inherit;font-size:13px}
+input{direction:ltr;text-align:right}
 .tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
 .tabs button{flex:1;background:var(--row);border:1px solid var(--bd);color:var(--dim);font-weight:400}
 .tabs button.on{background:linear-gradient(135deg,var(--a1),var(--a2));color:#fff;font-weight:700}
 .bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.bar>*{flex:1 1 140px}
+.gsel{display:flex;gap:8px;align-items:center;margin-bottom:14px}.gsel label{font-size:13px;color:var(--dim);white-space:nowrap}.gsel select{max-width:320px;font-weight:700}
 .sum{font-size:12px;color:var(--dim);margin:6px 2px 10px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:var(--row);border:1px solid var(--bd);border-radius:14px;padding:14px}
+.kpi .l{font-size:12px;color:var(--dim)}.kpi .v{font-size:24px;font-weight:700;margin:4px 0;font-variant-numeric:tabular-nums}.kpi .s{font-size:12px;color:var(--dim)}
+.up{color:var(--ok)}.dn{color:var(--err)}
+.prog{height:6px;border-radius:9px;background:var(--in);overflow:hidden;margin-top:6px}.prog i{display:block;height:100%;background:linear-gradient(90deg,var(--a1),#2fd3a7)}
+.chart{margin:4px 0 16px;overflow-x:auto}.chart h3,.card h3{font-size:14px;margin:0 0 8px}
+.chip{display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px}
+.c-ok{background:rgba(74,222,128,.15);color:var(--ok)}.c-mid{background:rgba(79,123,255,.18);color:#8fb0ff}.c-bad{background:rgba(251,191,36,.16);color:var(--warn)}.c-zero{background:rgba(255,107,125,.15);color:var(--err)}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th,td{padding:9px 8px;text-align:right;border-bottom:1px solid var(--bd)}
 td.n,th.n{direction:ltr;text-align:center;font-variant-numeric:tabular-nums}
@@ -45,17 +55,30 @@ tr.click{cursor:pointer}tr.click:hover{background:var(--row)}
     <h1>پنل سرگروه <span id="who" style="font-size:12px;color:var(--dim);direction:ltr;display:inline-block"></span></h1>
     <button class="sec" id="logout">خروج</button>
   </header>
+
+  <div class="gsel"><label for="grp">سرگروه:</label><select id="grp"><option value="">همه‌ی کارشناسان</option></select></div>
+
   <div class="tabs" id="tabs">
-    <button data-t="report" class="on">گزارش گروه</button>
+    <button data-t="dash" class="on">داشبورد</button>
+    <button data-t="report">گزارش گروه</button>
     <button data-t="edit">اصلاح گزارش</button>
     <button data-t="target">تارگت</button>
   </div>
 
-  <section class="card" data-p="report">
+  <section data-p="dash">
+    <div class="bar" style="margin-bottom:10px"><select id="dday"></select></div>
+    <div class="kpis" id="kpis"></div>
+    <div class="card chart"><h3 id="chT">عملکرد گروه در ۷ روز اخیر</h3><div id="chart"></div></div>
+    <div class="card">
+      <h3>نیروهای گروه: مقایسه‌ی روز انتخابی با روز قبل</h3>
+      <div class="scroll"><table><thead><tr><th class="n">#</th><th>کارشناس</th><th>نام</th><th class="n">روز قبل</th><th class="n">این روز</th><th class="n">تغییر</th><th class="n">درصد تارگت</th><th>وضعیت</th></tr></thead><tbody id="dtb"></tbody></table></div>
+    </div>
+  </section>
+
+  <section class="card" data-p="report" hidden>
     <div class="bar">
       <input id="from" placeholder="از تاریخ 1405/07/01">
       <input id="to" placeholder="تا تاریخ 1405/07/30">
-      <select id="grp"><option value="">همه‌ی کارشناسان</option></select>
       <input id="q" placeholder="جستجوی کارشناس...">
       <button id="xls">📥 خروجی اکسل</button>
     </div>
@@ -70,9 +93,12 @@ tr.click{cursor:pointer}tr.click:hover{background:var(--row)}
   </section>
 
   <section class="card" data-p="target" hidden>
+    <div class="sum">تارگت روزانه‌ی هر نفر (برای محاسبه‌ی درصد تحقق در داشبورد):</div>
+    <div class="bar"><input id="dt" type="number" step="any" placeholder="مثلاً 25"><button id="dtsave">ذخیره تارگت روزانه</button></div>
+    <hr style="border:0;border-top:1px solid var(--bd);margin:16px 0">
     <div class="sum">پله‌های پاداش هر روز. «از تعداد» و «پاداش هر سفارش (تومان)» را تغییر بدهید؛ روی پنل همه‌ی نماینده‌ها اعمال می‌شود.</div>
     <div id="tiers"></div>
-    <div class="bar" style="margin-top:10px"><button class="sec" id="tadd">+ پله جدید</button><button id="tsave">ذخیره تارگت</button></div>
+    <div class="bar" style="margin-top:10px"><button class="sec" id="tadd">+ پله جدید</button><button id="tsave">ذخیره پله‌ها</button></div>
   </section>
   <div class="msg" id="msg" role="status"></div>
 </div>
@@ -91,7 +117,7 @@ const mk=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=nu
 async function fetchAll(table,cols){const r=[];let f=0;for(;;){const{data,error}=await sb.from(table).select(cols).range(f,f+999);if(error)throw error;r.push(...data);if(data.length<1000)break;f+=1000}return r}
 const touch=()=>sb.from("app_settings").upsert({key:"last_report_update",value:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:"key"});
 
-let ORD=[],USERS=[],cur="",AG=new Map(),MYNAME="";
+let ORD=[],USERS=[],cur="",AG=new Map(),MYNAME="",BY=new Map(),DAYS=[],DT=25;
 const toks=l=>String(l||"").split(/\s*[-–—]\s*/).map(x=>x.trim()).filter(Boolean);
 
 /* ---------- گیت: فقط سرگروه ---------- */
@@ -107,30 +133,85 @@ const toks=l=>String(l||"").split(/\s*[-–—]\s*/).map(x=>x.trim()).filter(Boo
   }catch(e){location.replace("index.html")}
 })();
 $("logout").onclick=async()=>{await sb.auth.signOut();try{localStorage.removeItem("remember_pref")}catch(e){}location.replace("index.html")};
-$("tabs").onclick=e=>{const t=e.target.dataset.t;if(!t)return;
+function goTab(t){
   document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
-  document.querySelectorAll("[data-p]").forEach(p=>p.hidden=p.dataset.p!==t);say("")};
+  document.querySelectorAll("[data-p]").forEach(p=>p.hidden=p.dataset.p!==t);say("")}
+$("tabs").onclick=e=>{const t=e.target.dataset.t;if(t)goTab(t)};
 
-/* ---------- گزارش گروه ---------- */
+/* ---------- بارگذاری داده ---------- */
+async function loadAgents(){
+  // اول جدول agent_leaders (همونی که پنل ادمین توش می‌نویسه)، اگه دسترسی نبود agent_info
+  try{
+    const a=await fetchAll("agent_leaders","username,first_name,leaders");
+    if(a.length)return new Map(a.map(x=>{const tk=(x.leaders||[]).map(s=>String(s).trim()).filter(Boolean);return[x.username,{name:x.first_name||"",label:tk.join(" - "),tk}]}));
+  }catch(e){}
+  try{
+    const a=await fetchAll("agent_info","username,first_name,leader_label");
+    return new Map(a.map(x=>[x.username,{name:x.first_name||"",label:x.leader_label||"",tk:toks(x.leader_label)}]));
+  }catch(e){return new Map()}
+}
 async function loadData(){
   say("در حال بارگذاری...");
   try{
-    const[o,p,a,me]=await Promise.all([fetchAll("orders","username,order_date,order_count"),fetchAll("profiles","username"),
-      fetchAll("agent_info","username,first_name,leader_label").catch(()=>[]),
+    const[o,p,ag,me]=await Promise.all([fetchAll("orders","username,order_date,order_count"),fetchAll("profiles","username"),loadAgents(),
       sb.from("leaders").select("leader_name").maybeSingle().then(r=>r.data||{}).catch(()=>({}))]);
-    ORD=o;USERS=p.map(x=>x.username).sort();MYNAME=(me.leader_name||"").trim();
-    AG=new Map(a.map(x=>[x.username,{name:x.first_name||"",label:x.leader_label||"",tk:toks(x.leader_label)}]));
+    ORD=o;USERS=p.map(x=>x.username).sort();MYNAME=(me.leader_name||"").trim();AG=ag;
+    BY=new Map();ORD.forEach(r=>{if(!BY.has(r.order_date))BY.set(r.order_date,new Map());BY.get(r.order_date).set(r.username,Number(r.order_count)||0)});
+    DAYS=[...BY.keys()].sort((a,b)=>dk(b)-dk(a));
     const names=[...new Set([...AG.values()].flatMap(x=>x.tk))].sort((x,y)=>x.localeCompare(y,"fa"));
     $("grp").replaceChildren(...[["","همه‌ی کارشناسان"],...names.map(n=>[n,"گروه "+n])].map(([v,t])=>{const o=document.createElement("option");o.value=v;o.textContent=t;return o}));
     if(MYNAME&&names.includes(MYNAME))$("grp").value=MYNAME;
+    $("dday").replaceChildren(...DAYS.slice(0,60).map((d,i)=>{const o=document.createElement("option");o.value=d;o.textContent=(i===0?"آخرین روز ثبت‌شده: ":"روز ")+d;return o}));
     $("ul").replaceChildren(...USERS.map(u=>{const x=document.createElement("option");x.value=u;return x}));
-    say("");renderReport();
+    try{const{data}=await sb.from("app_settings").select("value").eq("key","daily_target").maybeSingle();if(data&&+data.value>0)DT=+data.value}catch(e){}
+    $("dt").value=DT;
+    say("");renderAll();
   }catch(e){say("خواندن اطلاعات ناموفق بود: "+e.message,"er")}
 }
+const members=()=>{const g=$("grp").value;return USERS.filter(u=>!g||((AG.get(u)||{}).tk||[]).includes(g))};
+const tot=(d,ms)=>{const m=BY.get(d);return m?ms.reduce((s,u)=>s+(m.get(u)||0),0):0};
+const chg=(a,b)=>b?Math.round((a-b)/b*100):(a?100:0);
+const arrow=p=>p>0?'<span class="up">▲ '+p+'%</span>':p<0?'<span class="dn">▼ '+Math.abs(p)+'%</span>':'<span>— 0%</span>';
+
+/* ---------- داشبورد ---------- */
+function renderDash(){
+  const ms=members(),sel=$("dday").value||DAYS[0],i=DAYS.indexOf(sel),prev=DAYS[i+1];
+  if(!sel){$("kpis").replaceChildren(mk("div","sum","هنوز آماری ثبت نشده"));return}
+  const t=tot(sel,ms),pt=prev?tot(prev,ms):0,tg=ms.length*DT,pc=tg?Math.round(t/tg*100):0,active=ms.filter(u=>(BY.get(sel)||new Map()).get(u)>0).length;
+  $("kpis").innerHTML=
+   '<div class="kpi"><div class="l">کل کارشناسان گروه</div><div class="v">'+ms.length+'</div><div class="s">'+active+' نفر در این روز صدور داشتن</div></div>'+
+   '<div class="kpi"><div class="l">مجموع صدور این روز</div><div class="v">'+fmt(t)+'</div><div class="s">'+sel+'</div></div>'+
+   '<div class="kpi"><div class="l">مجموع روز قبل</div><div class="v">'+fmt(pt)+'</div><div class="s">'+(prev||"—")+' · '+arrow(chg(t,pt))+'</div></div>'+
+   '<div class="kpi"><div class="l">تارگت گروه ('+fmt(DT)+' × '+ms.length+')</div><div class="v">'+fmt(tg)+'</div><div class="s">تحقق: '+pc+'%</div><div class="prog"><i style="width:'+Math.min(pc,100)+'%"></i></div></div>';
+  // نمودار ۷ روز
+  const d7=DAYS.slice(i,i+7).reverse(),vals=d7.map(d=>tot(d,ms)),mx=Math.max(tg,...vals,1)*1.1,W=640,H=210,bw=W/Math.max(d7.length,1);
+  let s='<svg viewBox="0 0 '+W+' '+(H+28)+'" width="100%" style="min-width:420px">';
+  [0,.25,.5,.75,1].forEach(f=>{const y=H-f*H;s+='<line x1="0" x2="'+W+'" y1="'+y+'" y2="'+y+'" stroke="currentColor" opacity=".1"/><text x="2" y="'+(y-3)+'" font-size="10" fill="currentColor" opacity=".5">'+Math.round(f*mx)+'</text>'});
+  d7.forEach((d,k)=>{const h=vals[k]/mx*H,x=k*bw+bw*.25;
+    s+='<rect x="'+x+'" y="'+(H-h)+'" width="'+bw*.5+'" height="'+h+'" rx="5" fill="'+(d===sel?"#2fd3a7":"#6d5bff")+'"/><text x="'+(x+bw*.25)+'" y="'+(H-h-5)+'" text-anchor="middle" font-size="11" fill="currentColor">'+fmt(vals[k])+'</text><text x="'+(x+bw*.25)+'" y="'+(H+16)+'" text-anchor="middle" font-size="10" fill="currentColor" opacity=".7">'+d.slice(5)+'</text>'});
+  const ty=H-tg/mx*H;
+  s+='<line x1="0" x2="'+W+'" y1="'+ty+'" y2="'+ty+'" stroke="#fbbf24" stroke-dasharray="6 4" stroke-width="2"/><text x="'+(W-4)+'" y="'+(ty-5)+'" text-anchor="end" font-size="11" fill="#fbbf24">تارگت '+fmt(tg)+'</text></svg>';
+  $("chart").innerHTML=s;
+  $("chT").textContent="عملکرد "+($("grp").value?"گروه "+$("grp").value:"همه")+" در "+d7.length+" روز اخیر (نمودار زرد = تارگت)";
+  // جدول نفرات
+  const tb=$("dtb");tb.replaceChildren();
+  const rows=ms.map(u=>({u,c:(BY.get(sel)||new Map()).get(u)||0,p:prev?((BY.get(prev)||new Map()).get(u)||0):0})).sort((a,b)=>b.c-a.c||a.u.localeCompare(b.u));
+  rows.forEach((r,k)=>{
+    const pr=DT?Math.round(r.c/DT*100):0,st=r.c===0?["بدون صدور","c-zero"]:pr>=100?["محقق شد","c-ok"]:pr>=70?["خوب","c-mid"]:["نیاز به توجه","c-bad"];
+    const tr=mk("tr","click");
+    const dtd=mk("td","n");dtd.innerHTML=arrow(chg(r.c,r.p));
+    const stt=mk("td"),ch=mk("span","chip "+st[1],st[0]);stt.appendChild(ch);
+    const un=mk("td",null,r.u);un.style.direction="ltr";
+    tr.append(mk("td","n",k+1),un,mk("td",null,(AG.get(r.u)||{}).name||"—"),mk("td","n",fmt(r.p)),mk("td","n",fmt(r.c)),dtd,mk("td","n",pr+"%"),stt);
+    tr.onclick=()=>{$("eu").value=r.u;goTab("edit");showUser(r.u)};
+    tb.appendChild(tr)});
+}
+$("dday").addEventListener("input",renderDash);
+
+/* ---------- گزارش گروه ---------- */
 function agg(){
   const f=dk($("from").value)||0,t=dk($("to").value)||99999999,q=$("q").value.trim().toLowerCase();
-  const g=$("grp").value,inG=u=>!g||((AG.get(u)||{}).tk||[]).includes(g);
-  const m=new Map(USERS.filter(inG).map(u=>[u,{u,days:0,total:0}]));
+  const m=new Map(members().map(u=>[u,{u,days:0,total:0}]));
   ORD.forEach(r=>{const k=dk(r.order_date);if(k<f||k>t)return;const x=m.get(r.username);if(!x)return;x.days++;x.total+=Number(r.order_count)||0});
   return[...m.values()].filter(x=>!q||x.u.toLowerCase().includes(q)).sort((a,b)=>b.total-a.total||a.u.localeCompare(b.u));
 }
@@ -141,11 +222,13 @@ function renderReport(){
     const tr=mk("tr","click");
     tr.append(mk("td","n",i+1),mk("td",null,x.u),mk("td",null,(AG.get(x.u)||{}).name||"—"),mk("td","n",x.days),mk("td","n",x.days?fmt(x.total/x.days):"—"),mk("td","n",fmt(x.total)));
     tr.querySelector("td:nth-child(2)").style.direction="ltr";
-    tr.onclick=()=>{$("eu").value=x.u;document.querySelector('[data-t="edit"]').click();showUser(x.u)};
+    tr.onclick=()=>{$("eu").value=x.u;goTab("edit");showUser(x.u)};
     tb.appendChild(tr)});
   $("sum").textContent=rows.length+" کارشناس · مجموع گروه: "+fmt(sum);
 }
-["from","to","q","grp"].forEach(i=>$(i).addEventListener("input",renderReport));
+function renderAll(){renderDash();renderReport()}
+["from","to","q"].forEach(i=>$(i).addEventListener("input",renderReport));
+$("grp").addEventListener("input",renderAll);
 $("xls").onclick=()=>{
   const rows=agg();
   const s1=rows.map((x,i)=>({"رتبه":i+1,"کارشناس":x.u,"نام":(AG.get(x.u)||{}).name||"","سرگروه":(AG.get(x.u)||{}).label||"","روز":x.days,"میانگین":x.days?Math.round(x.total/x.days*100)/100:0,"مجموع":Math.round(x.total*100)/100}));
@@ -170,7 +253,9 @@ function showUser(u){
     dl.onclick=async()=>{if(!confirm("رکورد "+r.order_date+" حذف شود؟"))return;
       const{error}=await sb.from("orders").delete().eq("username",u).eq("order_date",r.order_date);
       if(error){say(error.message,"er");return}
-      ORD=ORD.filter(x=>!(x.username===u&&x.order_date===r.order_date));touch();showUser(u);renderReport();say("حذف شد","ok")};
+      ORD=ORD.filter(x=>!(x.username===u&&x.order_date===r.order_date));
+      if(BY.has(r.order_date))BY.get(r.order_date).delete(u);
+      touch();showUser(u);renderAll();say("حذف شد","ok")};
     row.append(mk("span","d",r.order_date),inp,sv,dl);h.appendChild(row)});
 }
 async function save(u,date,val){
@@ -181,12 +266,21 @@ async function save(u,date,val){
   if(error){say("ثبت نشد: "+error.message,"er");return}
   const i=ORD.findIndex(x=>x.username===u&&x.order_date===date);
   if(i>=0)ORD[i].order_count=c;else ORD.push({username:u,order_date:date,order_count:c});
-  touch();showUser(u);renderReport();say("✔ ثبت شد","ok");
+  if(!BY.has(date)){BY.set(date,new Map());DAYS=[...BY.keys()].sort((a,b)=>dk(b)-dk(a))}
+  BY.get(date).set(u,c);
+  touch();showUser(u);renderAll();say("✔ ثبت شد","ok");
 }
 $("eload").onclick=()=>showUser($("eu").value.trim());
 $("eadd").onclick=()=>save($("eu").value.trim(),nd($("ed").value),$("ec").value);
 
 /* ---------- تارگت ---------- */
+$("dtsave").onclick=async()=>{
+  const v=parseFloat(nd($("dt").value));
+  if(!(v>0)){say("تارگت روزانه باید عدد مثبت باشد","er");return}
+  const{error}=await sb.from("app_settings").upsert({key:"daily_target",value:String(v),updated_at:new Date().toISOString()},{onConflict:"key"});
+  if(error){say("ذخیره نشد: "+error.message,"er");return}
+  DT=v;renderDash();say("✔ تارگت روزانه ذخیره شد","ok");
+};
 const COLORS=["#7c83aa","#4f7bff","#2fd3a7","#fbbf24","#f5c542","#ff6b7d","#c084fc","#fb923c"];
 let TIERS=[{min:0,bonus:0},{min:8,bonus:4000},{min:15,bonus:9000},{min:20,bonus:12000},{min:25,bonus:14000},{min:30,bonus:16000}];
 async function loadTiers(){
@@ -212,7 +306,7 @@ $("tsave").onclick=async()=>{
     label:i===0&&x.bonus===0?"بدون پاداش":(i===t.length-1?x.min+" به بالا":x.min+" تا "+(t[i+1].min-1))}));
   const{error}=await sb.from("app_settings").upsert({key:"target_tiers",value:JSON.stringify(out),updated_at:new Date().toISOString()},{onConflict:"key"});
   if(error){say("ذخیره نشد: "+error.message,"er");return}
-  TIERS=t;drawTiers();say("✔ تارگت ذخیره شد و روی پنل نماینده‌ها اعمال می‌شود","ok");
+  TIERS=t;drawTiers();say("✔ پله‌های پاداش ذخیره شد و روی پنل نماینده‌ها اعمال می‌شود","ok");
 };
 </script>
 </body>
