@@ -29,10 +29,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
-  select {
-  width: 100%; padding: 12px 14px; border-radius: 12px; font-family: inherit; font-size: 14px;
-  border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text); outline: none;
-}
   * { box-sizing: border-box; }
   :root {
     --page-base: #0b0e1e;
@@ -650,7 +646,7 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
         </div>
         <div class="greet-chip" id="gGreet"></div>
         <h1>ورود مدیر</h1>
-        <p class="gate-sub">ورود مدیر و سرگروه‌ها</p>
+        <p class="gate-sub">این بخش فقط برای مدیر سایت در دسترسه</p>
 
         <label class="field" for="gUser">نام کاربری</label>
         <div class="gate-input-wrap">
@@ -852,10 +848,7 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
           <p>جستجو، ثبت، ویرایش و حذف آمار یک کاربر</p>
         </div>
       </div>
-      <div class="search-box" id="leaderFilterWrap">
-        <select id="leaderFilter"></select>
-      </div>
-      <div class="hint" id="leaderBadge" hidden></div>
+
       <div class="search-box">
         <input id="searchInput" type="text" placeholder="نام کاربری رو تایپ کنید..." autocomplete="off" spellcheck="false" />
         <button id="searchBtn">جستجو</button>
@@ -984,24 +977,6 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
 </div>
     <div id="usersMsg" role="status" aria-live="polite" style="text-align:center; font-size:13px; min-height:18px; margin-top:10px; color:var(--text-dim);"></div>
     <div id="bulkUserMsg" role="status" aria-live="polite" style="text-align:center; font-size:13px; min-height:18px; margin-top:6px; color:var(--text-dim);"></div>
-   <div class="sub-title">
-  <span>مشخصات و سرگروه نمایندگان</span>
-  <button type="button" class="chip" id="metaToggle">باز/بسته</button>
-</div>
-<div id="metaWrap" hidden style="margin-bottom:16px;">
-  <div class="hint">هر خط: آیدی سایت ⇥ آیدی متر‌موست ⇥ اسم ⇥ سرگروه (ستون‌های اکسل رو مستقیم پیست کنید)</div>
-  <textarea id="metaText" class="ltr" spellcheck="false" style="min-height:120px;text-align:left;"
-    placeholder="amir.rezaei&#9;amir.rezaei&#9;امیرحسین&#9;فیروز - شاهمیر"></textarea>
-  <div class="actions"><button type="button" id="metaSaveBtn">ذخیره مشخصات</button></div>
-  <div id="metaMsg" role="status" style="text-align:center;font-size:13px;min-height:18px;margin-top:8px;color:var(--text-dim);"></div>
-
-  <div class="hint" style="margin-top:14px;">ثبت حساب سرگروه (اول حسابش رو با «افزودن نماینده» بسازید)</div>
-  <div class="date-row">
-    <input class="ltr" id="ldUser" type="text" placeholder="نام کاربری سرگروه" autocomplete="off" />
-    <input id="ldName" type="text" placeholder="نام سرگروه (مثلاً فیروز - شاهمیر)" autocomplete="off" />
-  </div>
-  <button type="button" class="full" id="ldSaveBtn">ثبت به‌عنوان سرگروه</button>
-</div>
     <div class="sub-title"><span>لیست نمایندگان</span></div>
     <div class="search-box" style="margin-bottom:10px;">
       <input class="ltr" id="usersMgmtSearch" type="text" placeholder="جستجوی نام کاربری..." autocomplete="off" spellcheck="false" />
@@ -1299,9 +1274,7 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
     const lastEl = document.getElementById("statLastDate");
     const lastCountEl = document.getElementById("statLastCount");
     try {
-      let cq = supabaseClient.from("profiles").select("username", { count: "exact", head: true });
-      if (ROLE === "leader") cq = cq.eq("leader_name", MY_LEADER);
-      const { count, error } = await cq;
+      const { count, error } = await supabaseClient.from("profiles").select("username", { count: "exact", head: true });
       if (error || count == null) usersEl.textContent = "—"; else animateNumber(usersEl, count);
     } catch (e) { usersEl.textContent = "—"; }
 
@@ -1399,9 +1372,8 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
     const pageSize = 1000;
     let from = 0;
     while (true) {
-      let q = supabaseClient.from("profiles").select("username").range(from, from + pageSize - 1);
-      if (ROLE === "leader") q = q.eq("leader_name", MY_LEADER);
-      const { data, error } = await q;
+      const { data, error } = await supabaseClient
+        .from("profiles").select("username").range(from, from + pageSize - 1);
       if (error) throw error;
       all.push(...data.map(r => r.username));
       if (data.length < pageSize) break;
@@ -1854,36 +1826,16 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
     selectedUsername = null;
   }
 
-  async function loadLeaderOptions() {
-    const sel = $("leaderFilter");
-    const { data } = await supabaseClient.from("leaders").select("leader_name").order("leader_name");
-    const names = [...new Set((data || []).map(r => r.leader_name))];
-    sel.replaceChildren();
-    sel.add(new Option("همه‌ی نمایندگان", ""));
-    names.forEach(n => sel.add(new Option("سرگروه: " + n, n)));
-    sel.add(new Option("بدون سرگروه", "__none"));
-  }
-  document.getElementById("leaderFilter").addEventListener("change", () => searchUsers());
-
   async function searchUsers() {
-    const term = document.getElementById("searchInput").value.trim().replace(/[,()%]/g, "");
+    const term = document.getElementById("searchInput").value.trim();
     userListEl.replaceChildren(hintEl("در حال جستجو..."));
 
-    let query = supabaseClient.from("profiles")
-      .select("username, full_name, mm_username, leader_name")
-      .order("username", { ascending: true });
-
-    if (ROLE === "leader") query = query.eq("leader_name", MY_LEADER);
-    else {
-      const f = $("leaderFilter").value;
-      if (f === "__none") query = query.is("leader_name", null);
-      else if (f) query = query.eq("leader_name", f);
-    }
-    if (term) query = query.or(
-      "username.ilike.%" + term + "%,full_name.ilike.%" + term + "%,mm_username.ilike.%" + term + "%");
+    let query = supabaseClient.from("profiles").select("username").order("username", { ascending: true });
+    if (term) query = query.ilike("username", "%" + term + "%");
 
     const { data, error } = await query;
     userListEl.replaceChildren();
+
     if (error || !data || data.length === 0) {
       userListEl.appendChild(hintEl("کاربری پیدا نشد"));
       return;
@@ -1897,20 +1849,18 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
       nameEl.className = "name";
       nameEl.textContent = user.username;
       row.appendChild(nameEl);
-      if (user.full_name) {
-        const fn = document.createElement("span");
-        fn.className = "hint";
-        fn.style.margin = "0";
-        fn.textContent = user.full_name + (ROLE === "admin" && user.leader_name ? " · " + user.leader_name : "");
-        row.appendChild(fn);
-      }
       row.addEventListener("click", () => {
-        if (selectedUsername === user.username && panelEl.classList.contains("show")) closeUserPanel();
-        else selectUser(user.username, row);
+        // کلیک دوباره روی کاربری که پنلش بازه => بسته می‌شه
+        if (selectedUsername === user.username && panelEl.classList.contains("show")) {
+          closeUserPanel();
+        } else {
+          selectUser(user.username, row);
+        }
       });
       userListEl.appendChild(row);
     });
   }
+
   async function selectUser(username, rowEl) {
     document.querySelectorAll(".user-row").forEach(r => r.classList.remove("selected"));
     rowEl.classList.add("selected");
@@ -2940,7 +2890,6 @@ bindModal("annOpen", "annModal", "annCloseBtn", loadAnnouncements);
 bindModal("errOpen", "errorsModal", "errCloseBtn", loadAllErrors);
   bindModal("ordOpen", "ordersModal", "ordCloseBtn", () => { $("ordSearch").value = ""; loadSavedOrders(); });
   function showMainTab(name) {
-  if (ROLE === "leader") name = "stats";
   if (name !== "stats" && name !== "period") name = "stats";
   document.querySelectorAll("[data-pane]").forEach(p => { p.hidden = p.dataset.pane !== name; });
   document.querySelectorAll("#mainTabs .tab").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
@@ -3356,41 +3305,17 @@ $("ordDeleteAllBtn").addEventListener("click", async () => {
   const ADMIN_EMAIL = ADMIN_USERNAME + "@yourapp.local";
   let appStarted = false;
 
-  let ROLE = null;       // "admin" | "leader"
-  let MY_LEADER = null;
-  const normLeader = s => String(s || "").replace(/\s*-\s*/g, " - ").replace(/\s+/g, " ").trim();
-
   function isAdminSession(session) {
     return !!(session && session.user && String(session.user.email || "").toLowerCase() === ADMIN_EMAIL);
   }
 
-  async function detectRole(session) {
-    if (!session || !session.user) return null;
-    if (isAdminSession(session)) return { role: "admin" };
-    const { data } = await supabaseClient.from("leaders")
-      .select("leader_name").eq("user_id", session.user.id).maybeSingle();
-    return data ? { role: "leader", leader: data.leader_name } : null;
-  }
-
-  function applyRole() {
-    const leader = ROLE === "leader";
-    ["seasonToggle", "wipeOpen", "usersOpen", "annOpen", "ordOpen"].forEach(id => $(id).hidden = leader);
-    document.querySelector(".menu-divider").hidden = leader;
-    $("mainTabs").hidden = leader;
-    $("leaderFilterWrap").hidden = leader;
-    $("leaderBadge").hidden = !leader;
-    if (leader) $("leaderBadge").textContent = "سرگروه: " + MY_LEADER;
-    document.querySelector(".brand p").textContent = leader ? "پنل سرگروه: " + MY_LEADER : "ثبت و مدیریت آمار صدور کاربران";
-    showMainTab("stats");
-  }
-
   function startApp() {
-    applyRole();
     searchUsers();
     loadStats();
     loadAllErrors();
+    loadAnnouncements();
+    loadPeriodList();
     loadSeasonFromServer();
-    if (ROLE === "admin") { loadAnnouncements(); loadPeriodList(); loadLeaderOptions(); }
   }
   function showApp() {
     $("gate").hidden = true;
@@ -3398,7 +3323,6 @@ $("ordDeleteAllBtn").addEventListener("click", async () => {
     if (!appStarted) { appStarted = true; startApp(); }
   }
   function showGate() {
-    ROLE = null; MY_LEADER = null;
     appStarted = false;
     selectedUsername = null;
     $("app").hidden = true;
@@ -3406,6 +3330,7 @@ $("ordDeleteAllBtn").addEventListener("click", async () => {
     $("gLogin").disabled = false;
     setTimeout(() => $("gUser").focus(), 60);
   }
+
   /* ---------- سلام بر اساس ساعت ---------- */
   (function () {
     const h = new Date().getHours();
@@ -3495,15 +3420,16 @@ $("ordDeleteAllBtn").addEventListener("click", async () => {
     msg.textContent = "";
     msg.className = "";
 
-    const email = username + "@yourapp.local";
-    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-    const r = (!error && data && data.session) ? await detectRole(data.session) : null;
-    if (!r) {
+    // فقط حساب مدیر اجازه‌ی ورود به این صفحه داره
+    if (username !== ADMIN_USERNAME) { setTimeout(() => gateFail("نام کاربری یا رمز عبور اشتباهه"), 700); return; }
+
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email: ADMIN_EMAIL, password: password });
+    if (error || !data || !isAdminSession(data.session)) {
       if (data && data.session) await supabaseClient.auth.signOut();
       gateFail("نام کاربری یا رمز عبور اشتباهه");
       return;
     }
-    ROLE = r.role; MY_LEADER = r.leader || null;
+
     $("gPass").value = "";
     msg.textContent = "";
     setGateBtn("success", "ورود موفق");
@@ -3530,64 +3456,16 @@ $("ordDeleteAllBtn").addEventListener("click", async () => {
 
   (async function checkAuth() {
     let session = null;
-    try { session = (await supabaseClient.auth.getSession()).data.session; } catch (e) {}
-    const r = await detectRole(session);
-    if (r) { ROLE = r.role; MY_LEADER = r.leader || null; showApp(); }
+    try {
+      const res = await supabaseClient.auth.getSession();
+      session = res.data.session;
+    } catch (e) {}
+    if (isAdminSession(session)) showApp();
     else {
       if (session) { try { await supabaseClient.auth.signOut(); } catch (e) {} }
       showGate();
     }
   })();
-    $("metaToggle").addEventListener("click", () => { $("metaWrap").hidden = !$("metaWrap").hidden; });
-
-  function setMetaMsg(t, c) {
-    $("metaMsg").textContent = t;
-    $("metaMsg").style.color = c === "error" ? "var(--error)" : c === "ok" ? "var(--ok)" : "var(--text-dim)";
-  }
-
-  $("metaSaveBtn").addEventListener("click", async () => {
-    const rows = [], bad = [];
-    $("metaText").value.split(/\r?\n/).map(l => l.trim()).filter(Boolean).forEach(l => {
-      const p = l.split(/\t+|\s{2,}/).map(x => x.trim()).filter(Boolean);
-      if (p.length < 4) { bad.push(l); return; }
-      rows.push({ username: p[0].toLowerCase(), mm_username: p[1], full_name: p[2], leader_name: normLeader(p.slice(3).join(" ")) });
-    });
-    if (!rows.length) { setMetaMsg("خط معتبری پیدا نشد (هر خط ۴ ستون)", "error"); return; }
-
-    $("metaSaveBtn").disabled = true;
-    let ok = 0; const missing = [];
-    for (let i = 0; i < rows.length; i += 10) {
-      setMetaMsg("در حال ذخیره... " + ok + " از " + rows.length);
-      const res = await Promise.all(rows.slice(i, i + 10).map(r =>
-        supabaseClient.from("profiles")
-          .update({ mm_username: r.mm_username, full_name: r.full_name, leader_name: r.leader_name })
-          .eq("username", r.username).select("username")));
-      res.forEach((x, j) => {
-        if (x.error || !x.data || !x.data.length) missing.push(rows[i + j].username); else ok++;
-      });
-    }
-    $("metaSaveBtn").disabled = false;
-    setMetaMsg("✔ " + ok + " نفر ذخیره شد" + (missing.length ? " | در سایت نبودن: " + missing.slice(0, 5).join(", ") : "")
-      + (bad.length ? " | " + bad.length + " خط نامعتبر" : ""), missing.length || bad.length ? "error" : "ok");
-    if (ok) { $("metaText").value = ""; loadLeaderOptions(); searchUsers(); }
-  });
-
-  $("ldSaveBtn").addEventListener("click", async () => {
-    const uname = $("ldUser").value.trim().toLowerCase();
-    const lname = normLeader($("ldName").value);
-    if (!uname || !lname) { setMetaMsg("نام کاربری و نام سرگروه رو وارد کنید", "error"); return; }
-    try {
-      const { data } = await callAdminFn({ action: "list" });
-      const u = (data || []).find(x => x.username.toLowerCase() === uname);
-      if (!u) { setMetaMsg("این حساب وجود نداره؛ اول با «افزودن نماینده» بسازیدش", "error"); return; }
-      const { error } = await supabaseClient.from("leaders")
-        .upsert({ user_id: u.id, username: u.username, leader_name: lname }, { onConflict: "user_id" });
-      if (error) throw error;
-      setMetaMsg("✔ «" + uname + "» به‌عنوان سرگروه «" + lname + "» ثبت شد", "ok");
-      $("ldUser").value = ""; $("ldName").value = "";
-      loadLeaderOptions();
-    } catch (e) { setMetaMsg("ثبت نشد: " + (e.message || e), "error"); }
-  });
 </script>
 </body>
 </html>
