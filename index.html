@@ -461,7 +461,7 @@ input:focus + .icon { stroke: var(--accent2); }
         <button id="loginBtn" type="submit"><span class="btn-spin"></span><span class="btn-label">ورود</span></button>
         <div id="msg" role="status" aria-live="polite"></div>
       </form>
-         <button type="button" id="leaderBtn" style="width:100%;margin-top:12px;padding:12px;border-radius:13px;background:var(--row-bg);border:1px solid var(--row-border);color:var(--text);font-family:inherit;cursor:pointer">ورود سرگروه</button>
+      
 
       <div class="secure">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg>
@@ -746,17 +746,14 @@ input:focus + .icon { stroke: var(--accent2); }
     stageEl.classList.add("shake");
     submitting = false;
   }
-  let leaderMode = false;
-  loginBtn.addEventListener("click", () => { leaderMode = false; });
-  document.getElementById("leaderBtn").addEventListener("click", () => { leaderMode = true; form.requestSubmit(); });
+
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (submitting) return;
     submitting = true;
 
-    const asLeader = leaderMode;
-    leaderMode = false;
+
 
     const username = document.getElementById("username").value.trim();
     const password = passwordEl.value;
@@ -782,10 +779,11 @@ input:focus + .icon { stroke: var(--accent2); }
 
     if (result.error) { failLogin("نام کاربری یا رمز عبور اشتباه است"); return; }
 
-    if (asLeader) {
+    let asLeader = false;
+    try {
       const { data: ok } = await supabaseClient.rpc("is_leader");
-      if (!ok) { await supabaseClient.auth.signOut(); failLogin("این حساب سرگروه نیست"); return; }
-    }
+      asLeader = !!ok;
+    } catch (err) {}
 
     localStorage.setItem("current_username", username);
     setBtn("success", "ورود موفق");
