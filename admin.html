@@ -1863,7 +1863,7 @@ button.menu-toggle.on svg { transform: rotate(90deg); }
     names.forEach(n => sel.add(new Option("سرگروه: " + n, n)));
     sel.add(new Option("بدون سرگروه", "__none"));
   }
-  $("leaderFilter").addEventListener("change", () => searchUsers());
+  document.getElementById("leaderFilter").addEventListener("change", () => searchUsers());
 
   async function searchUsers() {
     const term = document.getElementById("searchInput").value.trim().replace(/[,()%]/g, "");
