@@ -1307,7 +1307,13 @@ button.sort-btn.active { background: linear-gradient(135deg, var(--accent1), var
       if (count == null) lastCountEl.textContent = "—"; else animateNumber(lastCountEl, count);
     } catch (e) { lastEl.textContent = "—"; lastCountEl.textContent = "—"; }
   }
-
+  /* ---------- ثبت زمان آخرین بروزرسانی گزارش ---------- */
+  async function markReportUpdated() {
+    const { error } = await supabaseClient
+      .from("app_settings")
+      .upsert({ key: "last_report_update", value: new Date().toISOString(), updated_at: new Date().toISOString() }, { onConflict: "key" });
+    if (error) toast("زمان بروزرسانی ذخیره نشد: " + explainError(error), "error");
+  }
   /* =========================================================
      ثبت دسته‌ای از اکسل (روزانه)
      ========================================================= */
@@ -1584,6 +1590,7 @@ button.sort-btn.active { background: linear-gradient(135deg, var(--accent1), var
     setBulkMsg(autoDateMode
       ? ("✔ آمار " + done + " ردیف برای " + distinctDates + " تاریخ مختلف ثبت شد")
       : ("✔ آمار " + done + " نفر برای تاریخ " + pendingDate + " ثبت شد"), "ok");
+    markReportUpdated();
     pendingRows = [];
     bulkPreviewEl.classList.remove("show");
     bulkTextEl.value = "";
