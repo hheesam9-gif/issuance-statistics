@@ -55,11 +55,12 @@ tr.click{cursor:pointer}tr.click:hover{background:var(--row)}
     <div class="bar">
       <input id="from" placeholder="از تاریخ 1405/07/01">
       <input id="to" placeholder="تا تاریخ 1405/07/30">
+      <select id="grp"><option value="">همه‌ی کارشناسان</option></select>
       <input id="q" placeholder="جستجوی کارشناس...">
       <button id="xls">📥 خروجی اکسل</button>
     </div>
     <div class="sum" id="sum"></div>
-    <div class="scroll"><table><thead><tr><th class="n">#</th><th>کارشناس</th><th class="n">روز</th><th class="n">میانگین</th><th class="n">مجموع</th></tr></thead><tbody id="tb"></tbody></table></div>
+    <div class="scroll"><table><thead><tr><th class="n">#</th><th>کارشناس</th><th>نام</th><th class="n">روز</th><th class="n">میانگین</th><th class="n">مجموع</th></tr></thead><tbody id="tb"></tbody></table></div>
   </section>
 
   <section class="card" data-p="edit" hidden>
@@ -90,7 +91,8 @@ const mk=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=nu
 async function fetchAll(table,cols){const r=[];let f=0;for(;;){const{data,error}=await sb.from(table).select(cols).range(f,f+999);if(error)throw error;r.push(...data);if(data.length<1000)break;f+=1000}return r}
 const touch=()=>sb.from("app_settings").upsert({key:"last_report_update",value:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:"key"});
 
-let ORD=[],USERS=[],cur="";
+let ORD=[],USERS=[],cur="",AG=new Map(),MYNAME="";
+const toks=l=>String(l||"").split(/\s*[-–—]\s*/).map(x=>x.trim()).filter(Boolean);
 
 /* ---------- گیت: فقط سرگروه ---------- */
 (async()=>{
@@ -113,15 +115,22 @@ $("tabs").onclick=e=>{const t=e.target.dataset.t;if(!t)return;
 async function loadData(){
   say("در حال بارگذاری...");
   try{
-    const[o,p]=await Promise.all([fetchAll("orders","username,order_date,order_count"),fetchAll("profiles","username")]);
-    ORD=o;USERS=p.map(x=>x.username).sort();
+    const[o,p,a,me]=await Promise.all([fetchAll("orders","username,order_date,order_count"),fetchAll("profiles","username"),
+      fetchAll("agent_info","username,first_name,leader_label").catch(()=>[]),
+      sb.from("leaders").select("leader_name").maybeSingle().then(r=>r.data||{}).catch(()=>({}))]);
+    ORD=o;USERS=p.map(x=>x.username).sort();MYNAME=(me.leader_name||"").trim();
+    AG=new Map(a.map(x=>[x.username,{name:x.first_name||"",label:x.leader_label||"",tk:toks(x.leader_label)}]));
+    const names=[...new Set([...AG.values()].flatMap(x=>x.tk))].sort((x,y)=>x.localeCompare(y,"fa"));
+    $("grp").replaceChildren(...[["","همه‌ی کارشناسان"],...names.map(n=>[n,"گروه "+n])].map(([v,t])=>{const o=document.createElement("option");o.value=v;o.textContent=t;return o}));
+    if(MYNAME&&names.includes(MYNAME))$("grp").value=MYNAME;
     $("ul").replaceChildren(...USERS.map(u=>{const x=document.createElement("option");x.value=u;return x}));
     say("");renderReport();
   }catch(e){say("خواندن اطلاعات ناموفق بود: "+e.message,"er")}
 }
 function agg(){
   const f=dk($("from").value)||0,t=dk($("to").value)||99999999,q=$("q").value.trim().toLowerCase();
-  const m=new Map(USERS.map(u=>[u,{u,days:0,total:0}]));
+  const g=$("grp").value,inG=u=>!g||((AG.get(u)||{}).tk||[]).includes(g);
+  const m=new Map(USERS.filter(inG).map(u=>[u,{u,days:0,total:0}]));
   ORD.forEach(r=>{const k=dk(r.order_date);if(k<f||k>t)return;const x=m.get(r.username);if(!x)return;x.days++;x.total+=Number(r.order_count)||0});
   return[...m.values()].filter(x=>!q||x.u.toLowerCase().includes(q)).sort((a,b)=>b.total-a.total||a.u.localeCompare(b.u));
 }
@@ -130,16 +139,16 @@ function renderReport(){
   let sum=0;
   rows.forEach((x,i)=>{sum+=x.total;
     const tr=mk("tr","click");
-    tr.append(mk("td","n",i+1),mk("td",null,x.u),mk("td","n",x.days),mk("td","n",x.days?fmt(x.total/x.days):"—"),mk("td","n",fmt(x.total)));
+    tr.append(mk("td","n",i+1),mk("td",null,x.u),mk("td",null,(AG.get(x.u)||{}).name||"—"),mk("td","n",x.days),mk("td","n",x.days?fmt(x.total/x.days):"—"),mk("td","n",fmt(x.total)));
     tr.querySelector("td:nth-child(2)").style.direction="ltr";
     tr.onclick=()=>{$("eu").value=x.u;document.querySelector('[data-t="edit"]').click();showUser(x.u)};
     tb.appendChild(tr)});
   $("sum").textContent=rows.length+" کارشناس · مجموع گروه: "+fmt(sum);
 }
-["from","to","q"].forEach(i=>$(i).addEventListener("input",renderReport));
+["from","to","q","grp"].forEach(i=>$(i).addEventListener("input",renderReport));
 $("xls").onclick=()=>{
   const rows=agg();
-  const s1=rows.map((x,i)=>({"رتبه":i+1,"کارشناس":x.u,"روز":x.days,"میانگین":x.days?Math.round(x.total/x.days*100)/100:0,"مجموع":Math.round(x.total*100)/100}));
+  const s1=rows.map((x,i)=>({"رتبه":i+1,"کارشناس":x.u,"نام":(AG.get(x.u)||{}).name||"","سرگروه":(AG.get(x.u)||{}).label||"","روز":x.days,"میانگین":x.days?Math.round(x.total/x.days*100)/100:0,"مجموع":Math.round(x.total*100)/100}));
   const f=dk($("from").value)||0,t=dk($("to").value)||99999999,names=new Set(rows.map(r=>r.u));
   const s2=ORD.filter(r=>{const k=dk(r.order_date);return k>=f&&k<=t&&names.has(r.username)}).sort((a,b)=>a.username.localeCompare(b.username)||dk(a.order_date)-dk(b.order_date))
     .map(r=>({"کارشناس":r.username,"تاریخ":r.order_date,"تعداد":Number(r.order_count)}));
