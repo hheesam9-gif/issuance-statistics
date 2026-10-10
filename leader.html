@@ -259,13 +259,18 @@ function renderDash(){
   const d7=DAYS.slice(i,i+7).reverse(),vals=d7.map(d=>tot(d,ms)),wt=tg*d7.length,wd=vals.reduce((a,b)=>a+b,0),wp=wt?Math.round(wd/wt*100):0;
   $("kpis").innerHTML=kpi(0,"users","کل کارشناسان گروه",ms.length,"همه اعضا")+kpi(1,"check","گزارش‌های این روز",active,"از "+ms.length+" نفر · "+arrow(chg(t,pt)))+kpi(2,"target","تارگت روزانه گروه",Math.round(tg*100)/100,"انجام شده: "+fmt(t)+" ("+pc+"%)",pc)+kpi(3,"chart","تارگت کلی ("+d7.length+" روز)",Math.round(wt*100)/100,"انجام شده: "+fmt(wd)+" ("+wp+"%)",wp);
   document.querySelectorAll("#kpis .v").forEach(e=>an(e,+e.dataset.v));
-  const mx=Math.max(tg,...vals,1)*1.1,W=640,H=200,bw=W/Math.max(d7.length,1);
-  let s='<svg viewBox="0 0 '+W+' '+(H+26)+'" width="100%"><defs><linearGradient id="gp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9b82ff"/><stop offset="1" stop-color="#5b3fe0"/></linearGradient><linearGradient id="gg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5df0c8"/><stop offset="1" stop-color="#12a883"/></linearGradient></defs>';
-  [0,.25,.5,.75,1].forEach(f=>{const y=H-f*H;s+='<line x1="0" x2="'+W+'" y1="'+y+'" y2="'+y+'" stroke="currentColor" opacity=".1"/><text x="2" y="'+(y-3)+'" font-size="10" fill="currentColor" opacity=".5">'+Math.round(f*mx)+'</text>'});
+  const mx=Math.max(tg,...vals,1)*1.12,W=660,PL=48,H=200,bw=(W-PL)/Math.max(d7.length,1),nf=n=>Math.round(n).toLocaleString("en-US");
+  let s='<svg viewBox="0 0 '+W+' '+(H+44)+'" width="100%" style="direction:ltr"><defs><linearGradient id="gp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9b82ff"/><stop offset="1" stop-color="#5b3fe0"/></linearGradient><linearGradient id="gg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5df0c8"/><stop offset="1" stop-color="#12a883"/></linearGradient></defs>';
+  [0,.25,.5,.75,1].forEach(f=>{const y=H-f*H;s+='<line x1="'+PL+'" x2="'+W+'" y1="'+y+'" y2="'+y+'" stroke="currentColor" opacity=".1"/><text x="'+(PL-8)+'" y="'+(y+3)+'" text-anchor="end" font-size="10" fill="currentColor" opacity=".65">'+nf(f*mx)+'</text>'});
   let pts="";
-  d7.forEach((d,k)=>{const x=k*bw+bw*.2,w=bw*.28,h1=tg/mx*H,h2=vals[k]/mx*H;
-    s+='<rect x="'+x+'" y="'+(H-h1)+'" width="'+w+'" height="'+h1+'" rx="5" fill="url(#gp)" opacity=".9"/><rect x="'+(x+w+3)+'" y="'+(H-h2)+'" width="'+w+'" height="'+h2+'" rx="5" fill="url(#gg)"/><text x="'+(x+w)+'" y="'+(H+16)+'" text-anchor="middle" font-size="10" fill="currentColor" opacity=".7">'+d.slice(5)+'</text>';
-    pts+=(k?" ":"")+(x+w)+","+(H-h2)});
+  d7.forEach((d,k)=>{const w=bw*.3,x=PL+k*bw+bw*.18,h1=tg/mx*H,h2=vals[k]/mx*H,p=tg?Math.round(vals[k]/tg*100):0,cx=x+w+2;
+    s+='<g><title>'+d+' | تارگت: '+nf(tg)+' | انجام شده: '+fmt(vals[k])+' ('+p+'%)</title><rect x="'+x+'" y="'+(H-h1)+'" width="'+w+'" height="'+h1+'" rx="5" fill="url(#gp)" opacity=".9"/><rect x="'+(x+w+4)+'" y="'+(H-h2)+'" width="'+w+'" height="'+h2+'" rx="5" fill="url(#gg)"/>'+
+     '<text x="'+(x+w+4+w/2)+'" y="'+(H-h2-7)+'" text-anchor="middle" font-size="11" font-weight="700" fill="currentColor">'+nf(vals[k])+'</text>'+
+     '<text x="'+cx+'" y="'+(H+16)+'" text-anchor="middle" font-size="10" fill="currentColor" opacity=".7">'+d.slice(5)+'</text>'+
+     '<text x="'+cx+'" y="'+(H+32)+'" text-anchor="middle" font-size="10" font-weight="700" fill="'+(p>=100?"#2fd3a7":"#fbbf24")+'">'+p+'%</text></g>';
+    pts+=(k?" ":"")+(x+w+4+w/2)+","+(H-h2)});
+  const ty=H-tg/mx*H;
+  s+='<line x1="'+PL+'" x2="'+W+'" y1="'+ty+'" y2="'+ty+'" stroke="#fbbf24" stroke-dasharray="6 4" stroke-width="1.5"/><text x="'+W+'" y="'+(ty-5)+'" text-anchor="end" font-size="10" fill="#fbbf24">تارگت روزانه: '+nf(tg)+'</text>';
   s+='<polyline points="'+pts+'" fill="none" stroke="#4f7bff" stroke-width="2.5" stroke-linejoin="round"/></svg>';
   $("chart").innerHTML=s;
   $("chT").textContent="عملکرد "+($("grp").value?"گروه "+$("grp").value:"همه")+" در "+d7.length+" روز گذشته";
