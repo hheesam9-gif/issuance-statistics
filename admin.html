@@ -3891,5 +3891,135 @@ $("ldSearch").addEventListener("input", () => { clearTimeout(ldTimer); ldTimer =
   });
 })();
 </script>
+  <!-- ===== پنل مدیریت: دکمه‌ی «ثبت سرگروه». کل این فایل را قبل از </body> فایل پنل مدیریت بچسبان ===== -->
+<script>
+(function(){
+  /* دکمه‌ی منو */
+  const item=document.createElement("button");
+  item.type="button";item.className="menu-item";item.id="lacOpen";item.setAttribute("role","menuitem");
+  item.innerHTML='<span class="menu-item-icon">🛡️</span><span class="menu-item-label">ثبت سرگروه</span>';
+  $("menuItems").insertBefore(item,$("menuItems").querySelector(".menu-divider"));
+
+  /* پنجره */
+  const m=document.createElement("div");
+  m.className="modal";m.id="lacModal";m.setAttribute("role","dialog");m.setAttribute("aria-modal","true");
+  m.innerHTML=
+   '<div class="modal-box" style="max-width:560px;text-align:right;">'+
+   '<div class="card-head"><div class="card-icon" style="font-size:20px;">🛡️</div><div><h2>ثبت سرگروه</h2><p>ساخت حساب ورود به پنل سرگروه</p></div></div>'+
+   '<label class="field" for="lacUser">نام کاربری</label>'+
+   '<input class="ltr" id="lacUser" type="text" placeholder="مثلاً a.naderi" autocomplete="off" spellcheck="false">'+
+   '<label class="field" for="lacPass" style="margin-top:12px">رمز عبور</label>'+
+   '<div class="date-row" style="margin-bottom:0"><input class="ltr" id="lacPass" type="text" placeholder="حداقل ۶ کاراکتر" autocomplete="off"><button type="button" class="chip" id="lacGen">تولید رمز</button></div>'+
+   '<label class="field" for="lacName" style="margin-top:12px">نام گروه (سرگروه)</label>'+
+   '<input id="lacName" list="lacNames" type="text" placeholder="مثلاً نادری" autocomplete="off"><datalist id="lacNames"></datalist>'+
+   '<div class="hint" style="margin-top:6px">باید دقیقاً همان اسمی باشد که در «سرگروه‌های نمایندگان» برای اعضای گروه ثبت شده؛ از لیست پیشنهادی انتخاب کن.</div>'+
+   '<button type="button" class="full" id="lacSave" style="margin-top:14px">ثبت سرگروه</button>'+
+   '<div id="lacMsg" role="status" aria-live="polite" style="text-align:center;font-size:13px;min-height:18px;margin-top:10px;color:var(--text-dim);line-height:1.9"></div>'+
+   '<div class="sub-title"><span>سرگروه‌های ثبت‌شده</span><span id="lacCount"></span></div>'+
+   '<div class="history" id="lacList" style="max-height:260px;"></div>'+
+   '<div class="actions" style="margin-top:16px;"><button type="button" class="secondary full" id="lacClose">بستن</button></div>'+
+   '</div>';
+  document.body.appendChild(m);
+  bindModal("lacOpen","lacModal","lacClose",()=>{setMsg("");loadNames();loadLeaders()});
+  document.addEventListener("keydown",e=>{if(e.key==="Escape")m.classList.remove("show")});
+
+  const setMsg=(t,c)=>{const e=$("lacMsg");e.textContent=t;e.style.color=c==="error"?"var(--error)":c==="ok"?"var(--ok)":"var(--text-dim)"};
+
+  /* پیشنهاد اسم گروه از روی سرگروه‌های ثبت‌شده‌ی نماینده‌ها */
+  async function loadNames(){
+    try{
+      const names=new Set();let from=0;
+      while(true){
+        const{data,error}=await supabaseClient.from("agent_leaders").select("leaders").range(from,from+999);
+        if(error)throw error;
+        data.forEach(r=>(r.leaders||[]).forEach(n=>names.add(n)));
+        if(data.length<1000)break;from+=1000;
+      }
+      $("lacNames").replaceChildren(...[...names].sort((a,b)=>a.localeCompare(b,"fa")).map(n=>{const o=document.createElement("option");o.value=n;return o}));
+    }catch(e){}
+  }
+
+  $("lacGen").addEventListener("click",()=>{
+    const u=$("lacUser").value.trim().toLowerCase();
+    $("lacPass").value=genPasswordFor(u||"x.y",new Set());
+  });
+
+  async function findUserId(username){
+    const{data}=await callAdminFn({action:"list"});
+    const u=(data||[]).find(x=>String(x.username).toLowerCase()===username);
+    return u?u.id:null;
+  }
+
+  $("lacSave").addEventListener("click",async()=>{
+    const username=$("lacUser").value.trim().toLowerCase().replace(/\s+/g,"");
+    const password=$("lacPass").value;
+    const leaderName=$("lacName").value.trim();
+    if(!username||!password||!leaderName){setMsg("نام کاربری، رمز و نام گروه رو کامل وارد کن","error");return}
+    if(!/^[a-z0-9._-]+$/.test(username)){setMsg("نام کاربری فقط انگلیسی (حرف، عدد، . - _) باشه","error");return}
+    if(password.length<6){setMsg("رمز باید حداقل ۶ کاراکتر باشه","error");return}
+
+    const btn=$("lacSave");btn.disabled=true;setMsg("در حال ساخت حساب...");
+    try{
+      let id=null,createdNew=true;
+      try{
+        await callAdminFn({action:"create",username,password});
+      }catch(err){
+        id=await findUserId(username);
+        if(!id)throw err;
+        createdNew=false;
+        if(!confirm("این نام کاربری از قبل حساب داره.\nفقط به‌عنوان سرگروه ثبت بشه و رمزش هم به رمز واردشده تغییر کنه؟")){setMsg("لغو شد");btn.disabled=false;return}
+        await callAdminFn({action:"update",userId:id,newPassword:password});
+      }
+      if(!id)id=await findUserId(username);
+      if(!id)throw new Error("حساب ساخته شد ولی شناسه‌اش پیدا نشد؛ لیست نمایندگان رو بازخوانی کن");
+
+      const{data:ex,error:e1}=await supabaseClient.from("leaders").select("user_id").eq("user_id",id).maybeSingle();
+      if(e1)throw e1;
+      const{error:e2}=ex
+        ?await supabaseClient.from("leaders").update({username,leader_name:leaderName}).eq("user_id",id)
+        :await supabaseClient.from("leaders").insert({user_id:id,username,leader_name:leaderName});
+      if(e2)throw e2;
+
+      setMsg("✔ سرگروه «"+leaderName+"» ثبت شد — نام کاربری: "+username+" | رمز: "+password+(createdNew?"":" (رمز به‌روز شد)"),"ok");
+      $("lacUser").value="";$("lacPass").value="";$("lacName").value="";
+      loadLeaders();
+      if(typeof loadUsersMgmtList==="function")loadUsersMgmtList();
+    }catch(err){
+      setMsg("ثبت نشد: "+explainError(err),"error");
+    }
+    btn.disabled=false;
+  });
+
+  async function loadLeaders(){
+    const list=$("lacList");list.replaceChildren(hintEl("در حال بارگذاری..."));
+    const{data,error}=await supabaseClient.from("leaders").select("*").order("created_at",{ascending:false});
+    list.replaceChildren();
+    if(error){$("lacCount").textContent="";list.appendChild(hintEl(explainError(error)));return}
+    $("lacCount").textContent=data.length?data.length+" سرگروه":"";
+    if(!data.length){list.appendChild(hintEl("هنوز سرگروهی ثبت نشده"));return}
+    data.forEach(r=>{
+      const row=mk("div","row");
+      const left=mk("span","d",(r.username||"—")+" — "+(r.leader_name||""));left.style.direction="ltr";
+      const vals=mk("span","vals");
+      const key=mk("button","delete-btn","🔑");key.type="button";key.title="تغییر رمز";key.style.color="var(--accent2)";
+      key.addEventListener("click",async()=>{
+        const p=prompt("رمز جدید برای «"+r.username+"» (حداقل ۶ کاراکتر):","");
+        if(p===null)return;
+        if(p.length<6){toast("رمز باید حداقل ۶ کاراکتر باشه","error");return}
+        try{await callAdminFn({action:"update",userId:r.user_id,newPassword:p});toast("رمز «"+r.username+"» عوض شد: "+p,"ok")}
+        catch(e){toast("تغییر رمز ناموفق بود: "+e.message,"error")}
+      });
+      const del=mk("button","delete-btn","🗑️");del.type="button";del.title="برداشتن دسترسی سرگروه";
+      del.addEventListener("click",async()=>{
+        if(!confirm("دسترسی سرگروهی «"+r.username+"» برداشته بشه؟\n(حساب کاربری‌اش حذف نمی‌شه، فقط دیگه وارد پنل سرگروه نمی‌شه)"))return;
+        const{error}=await supabaseClient.from("leaders").delete().eq("user_id",r.user_id);
+        if(error){toast("حذف نشد: "+explainError(error),"error");return}
+        toast("دسترسی سرگروه برداشته شد","ok");loadLeaders();
+      });
+      vals.append(key,del);row.append(left,vals);list.appendChild(row);
+    });
+  }
+})();
+</script>
 </body>
 </html>
