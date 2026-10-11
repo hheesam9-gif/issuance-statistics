@@ -784,5 +784,80 @@ input:hover,select:hover,textarea:hover{border-color:rgba(122,92,255,.45)}
   const ld=$("eload");if(ld)ld.addEventListener("click",close);
 })();
 </script>
+  <!-- ===== پنل سرگروه: ثبت تاریخچه‌ی فعالیت. کل این فایل را قبل از </body> فایل پنل سرگروه بچسبان (آخر همه‌ی پچ‌ها) ===== -->
+<script>
+(function(){
+  /* ارسال یک رکورد به جدول leader_activity (اگر خطا بدهد بی‌صدا رد می‌شود و کار سرگروه را خراب نمی‌کند) */
+  const log=async(action,target,summary,details)=>{
+    try{
+      const{data:{session}}=await sb.auth.getSession();if(!session)return;
+      await sb.from("leader_activity").insert({leader_name:MYNAME||null,action,target_username:target||null,summary,details:details||{}});
+    }catch(e){}
+  };
+
+  /* ثبت یا اصلاح آمار (قدیم ← جدید) */
+  const _save=window.save;
+  window.save=async function(u,date,val){
+    const c=parseFloat(nd(val)),o=ORD.find(x=>x.username===u&&x.order_date===date),old=o?Number(o.order_count):null;
+    await _save(u,date,val);
+    const n=ORD.find(x=>x.username===u&&x.order_date===date);
+    if(!n||Number(n.order_count)!==c||old===c)return;
+    if(old===null)log("stat_add",u,"آمار صدور «"+u+"» در تاریخ "+date+" را ثبت کرد: "+fmt(c),{date,new:c});
+    else log("stat_edit",u,"آمار صدور «"+u+"» در تاریخ "+date+" را از "+fmt(old)+" به "+fmt(c)+" اصلاح کرد",{date,old,new:c});
+  };
+
+  /* حذف رکورد آمار (دکمه‌ی سطل زباله) */
+  const _show=window.showUser;
+  window.showUser=function(u){
+    _show(u);
+    document.querySelectorAll("#hist .row").forEach(r=>{
+      const b=r.querySelector(".ib"),d=r.querySelector(".d");if(!b||!d||b._w)return;
+      const date=d.textContent,orig=b.onclick;b._w=1;
+      b.onclick=async()=>{
+        const o=ORD.find(x=>x.username===u&&x.order_date===date),old=o?Number(o.order_count):null;
+        await orig();
+        if(o&&!ORD.some(x=>x.username===u&&x.order_date===date))
+          log("stat_delete",u,"رکورد آمار «"+u+"» در تاریخ "+date+" (مقدار "+fmt(old)+") را حذف کرد",{date,old});
+      };
+    });
+  };
+
+  /* ثبت مغایرت */
+  const es=$("esave"),_es=es.onclick;
+  es.onclick=async()=>{
+    const o=$("eo").value.trim(),a=$("ea").value.trim(),r=$("er").value.trim(),u=cur;
+    await _es();
+    if(o&&$("eo").value===""&&$("er").value==="")
+      log("error_add",u,"برای «"+u+"» مغایرت ثبت کرد: سفارش "+o+"، مبلغ "+a+"، دلیل: "+r,{order:o,amount:a,reason:r});
+  };
+
+  /* رفع مغایرت */
+  const _re=window.resolveErr;
+  window.resolveErr=async function(e){
+    const t=$("toast");t.textContent="";t.className="toast";
+    await _re(e);
+    if(t.classList.contains("ok")&&t.textContent.includes("برداشته شد"))
+      log("error_resolve",e.username,"مغایرت سفارش "+e.order_number+" (مبلغ "+fmtMoney(e.amount)+") برای «"+e.username+"» را رفع‌شده ثبت کرد",{order:e.order_number,amount:e.amount});
+  };
+
+  /* تغییر تارگت روزانه */
+  const dts=$("dtsave"),_dt=dts.onclick;
+  dts.onclick=async()=>{
+    const old=DT;await _dt();
+    if(DT!==old)log("target_change",null,"تارگت روزانه را از "+fmt(old)+" به "+fmt(DT)+" تغییر داد",{old,new:DT});
+  };
+
+  /* خروجی اکسل */
+  const _x=window.exportXls;
+  window.exportXls=function(){
+    _x();
+    try{
+      const f=$("from").value.trim(),t=$("to").value.trim(),g=$("grp").value;
+      log("export",null,"خروجی اکسل گرفت"+(g?" (گروه "+g+")":"")+(f||t?" — بازه "+(f||"…")+" تا "+(t||"…"):""),{group:g,from:f,to:t,rows:agg().length});
+    }catch(e){}
+  };
+  $("xls").onclick=window.exportXls;
+})();
+</script>
 </body>
 </html>
