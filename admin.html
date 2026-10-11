@@ -3794,5 +3794,102 @@ $("ldSearch").addEventListener("input", () => { clearTimeout(ldTimer); ldTimer =
     }
   })();
 </script>
+  <!-- ===== پنل مدیریت: دکمه‌ی «تاریخچه‌ی سرگروه‌ها». کل این فایل را قبل از </body> فایل پنل مدیریت بچسبان ===== -->
+<script>
+(function(){
+  const AL={
+    stat_edit:["✏️ اصلاح آمار","#4f7bff"],stat_add:["➕ ثبت آمار","#2fd3a7"],stat_delete:["🗑 حذف آمار","#ff6b7d"],
+    error_add:["⚠️ ثبت مغایرت","#fbbf24"],error_resolve:["✅ رفع مغایرت","#4ade80"],
+    target_change:["🎯 تغییر تارگت","#9b82ff"],export:["📥 خروجی اکسل","#9aa3c7"]
+  };
+  let ACT=[],fLeader="",fAct="";
+
+  /* دکمه‌ی منو */
+  const item=document.createElement("button");
+  item.type="button";item.className="menu-item";item.id="actOpen";item.setAttribute("role","menuitem");
+  item.innerHTML='<span class="menu-item-icon">🕘</span><span class="menu-item-label">تاریخچه‌ی سرگروه‌ها</span>';
+  $("menuItems").insertBefore(item,$("menuItems").querySelector(".menu-divider"));
+
+  /* پنجره */
+  const m=document.createElement("div");
+  m.className="modal";m.id="actModal";m.setAttribute("role","dialog");m.setAttribute("aria-modal","true");
+  m.innerHTML=
+   '<div class="modal-box" style="max-width:640px;text-align:right;">'+
+   '<div class="card-head"><div class="card-icon" style="font-size:20px;">🕘</div><div><h2>تاریخچه‌ی فعالیت سرگروه‌ها</h2><p>هر کاری که سرگروه‌ها توی پنل خودشون انجام می‌دن اینجا ثبت می‌شه</p></div></div>'+
+   '<div class="sum-row"><span class="sum-chip">تعداد: <b id="actCount">—</b></span></div>'+
+   '<div class="chips" id="actLeaders"></div><div class="chips" id="actTypes"></div>'+
+   '<div class="search-box" style="margin-top:12px;"><input id="actSearch" type="text" placeholder="جستجو: نام نماینده، شماره سفارش، متن..." autocomplete="off" spellcheck="false"></div>'+
+   '<div class="err-list" id="actList" style="max-height:440px;"></div>'+
+   '<div class="actions" style="margin-top:14px;"><button type="button" class="del-btn" id="actClear" style="flex:0 0 auto;">پاک‌سازی تاریخچه</button><button type="button" class="secondary" id="actCloseBtn">بستن</button></div>'+
+   '</div>';
+  document.body.appendChild(m);
+  bindModal("actOpen","actModal","actCloseBtn",loadActs);
+  document.addEventListener("keydown",e=>{if(e.key==="Escape")m.classList.remove("show")});
+
+  async function loadActs(){
+    $("actList").replaceChildren(hintEl("در حال بارگذاری..."));
+    const{data,error}=await supabaseClient.from("leader_activity").select("*").order("created_at",{ascending:false}).limit(500);
+    if(error){$("actList").replaceChildren(hintEl(explainError(error)));$("actCount").textContent="—";return}
+    ACT=data;render();
+  }
+
+  const lname=r=>r.leader_name||r.leader_username||"—";
+  function chipRow(box,entries,cur,set){
+    box.replaceChildren();
+    entries.forEach(([key,label,n])=>{
+      const b=mk("button","chip-btn",label+(n!=null?" ("+n+")":""));b.type="button";
+      if(key===cur){b.style.borderColor="var(--accent1)";b.style.background="linear-gradient(135deg,var(--accent1),var(--accent2))";b.style.color="#fff"}
+      b.addEventListener("click",()=>{set(key===cur?"":key);render()});
+      box.appendChild(b);
+    });
+  }
+
+  function render(){
+    const term=normalizeDigits($("actSearch").value.trim()).toLowerCase();
+    const lc=new Map(),ac=new Map();
+    ACT.forEach(r=>{lc.set(lname(r),(lc.get(lname(r))||0)+1);ac.set(r.action,(ac.get(r.action)||0)+1)});
+    chipRow($("actLeaders"),[...lc.entries()].sort((a,b)=>b[1]-a[1]).map(([k,n])=>[k,"👤 "+k,n]),fLeader,v=>fLeader=v);
+    chipRow($("actTypes"),[...ac.entries()].map(([k,n])=>[k,(AL[k]||[k])[0],n]),fAct,v=>fAct=v);
+
+    const rows=ACT.filter(r=>(!fLeader||lname(r)===fLeader)&&(!fAct||r.action===fAct)&&
+      (!term||(r.summary||"").toLowerCase().includes(term)||(r.target_username||"").toLowerCase().includes(term)||lname(r).toLowerCase().includes(term)));
+    animateNumber($("actCount"),rows.length);
+
+    const list=$("actList");list.replaceChildren();
+    if(!rows.length){list.appendChild(hintEl(ACT.length?"چیزی پیدا نشد":"هنوز فعالیتی ثبت نشده"));return}
+    rows.forEach(r=>{
+      const meta=AL[r.action]||[r.action,"#9aa3c7"];
+      const box=mk("div","err-item");box.style.borderRightColor=meta[1];
+      const top=mk("div","err-top");
+      const who=mk("b",null,"👤 "+lname(r));
+      const tag=mk("span",null,meta[0]);tag.style.cssText="font-size:12px;color:"+meta[1]+";font-weight:bold;white-space:nowrap";
+      top.append(who,tag);
+      const sm=mk("div","err-reason",lname(r)+" — "+r.summary);
+      const foot=mk("div","err-foot");
+      const d=new Date(r.created_at);
+      let hm="";try{hm=d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})}catch(e){}
+      foot.appendChild(mk("span","err-date",jalaliOf(d)+" — "+hm));
+      if(r.target_username){
+        const u=mk("span","err-user",r.target_username);u.title="رفتن به این نماینده";
+        u.addEventListener("click",()=>{m.classList.remove("show");openUser(r.target_username)});
+        foot.appendChild(u);
+      }
+      box.append(top,sm,foot);list.appendChild(box);
+    });
+  }
+
+  let t=null;
+  $("actSearch").addEventListener("input",()=>{clearTimeout(t);t=setTimeout(render,200)});
+
+  $("actClear").addEventListener("click",async()=>{
+    const typed=prompt("همه‌ی تاریخچه‌ی سرگروه‌ها برای همیشه پاک می‌شه.\nبرای تأیید، کلمه‌ی «حذف» رو تایپ کن:");
+    if(typed===null)return;
+    if(typed.trim()!=="حذف"){toast("تأیید نشد؛ چیزی حذف نشد","error");return}
+    const{error}=await supabaseClient.from("leader_activity").delete().not("id","is",null);
+    if(error){toast("پاک نشد: "+explainError(error),"error");return}
+    toast("تاریخچه پاک شد","ok");loadActs();
+  });
+})();
+</script>
 </body>
 </html>
