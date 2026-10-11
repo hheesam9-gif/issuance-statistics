@@ -641,6 +641,33 @@ button.sort-btn.active { background: linear-gradient(135deg, var(--accent1), var
 .rank-chip.r2 { background: linear-gradient(135deg, #d5dbee, #8c95b5); color: #23273d; }
 .rank-chip.r3 { background: linear-gradient(135deg, #e6a071, #b0683a); }
 .rank-chip.none { background: var(--row-bg); border: 1px solid var(--row-border); color: var(--text-dim); }
+/* ===== منوی تمیز ===== */
+.menu-item-icon { width: 32px; height: 32px; border-radius: 9px; background: var(--row-bg); border: 1px solid var(--row-border); font-size: 0; }
+.menu-item-icon svg { width: 17px; height: 17px; }
+.menu-item { padding: 9px 10px; gap: 12px; }
+.menu-item-text { display: flex; flex-direction: column; flex: 1; text-align: right; line-height: 1.5; }
+.menu-item-text small { font-size: 11px; color: var(--text-dim); }
+.menu-item:hover .menu-item-icon { border-color: var(--accent1); }
+.menu-item.featured { border: 1px solid transparent; background:
+  linear-gradient(var(--card-bg), var(--card-bg)) padding-box,
+  linear-gradient(135deg, var(--accent1), var(--accent2)) border-box; margin: 4px 0; }
+.menu-item.featured .menu-item-icon { background: linear-gradient(135deg, var(--accent1), var(--accent2)); border: none; }
+.menu-item.featured .menu-item-icon svg { stroke: #fff; }
+.menu-dropdown { min-width: 290px; }
+
+/* ===== پنجره‌ی گروه ثالث ===== */
+.third-tabs { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; padding: 5px; margin: 0 0 18px;
+  background: var(--row-bg); border: 1px solid var(--row-border); border-radius: 15px; }
+.third-tabs .tab-ind { position: absolute; top: 5px; bottom: 5px; right: 5px; width: calc((100% - 10px) / 4); border-radius: 11px;
+  background: linear-gradient(135deg, var(--accent1), var(--accent2)); box-shadow: 0 8px 20px rgba(0,0,0,.25);
+  transition: transform .35s cubic-bezier(.4,0,.2,1); }
+.third-tabs button { position: relative; z-index: 1; background: transparent; color: var(--text-dim); font-weight: normal; font-size: 12px; padding: 10px 4px; border-radius: 11px; }
+.third-tabs button.active { color: #fff; font-weight: bold; }
+.third-tabs button:hover { filter: none; color: var(--text); }
+.third-tabs button.active:hover { color: #fff; }
+.third-pane { display: none; }
+.third-pane.show { display: block; animation: paneIn .3s ease; }
+@media (max-width: 520px) { .third-tabs button { font-size: 11px; } }
 </style>
 </head>
 <body>
@@ -685,6 +712,10 @@ button.sort-btn.active { background: linear-gradient(135deg, var(--accent1), var
   </div>
 
   <div id="app" hidden>
+  <div hidden>
+    <button type="button" id="usersOpen"></button>
+    <button type="button" id="ldOpen"></button>
+  </div>
   <header class="top">
     <div class="top-main">
       <div class="brand">
@@ -716,36 +747,36 @@ button.sort-btn.active { background: linear-gradient(135deg, var(--accent1), var
 
           <div class="menu-dropdown" id="menuItems" role="menu">
             <button type="button" class="menu-item" id="annOpen" role="menuitem">
-              <span class="menu-item-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15 9a4 4 0 0 1 0 6"/><path d="M18 6a8 8 0 0 1 0 12"/></svg></span>
-              <span class="menu-item-label">اعلان به نماینده‌ها</span>
+              <span class="menu-item-icon"><svg viewBox="0 0 24 24"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15 9a4 4 0 0 1 0 6"/><path d="M18 6a8 8 0 0 1 0 12"/></svg></span>
+              <span class="menu-item-text">اعلان به نماینده‌ها<small>پیام همگانی در پنل نماینده</small></span>
               <span class="menu-item-badge" id="annBadge"></span>
             </button>
             <button type="button" class="menu-item" id="errOpen" role="menuitem">
-              <span class="menu-item-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></span>
-              <span class="menu-item-label">مغایرت‌های باز</span>
+              <span class="menu-item-icon"><svg viewBox="0 0 24 24"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></span>
+              <span class="menu-item-text">مغایرت‌های باز<small>موارد رفع‌نشده</small></span>
               <span class="menu-item-badge" id="errBadge"></span>
             </button>
             <button type="button" class="menu-item" id="ordOpen" role="menuitem">
-              <span class="menu-item-icon">🧾</span>
-              <span class="menu-item-label">ثبت شماره سفارش‌ها</span>
+              <span class="menu-item-icon"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6"/><path d="M9 12h6"/></svg></span>
+              <span class="menu-item-text">شماره سفارش‌ها<small>ثبت و جستجوی سفارش</small></span>
             </button>
-            <button type="button" class="menu-item" id="usersOpen" role="menuitem">
-              <span class="menu-item-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0 1 14 0v1"/></svg></span>
-              <span class="menu-item-label">مدیریت نمایندگان</span>
+
+            <div class="menu-divider"></div>
+
+            <button type="button" class="menu-item featured" id="thirdOpen" role="menuitem">
+              <span class="menu-item-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17.5" cy="9.5" r="2.5"/><path d="M16.5 14.2A5 5 0 0 1 21 19"/></svg></span>
+              <span class="menu-item-text">گروه ثالث<small>نمایندگان، سرگروه‌ها و تاریخچه</small></span>
             </button>
-            <button type="button" class="menu-item" id="ldOpen" role="menuitem">
-              <span class="menu-item-icon">👥</span>
-              <span class="menu-item-label">سرگروه‌های نمایندگان</span>
-            </button>
+
             <button type="button" class="menu-item" id="seasonToggle" role="menuitem">
-              <span class="menu-item-icon" id="seasonEmoji">🍂</span>
-              <span class="menu-item-label" id="seasonLabel">تم فصلی</span>
+              <span class="menu-item-icon" id="seasonEmoji" style="font-size:15px;">🍂</span>
+              <span class="menu-item-text"><span id="seasonLabel">تم فصلی</span><small>تغییر رنگ و افکت پس‌زمینه</small></span>
             </button>
 
             <div class="menu-divider"></div>
             <button type="button" class="menu-item danger" id="wipeOpen" role="menuitem">
-              <span class="menu-item-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></span>
-              <span class="menu-item-label">پایان دوره (حذف آمار)</span>
+              <span class="menu-item-icon"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></span>
+              <span class="menu-item-text">پایان دوره<small>حذف آمار روزانه</small></span>
             </button>
           </div>
         </div>
@@ -3808,7 +3839,7 @@ $("ldSearch").addEventListener("input", () => { clearTimeout(ldTimer); ldTimer =
   const item=document.createElement("button");
   item.type="button";item.className="menu-item";item.id="actOpen";item.setAttribute("role","menuitem");
   item.innerHTML='<span class="menu-item-icon">🕘</span><span class="menu-item-label">تاریخچه‌ی سرگروه‌ها</span>';
-  $("menuItems").insertBefore(item,$("menuItems").querySelector(".menu-divider"));
+  item.hidden=true; document.body.appendChild(item);
 
   /* پنجره */
   const m=document.createElement("div");
@@ -3898,7 +3929,7 @@ $("ldSearch").addEventListener("input", () => { clearTimeout(ldTimer); ldTimer =
   const item=document.createElement("button");
   item.type="button";item.className="menu-item";item.id="lacOpen";item.setAttribute("role","menuitem");
   item.innerHTML='<span class="menu-item-icon">🛡️</span><span class="menu-item-label">ثبت سرگروه</span>';
-  $("menuItems").insertBefore(item,$("menuItems").querySelector(".menu-divider"));
+  item.hidden=true; document.body.appendChild(item);
 
   /* پنجره */
   const m=document.createElement("div");
@@ -4019,6 +4050,55 @@ $("ldSearch").addEventListener("input", () => { clearTimeout(ldTimer); ldTimer =
       vals.append(key,del);row.append(left,vals);list.appendChild(row);
     });
   }
+})();
+</script>
+<script>
+(function(){
+  const TABS = [
+    { id: "usersModal",   label: "نمایندگان",   open: () => $("usersOpen") },
+    { id: "leadersModal", label: "سرگروه‌ها",   open: () => $("ldOpen") },
+    { id: "lacModal",     label: "ثبت سرگروه", open: () => $("lacOpen") },
+    { id: "actModal",     label: "تاریخچه",     open: () => $("actOpen") }
+  ];
+
+
+
+  // نوار تب سمت بالای هر پنجره
+  const bar = document.createElement("div");
+  bar.className = "modal";
+  bar.id = "thirdBar";
+  bar.style.cssText = "background:transparent; z-index:101; pointer-events:none; align-items:flex-start; padding-top:14px;";
+  bar.innerHTML = '<div class="third-tabs" id="thirdTabs" style="pointer-events:auto; width:100%; max-width:470px; background:var(--card-bg); backdrop-filter:blur(20px); box-shadow:var(--card-shadow);"><span class="tab-ind"></span></div>';
+  document.body.appendChild(bar);
+  const tabsEl = $("thirdTabs");
+
+  let current = -1;
+  function closeAll() { TABS.forEach(t => $(t.id).classList.remove("show")); }
+  function show(i) {
+    current = i;
+    closeAll();
+    $(TABS[i].id).classList.add("show");
+    bar.classList.add("show");
+    tabsEl.querySelectorAll("button").forEach((b, k) => b.classList.toggle("active", k === i));
+    tabsEl.querySelector(".tab-ind").style.transform = "translateX(" + (-i * 100) + "%)";
+  }
+  function hideAll() { closeAll(); bar.classList.remove("show"); current = -1; }
+
+  TABS.forEach((t, i) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = t.label;
+    b.addEventListener("click", () => { t.open().click(); show(i); });
+    tabsEl.appendChild(b);
+  });
+
+  $("thirdOpen").addEventListener("click", () => { $("usersOpen").click(); show(0); });
+
+  // وقتی پنجره‌ای با دکمه‌ی بستن یا کلیک بیرون بسته شد، نوار هم بسته بشه
+  const obs = new MutationObserver(() => {
+    if (current >= 0 && !$(TABS[current].id).classList.contains("show")) hideAll();
+  });
+  TABS.forEach(t => obs.observe($(t.id), { attributes: true, attributeFilter: ["class"] }));
 })();
 </script>
 </body>
