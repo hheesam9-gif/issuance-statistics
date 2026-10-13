@@ -4063,44 +4063,58 @@ const TABS = [
   { id: "tkModal",      label: "تیکت‌ها",       open: () => $("tkOpen") }
 ];
 
+const bar = document.createElement("div");
+bar.id = "thirdBar";
+bar.style.cssText = "position:fixed;top:14px;left:0;right:0;z-index:101;display:none;justify-content:center;padding:0 18px;pointer-events:none;";
+bar.innerHTML = '<div class="third-tabs" id="thirdTabs" style="pointer-events:auto;width:100%;max-width:470px;background:var(--card-bg);backdrop-filter:blur(20px);box-shadow:var(--card-shadow);"><span class="tab-ind"></span></div>';
+document.body.appendChild(bar);
+const tabsEl = $("thirdTabs");
 
+let current = -1;
+let switching = false;
 
-  // نوار تب سمت بالای هر پنجره
-  const bar = document.createElement("div");
-  bar.className = "modal";
-  bar.id = "thirdBar";
-  bar.style.cssText = "background:transparent; z-index:101; pointer-events:none; align-items:flex-start; padding-top:14px;";
-  bar.innerHTML = '<div class="third-tabs" id="thirdTabs" style="pointer-events:auto; width:100%; max-width:470px; background:var(--card-bg); backdrop-filter:blur(20px); box-shadow:var(--card-shadow);"><span class="tab-ind"></span></div>';
-  document.body.appendChild(bar);
-  const tabsEl = $("thirdTabs");
+function visible(i){ return $(TABS[i].id).classList.contains("show"); }
+function closeAll(){ TABS.forEach(t => $(t.id).classList.remove("show")); }
+function hideBar(){ bar.style.display = "none"; current = -1; }
 
-  let current = -1;
-  function closeAll() { TABS.forEach(t => $(t.id).classList.remove("show")); }
-  function show(i) {
-    current = i;
-    closeAll();
-    $(TABS[i].id).classList.add("show");
-    bar.classList.add("show");
-    tabsEl.querySelectorAll("button").forEach((b, k) => b.classList.toggle("active", k === i));
-    tabsEl.querySelector(".tab-ind").style.transform = "translateX(" + (-i * 100) + "%)";
-  }
-  function hideAll() { closeAll(); bar.classList.remove("show"); current = -1; }
+function show(i){
+  switching = true;
+  current = i;
+  closeAll();
+  TABS[i].open().click();           // لود داده‌ی همون تب (پنجره رو هم باز می‌کنه)
+  $(TABS[i].id).classList.add("show");
+  bar.style.display = "flex";
+  tabsEl.querySelectorAll("button").forEach((b, k) => b.classList.toggle("active", k === i));
+  tabsEl.querySelector(".tab-ind").style.transform = "translateX(" + (-i * 100) + "%)";
+  setTimeout(() => { switching = false; }, 50);
+}
 
-  TABS.forEach((t, i) => {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.textContent = t.label;
-    b.addEventListener("click", () => { t.open().click(); show(i); });
-    tabsEl.appendChild(b);
-  });
+TABS.forEach((t, i) => {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.textContent = t.label;
+  b.addEventListener("click", () => show(i));
+  tabsEl.appendChild(b);
+});
 
-  $("thirdOpen").addEventListener("click", () => { $("usersOpen").click(); show(0); });
+$("thirdOpen").addEventListener("click", () => show(0));
 
-  // وقتی پنجره‌ای با دکمه‌ی بستن یا کلیک بیرون بسته شد، نوار هم بسته بشه
-  const obs = new MutationObserver(() => {
-    if (current >= 0 && !$(TABS[current].id).classList.contains("show")) hideAll();
-  });
-  TABS.forEach(t => obs.observe($(t.id), { attributes: true, attributeFilter: ["class"] }));
+// هر وقت پنجره‌ی فعلی بسته شد (دکمه‌ی بستن، کلیک بیرون، Escape) نوار هم بسته بشه
+const obs = new MutationObserver(() => {
+  if (switching || current < 0) return;
+  if (!visible(current)) hideBar();
+});
+TABS.forEach(t => obs.observe($(t.id), { attributes: true, attributeFilter: ["class"] }));
+
+// بستن با Escape (در فاز capture تا قبل از بقیه اجرا بشه)
+window.addEventListener("keydown", e => {
+  if (e.key === "Escape" && current >= 0) { closeAll(); hideBar(); }
+}, true);
+
+// کلیک روی پس‌زمینه‌ی تیره‌ی هر کدوم از پنجره‌ها هم نوار رو ببنده (بررسی دقیق‌تر بعد از بسته شدن)
+TABS.forEach(t => $(t.id).addEventListener("click", e => {
+  if (e.target === $(t.id)) setTimeout(() => { if (!visible(current)) hideBar(); }, 0);
+}));
 })();
 </script>
 <!-- ===== پنل مدیریت: اسکین نئونی. کل این فایل را درست قبل از </body> فایل پنل مدیریت (بعد از آخرین </script>) بچسبان ===== -->
