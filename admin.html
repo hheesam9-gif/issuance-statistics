@@ -5565,8 +5565,8 @@ var list=$("userList"),sortBar=$("sortBar");
 if(!list||!sortBar||typeof supabaseClient==="undefined")return;
 
 var KEY="admin_user_group",grp="third";
-try{var s=localStorage.getItem(KEY);if(s==="nonauto"||s==="third")grp=s}catch(e){}
-var LABEL={third:"گروه ثالث",nonauto:"گروه غیر خودرویی"};
+try{var s=localStorage.getItem(KEY);if(s==="nonauto"||s==="third"||s==="body")grp=s}catch(e){}
+var LABEL={third:"گروه ثالث",nonauto:"گروه غیر خودرویی",body:"گروه بدنه"};
 var map=new Map(),all=[],loaded=false,loading=null,stamp=0;
 
 /* ---------- رابط ---------- */
@@ -5574,7 +5574,8 @@ var bar=document.createElement("div");
 bar.className="sort-bar";bar.id="grpBar";
 bar.innerHTML=
  '<button type="button" class="sort-btn" data-g="third">گروه ثالث <span class="gc"></span></button>'+
- '<button type="button" class="sort-btn" data-g="nonauto">گروه غیر خودرویی <span class="gc"></span></button>';
+ '<button type="button" class="sort-btn" data-g="nonauto">گروه غیر خودرویی <span class="gc"></span></button>'+
+ '<button type="button" class="sort-btn" data-g="body">گروه بدنه <span class="gc"></span></button>';
 sortBar.parentNode.insertBefore(bar,sortBar);
 
 var empty=document.createElement("div");
@@ -5582,14 +5583,14 @@ empty.className="hint";empty.id="grpEmpty";empty.hidden=true;
 list.parentNode.insertBefore(empty,list.nextSibling);
 
 /* ---------- منطق گروه ---------- */
-function groupOf(u){
-  var g=map.get(String(u).toLowerCase());
-  return g==="nonauto"?"nonauto":(g?"other":"third");   /* other = سرگروه غیر خودرویی */
-}
+   function groupOf(u){
+     var g=map.get(String(u).toLowerCase());
+     return g==="nonauto"?"nonauto":(g==="body"?"body":(g?"other":"third"));
+   }
 
 function counts(){
-  var c={third:0,nonauto:0};
-  all.forEach(function(u){var g=groupOf(u);if(g==="third"||g==="nonauto")c[g]++});
+  var c={third:0,nonauto:0,body:0};
+  all.forEach(function(u){var g=groupOf(u);if(c.hasOwnProperty(g))c[g]++});
   bar.querySelectorAll(".sort-btn").forEach(function(b){
     b.querySelector(".gc").textContent=loaded&&all.length?"("+c[b.dataset.g]+")":"";
   });
@@ -5600,7 +5601,7 @@ function apply(){
   rows.forEach(function(r){
     var n=r.querySelector(".name"),g=n?groupOf(n.textContent):"third",show=g===grp;
     r.hidden=!show;
-    if(show)vis++;else if(g==="third"||g==="nonauto")other++;
+    if(show)vis++;else if(g==="third"||g==="nonauto"||g==="body")other++;
   });
   var showEmpty=rows.length>0&&vis===0;
   empty.hidden=!showEmpty;
@@ -5610,7 +5611,7 @@ function apply(){
     other?("در "+LABEL[grp]+" نماینده‌ای پیدا نشد؛ "+other+" مورد در گروه دیگه هست."):("در "+LABEL[grp]+" نماینده‌ای پیدا نشد.")
   ));
   if(other){
-    var go=grp==="third"?"nonauto":"third",b=document.createElement("button");
+    var go=grp==="third"?"nonauto":(grp==="nonauto"?"body":"third"),b=document.createElement("button");
     b.type="button";b.className="secondary";b.textContent="نمایش "+LABEL[go];
     b.addEventListener("click",function(){setGroup(go)});
     empty.appendChild(b);
@@ -5669,7 +5670,7 @@ if(typeof window.openUser==="function"){
     try{
       if(!fresh())await refresh();
       var g=groupOf(name);
-      if(g==="third"||g==="nonauto")setGroup(g,true);
+      if(g==="third"||g==="nonauto"||g==="body")setGroup(g,true);
     }catch(e){}
     return oo.apply(this,arguments);
   };
@@ -6244,7 +6245,12 @@ var G=function(i){return document.getElementById(i)};
 var cal=G("azCal"),calCard=cal&&cal.closest(".card");
 if(!calCard||G("gtChart"))return;
 
-/* ستون وسط: تقویم + کارت نمودار */
+var S=[
+ {k:"t",c:"#38b6ff",l:"گروه ثالث",id:"gtT"},
+ {k:"n",c:"#ffb020",l:"گروه غیر خودرویی",id:"gtN"},
+ {k:"b",c:"#14d1b8",l:"گروه بدنه",id:"gtB"}
+];
+
 var wrap=document.createElement("div");wrap.className="az-mid";
 calCard.parentNode.insertBefore(wrap,calCard);
 wrap.appendChild(calCard);
@@ -6253,8 +6259,7 @@ var card=document.createElement("div");card.className="card gt-card";
 card.innerHTML=
  '<div class="gt-head"><h3 class="az-h"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l5-5 4 4 8-9"/><path d="M15 7h5v5"/></svg>روند صدور به تفکیک گروه</h3>'+
  '<select class="az-sel gt-sel" id="gtRange"><option value="7">۷ روز</option><option value="14">۱۴ روز</option><option value="30" selected>۳۰ روز</option></select></div>'+
- '<div class="gt-chips"><span class="gt-chip"><i style="background:#38b6ff"></i>گروه ثالث <b id="gtT">—</b></span>'+
- '<span class="gt-chip"><i style="background:#ffb020"></i>گروه غیر خودرویی <b id="gtN">—</b></span></div>'+
+ '<div class="gt-chips">'+S.map(function(s){return '<span class="gt-chip"><i style="background:'+s.c+'"></i>'+s.l+' <b id="'+s.id+'">—</b></span>'}).join("")+'</div>'+
  '<div id="gtChart"></div>';
 wrap.appendChild(card);
 
@@ -6295,62 +6300,52 @@ async function load(){
     r.data.forEach(function(o){
       var d=norm(o.order_date);if(!d)return;
       var g=map.get(String(o.username).toLowerCase()),v=Number(o.order_count)||0;
-      var e=by[d]||(by[d]={t:0,n:0});
-      if(g==="nonauto")e.n+=v;else if(!g)e.t+=v; /* سرگروه‌های غیر خودرویی حساب نمی‌شن */
+      var e=by[d]||(by[d]={t:0,n:0,b:0});
+      if(g==="nonauto")e.n+=v;else if(g==="body")e.b+=v;else if(!g)e.t+=v; /* حساب سرگروه‌ها شمرده نمی‌شه */
     });
     if(r.data.length<1000)break;from+=1000;
   }
-  DAYS=Object.keys(by).sort().map(function(d){return{d:d,t:Math.round(by[d].t*100)/100,n:Math.round(by[d].n*100)/100}});
-}
-
-function line(pts,color,id){
-  var d=smooth(pts);
-  return {d:d,area:d,color:color,id:id};
+  DAYS=Object.keys(by).sort().map(function(d){
+    return{d:d,t:Math.round(by[d].t*100)/100,n:Math.round(by[d].n*100)/100,b:Math.round(by[d].b*100)/100};
+  });
 }
 
 function draw(){
   var host=G("gtChart"),d=DAYS.slice(-range),n=d.length;
-  var st=0,sn=0;d.forEach(function(x){st+=x.t;sn+=x.n});
-  G("gtT").textContent=short(st);G("gtN").textContent=short(sn);
+  S.forEach(function(s){var sum=0;d.forEach(function(x){sum+=x[s.k]});G(s.id).textContent=short(sum)});
   if(n<2){host.innerHTML='<div class="az-empty">برای رسم نمودار حداقل دو روز آمار لازمه</div>';return}
   var W=Math.max(300,host.clientWidth),H=Math.max(170,host.clientHeight);
-  var a=d.map(function(x){return x.t}),b=d.map(function(x){return x.n});
-  var ax=axis(Math.max.apply(null,a.concat(b)));
-  var iw=W-PL-PR,ih=H-PT-PB,base=PT+ih;
+  var vals=S.map(function(s){return d.map(function(x){return x[s.k]})}),mx=0;
+  vals.forEach(function(a){a.forEach(function(v){if(v>mx)mx=v})});
+  var ax=axis(mx),iw=W-PL-PR,ih=H-PT-PB,base=PT+ih;
   var X=function(i){return PL+i*iw/(n-1)},Y=function(v){return base-v/ax.max*ih};
-  var pa=a.map(function(v,i){return[X(i),Y(v)]}),pb=b.map(function(v,i){return[X(i),Y(v)]});
-  var la=smooth(pa),lb=smooth(pb),s="",v,i;
-  s+='<defs><linearGradient id="gtg1" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#38b6ff" stop-opacity=".45"/><stop offset="1" stop-color="#38b6ff" stop-opacity="0"/></linearGradient>'+
-     '<linearGradient id="gtg2" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#ffb020" stop-opacity=".4"/><stop offset="1" stop-color="#ffb020" stop-opacity="0"/></linearGradient></defs>';
+  var pts=vals.map(function(a){return a.map(function(v,i){return[X(i),Y(v)]})});
+  var paths=pts.map(smooth),s="",v,i;
+  s+="<defs>"+S.map(function(x,k){return '<linearGradient id="gtg'+k+'" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="'+x.c+'" stop-opacity=".38"/><stop offset="1" stop-color="'+x.c+'" stop-opacity="0"/></linearGradient>'}).join("")+"</defs>";
   for(v=0;v<=ax.max+1e-9;v+=ax.step){var y=Y(v);
     s+='<line x1="'+PL+'" x2="'+(W-PR)+'" y1="'+y+'" y2="'+y+'" stroke="rgba(70,120,255,.16)"/>';
     s+='<text x="'+(PL-7)+'" y="'+(y+4)+'" text-anchor="end">'+short(v)+'</text>'}
   var stp=Math.max(1,Math.round(n/6));
   for(i=0;i<n;i+=stp)s+='<text x="'+X(i)+'" y="'+(H-6)+'" text-anchor="middle">'+d[i].d.slice(5)+'</text>';
-  s+='<path d="'+lb+' L'+X(n-1)+' '+base+' L'+X(0)+' '+base+'Z" fill="url(#gtg2)"/>';
-  s+='<path d="'+la+' L'+X(n-1)+' '+base+' L'+X(0)+' '+base+'Z" fill="url(#gtg1)"/>';
-  s+='<path d="'+lb+'" fill="none" stroke="#ffb020" stroke-width="2.4" stroke-linecap="round" style="filter:drop-shadow(0 0 5px #ffb020)"/>';
-  s+='<path d="'+la+'" fill="none" stroke="#38b6ff" stroke-width="2.6" stroke-linecap="round" style="filter:drop-shadow(0 0 5px #38b6ff)"/>';
-  if(n<=31){
-    pa.forEach(function(p){s+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="2.6" fill="#06122e" stroke="#38b6ff" stroke-width="1.6"/>'});
-    pb.forEach(function(p){s+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="2.6" fill="#06122e" stroke="#ffb020" stroke-width="1.6"/>'});
-  }
-  s+='<g id="gtHv" style="opacity:0;pointer-events:none"><line y1="'+PT+'" y2="'+base+'" stroke="rgba(160,200,255,.5)" stroke-dasharray="3 4"/><circle r="5" fill="#38b6ff" stroke="#fff" stroke-width="1.4"/><circle r="5" fill="#ffb020" stroke="#fff" stroke-width="1.4"/></g>';
+  for(i=S.length-1;i>=0;i--)s+='<path d="'+paths[i]+' L'+X(n-1)+' '+base+' L'+X(0)+' '+base+'Z" fill="url(#gtg'+i+')"/>';
+  S.forEach(function(x,k){s+='<path d="'+paths[k]+'" fill="none" stroke="'+x.c+'" stroke-width="2.4" stroke-linecap="round" style="filter:drop-shadow(0 0 5px '+x.c+')"/>'});
+  if(n<=31)S.forEach(function(x,k){pts[k].forEach(function(p){s+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="2.4" fill="#06122e" stroke="'+x.c+'" stroke-width="1.5"/>'})});
+  s+='<g id="gtHv" style="opacity:0;pointer-events:none"><line y1="'+PT+'" y2="'+base+'" stroke="rgba(160,200,255,.5)" stroke-dasharray="3 4"/>'+
+     S.map(function(x){return '<circle r="5" fill="'+x.c+'" stroke="#fff" stroke-width="1.4"/>'}).join("")+'</g>';
   s+='<rect id="gtHit" x="'+PL+'" y="'+PT+'" width="'+iw+'" height="'+ih+'" fill="transparent"/>';
   host.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="روند صدور به تفکیک گروه">'+s+'</svg>';
   var svg=host.querySelector("svg"),hv=svg.querySelector("#gtHv"),hit=svg.querySelector("#gtHit"),vl=hv.querySelector("line"),cs=hv.querySelectorAll("circle");
   hit.addEventListener("pointermove",function(e){
     var r=svg.getBoundingClientRect(),k=Math.max(0,Math.min(n-1,Math.round(((e.clientX-r.left)/r.width*W-PL)/iw*(n-1))));
     vl.setAttribute("x1",X(k));vl.setAttribute("x2",X(k));
-    cs[0].setAttribute("cx",X(k));cs[0].setAttribute("cy",Y(a[k]));
-    cs[1].setAttribute("cx",X(k));cs[1].setAttribute("cy",Y(b[k]));
+    cs.forEach(function(c,j){c.setAttribute("cx",X(k));c.setAttribute("cy",Y(vals[j][k]))});
     hv.style.opacity=1;
     if(tip){
-      tip.innerHTML='<div><b>'+d[k].d+'</b></div><div><span style="color:#38b6ff">●</span> گروه ثالث: <b>'+a[k]+'</b></div><div><span style="color:#ffb020">●</span> گروه غیر خودرویی: <b>'+b[k]+'</b></div>';
+      tip.innerHTML='<div><b>'+d[k].d+'</b></div>'+S.map(function(x,j){return '<div><span style="color:'+x.c+'">●</span> '+x.l+': <b>'+vals[j][k]+'</b></div>'}).join("");
       tip.classList.add("show");
-      var w=tip.offsetWidth,h=tip.offsetHeight,x=e.clientX+14,y=e.clientY-h-12;
-      if(x+w>innerWidth-8)x=e.clientX-w-14;if(y<8)y=e.clientY+16;
-      tip.style.left=x+"px";tip.style.top=y+"px";
+      var w=tip.offsetWidth,h=tip.offsetHeight,tx=e.clientX+14,ty=e.clientY-h-12;
+      if(tx+w>innerWidth-8)tx=e.clientX-w-14;if(ty<8)ty=e.clientY+16;
+      tip.style.left=tx+"px";tip.style.top=ty+"px";
     }
   });
   hit.addEventListener("pointerleave",function(){hv.style.opacity=0;if(tip)tip.classList.remove("show")});
@@ -6573,7 +6568,461 @@ body.sb-collapsed #sbBtn svg{transform:rotate(180deg)}
   #sbBtn,.nx-side .tab,.nx-side .menu-item,.nx-logo{animation:none!important}
 }
 </style>
+<script id="bd-script">
+(function(){
+"use strict";
+const G="body", GL="body_leader", T_LD="agent_leaders_body", T_LEAD="leaders_body", T_ACT="leader_activity_body";
 
+/* نسخه‌ی خام تابع ادمین (بدون فیلتر گروه‌های قبلی) */
+async function raw(p){
+  const {data:s}=await supabaseClient.auth.getSession();
+  const res=await fetch(ADMIN_FN_URL,{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+s.session.access_token},body:JSON.stringify(p)});
+  const j=await res.json(); if(!res.ok) throw new Error(j.error||"خطای نامشخص"); return j;
+}
+async function groupMap(){
+  const m=new Map(); let from=0;
+  while(true){
+    const {data,error}=await supabaseClient.from("agent_groups").select("username,grp").range(from,from+999);
+    if(error) throw error;
+    data.forEach(r=>m.set(String(r.username).toLowerCase(),r.grp));
+    if(data.length<1000) break; from+=1000;
+  }
+  return m;
+}
+async function listBody(){
+  const {data}=await raw({action:"list"}), m=await groupMap();
+  return (data||[]).filter(u=>m.get(String(u.username).toLowerCase())===G);
+}
+async function register(items){
+  const {data}=await raw({action:"list"});
+  const ids=new Map((data||[]).map(u=>[String(u.username).toLowerCase(),u.id]));
+  const rows=items.map(i=>({username:i.username,user_id:ids.get(i.username)||null,grp:i.grp}));
+  const {error}=await supabaseClient.from("agent_groups").upsert(rows,{onConflict:"username"});
+  if(error) throw error; return ids;
+}
+const msg=(id,t,c)=>{const e=$(id);e.textContent=t;e.style.color=c==="error"?"var(--error)":c==="ok"?"var(--ok)":"var(--text-dim)"};
+const SV=p=>'<svg viewBox="0 0 24 24" aria-hidden="true">'+p+'</svg>';
+const CAR='<path d="M4 15l1.5-5A2 2 0 0 1 7.4 8.5h9.2a2 2 0 0 1 1.9 1.5L20 15v3H4zM4 15h16M7 18v2M17 18v2"/>';
+const tiles=(p,a,b,c)=>'<div class="tiles"><div class="tile ok"><div class="n" id="'+p+'Ok">0</div><div class="lb">'+a+'</div></div><div class="tile warn"><div class="n" id="'+p+'Miss">0</div><div class="lb">'+b+'</div></div><div class="tile bad"><div class="n" id="'+p+'Bad">0</div><div class="lb">'+c+'</div></div></div>';
+
+/* ---------- دکمه‌ی منو ---------- */
+const item=document.createElement("button");
+item.type="button";item.className="menu-item featured";item.id="bdOpen";item.setAttribute("role","menuitem");
+item.innerHTML='<span class="menu-item-icon">'+SV(CAR)+'</span><span class="menu-item-text">گروه بدنه<small>نمایندگان، سرگروه‌ها و تاریخچه</small></span>';
+const anchor=$("naOpen")||$("thirdOpen"); anchor.parentNode.insertBefore(item,anchor.nextSibling);
+
+/* ---------- پنجره ---------- */
+const m=document.createElement("div");
+m.className="modal";m.id="bdModal";m.setAttribute("role","dialog");m.setAttribute("aria-modal","true");
+m.innerHTML=
+'<div class="modal-box" style="max-width:600px;text-align:right;">'+
+ '<div class="third-tabs" id="bdTabs"><span class="tab-ind"></span><button type="button">نمایندگان</button><button type="button">سرگروه‌ها</button><button type="button">ثبت سرگروه</button><button type="button">تاریخچه</button></div>'+
+
+ '<div class="third-pane show" id="bdP0">'+
+  '<div class="card-head"><div class="card-icon">'+SV(CAR)+'</div><div><h2>نمایندگان بدنه</h2><p>این نمایندگان فقط توی گروه بدنه ثبت می‌شن</p></div></div>'+
+  '<div class="sub-title" style="margin-top:0;padding-top:0;border-top:none"><span>افزودن نماینده جدید</span><button type="button" class="chip" id="bdBulkToggle">ثبت گروهی</button></div>'+
+  '<div id="bdSingle"><div class="date-row"><input class="ltr" id="bdNewUser" type="text" placeholder="نام کاربری" autocomplete="off" spellcheck="false"><input class="ltr" id="bdNewPass" type="text" placeholder="رمز عبور" autocomplete="off"></div><button type="button" class="full" id="bdCreate">افزودن نماینده</button></div>'+
+  '<div id="bdBulk" hidden><label class="field" for="bdBulkText">لیست نام‌کاربری‌ها (هر خط یکی)</label><textarea id="bdBulkText" spellcheck="false" style="min-height:120px"></textarea>'+
+   '<div class="actions"><button type="button" id="bdBulkGen">تولید رمز و پیش‌نمایش</button></div>'+
+   '<div id="bdBulkPrev" style="display:none;margin-top:14px">'+tiles("bdB","آماده ثبت","از قبل هست","نامعتبر")+'<div class="history" id="bdBulkList" style="max-height:240px;margin-top:12px"></div>'+
+   '<div class="actions" style="margin-top:14px;flex-wrap:wrap"><button type="button" id="bdBulkOk">تأیید و ثبت نهایی</button><button type="button" class="secondary" id="bdBulkCsv">دانلود اکسل (CSV)</button><button type="button" class="secondary" id="bdBulkCancel">لغو</button></div></div></div>'+
+  '<div id="bdMsg" role="status" aria-live="polite" style="text-align:center;font-size:13px;min-height:18px;margin-top:10px;color:var(--text-dim)"></div>'+
+  '<div class="sub-title"><span>به‌روزرسانی رمز نمایندگان موجود</span><button type="button" class="chip" id="bdPwToggle">آپلود لیست رمز</button></div>'+
+  '<div id="bdPwWrap" hidden style="margin-bottom:12px"><div class="hint">هر خط: نام‌کاربری و رمز (با Tab، فاصله یا کاما). فقط نمایندگان بدنه به‌روز می‌شن.</div><input type="file" id="bdPwFile" accept=".csv,.txt,.tsv" style="margin-bottom:8px"><textarea id="bdPwText" class="ltr" spellcheck="false" style="min-height:100px;text-align:left"></textarea><div class="actions"><button type="button" id="bdPwApply">بررسی و اعمال</button></div><div id="bdPwMsg" style="text-align:center;font-size:13px;min-height:18px;margin-top:8px;color:var(--text-dim)"></div></div>'+
+  '<div class="sub-title"><span>لیست نمایندگان</span><span id="bdCount"></span></div>'+
+  '<div class="search-box" style="margin-bottom:10px"><input class="ltr" id="bdSearch" type="text" placeholder="جستجوی نام کاربری..." autocomplete="off" spellcheck="false"></div>'+
+  '<div class="history" id="bdList" style="max-height:280px"></div>'+
+ '</div>'+
+
+ '<div class="third-pane" id="bdP1">'+
+  '<div class="card-head"><div class="card-icon">'+SV('<circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17.5" cy="9.5" r="2.5"/>')+'</div><div><h2>سرگروه‌های نمایندگان بدنه</h2><p>ستون‌های اکسل: نام‌کاربری، نام‌کاربری، اسم، سرگروه‌ها</p></div></div>'+
+  '<textarea id="bdLdText" spellcheck="false" style="min-height:130px"></textarea>'+
+  '<div class="actions"><button type="button" id="bdLdCheck">بررسی لیست</button></div>'+
+  '<div id="bdLdPrev" style="display:none;margin-top:14px">'+tiles("bdL","آماده ثبت","در این گروه نیستن","خط نامعتبر")+'<div class="actions"><button type="button" id="bdLdSave">ثبت نهایی</button><button type="button" class="secondary" id="bdLdCancel">لغو</button></div></div>'+
+  '<div id="bdLdMsg" role="status" style="text-align:center;font-size:13px;min-height:18px;margin-top:10px;color:var(--text-dim)"></div>'+
+  '<div class="sub-title"><span>ثبت‌شده‌ها</span><span id="bdLdCount"></span></div><div class="chips" id="bdLdChips" style="margin:0 0 10px"></div>'+
+  '<div class="search-box"><input id="bdLdSearch" type="text" placeholder="جستجو: نام‌کاربری، اسم یا سرگروه..." autocomplete="off" spellcheck="false"></div>'+
+  '<div class="history" id="bdLdList" style="max-height:280px"></div>'+
+ '</div>'+
+
+ '<div class="third-pane" id="bdP2">'+
+  '<div class="card-head"><div class="card-icon">'+SV('<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>')+'</div><div><h2>ثبت سرگروه بدنه</h2><p>ساخت حساب ورود به پنل سرگروه بدنه</p></div></div>'+
+  '<label class="field" for="bdLacUser">نام کاربری</label><input class="ltr" id="bdLacUser" type="text" autocomplete="off" spellcheck="false">'+
+  '<label class="field" for="bdLacPass" style="margin-top:12px">رمز عبور</label><div class="date-row" style="margin-bottom:0"><input class="ltr" id="bdLacPass" type="text" placeholder="حداقل ۶ کاراکتر" autocomplete="off"><button type="button" class="chip" id="bdLacGen">تولید رمز</button></div>'+
+  '<label class="field" for="bdLacName" style="margin-top:12px">نام گروه (سرگروه)</label><input id="bdLacName" list="bdLacNames" type="text" autocomplete="off"><datalist id="bdLacNames"></datalist>'+
+  '<div class="hint" style="margin-top:6px">باید دقیقاً همان اسمی باشد که در «سرگروه‌ها»ی بدنه برای اعضا ثبت شده.</div>'+
+  '<button type="button" class="full" id="bdLacSave" style="margin-top:14px">ثبت سرگروه</button>'+
+  '<div id="bdLacMsg" role="status" style="text-align:center;font-size:13px;min-height:18px;margin-top:10px;color:var(--text-dim);line-height:1.9"></div>'+
+  '<div class="sub-title"><span>سرگروه‌های ثبت‌شده</span><span id="bdLacCount"></span></div><div class="history" id="bdLacList" style="max-height:240px"></div>'+
+ '</div>'+
+
+ '<div class="third-pane" id="bdP3">'+
+  '<div class="card-head"><div class="card-icon">'+SV('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>')+'</div><div><h2>تاریخچه‌ی سرگروه‌های بدنه</h2><p>کارهای سرگروه‌ها توی پنل خودشون اینجا ثبت می‌شه</p></div></div>'+
+  '<div class="sum-row"><span class="sum-chip">تعداد: <b id="bdActCount">—</b></span></div><div class="chips" id="bdActChips"></div>'+
+  '<div class="search-box" style="margin-top:12px"><input id="bdActSearch" type="text" placeholder="جستجو..." autocomplete="off" spellcheck="false"></div>'+
+  '<div class="err-list" id="bdActList" style="max-height:400px"></div>'+
+  '<div class="actions" style="margin-top:12px"><button type="button" class="del-btn" id="bdActClear" style="flex:0 0 auto">پاک‌سازی تاریخچه</button></div>'+
+ '</div>'+
+ '<div class="actions" style="margin-top:16px"><button type="button" class="secondary full" id="bdClose">بستن</button></div>'+
+'</div>';
+document.body.appendChild(m);
+
+/* تب‌ها */
+const tabBtns=[...$("bdTabs").querySelectorAll("button")];
+function showTab(i){
+  tabBtns.forEach((b,k)=>b.classList.toggle("active",k===i));
+  $("bdTabs").querySelector(".tab-ind").style.transform="translateX("+(-i*100)+"%)";
+  for(let k=0;k<4;k++) $("bdP"+k).classList.toggle("show",k===i);
+  if(i===0) loadAgents(); if(i===1) loadSavedLeaders(); if(i===2){ loadNames(); loadLeaders(); } if(i===3) loadActs();
+}
+tabBtns.forEach((b,i)=>b.addEventListener("click",()=>showTab(i)));
+item.addEventListener("click",()=>{ m.classList.add("show"); showTab(0); });
+$("bdClose").addEventListener("click",()=>m.classList.remove("show"));
+m.addEventListener("click",e=>{ if(e.target===m) m.classList.remove("show"); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") m.classList.remove("show"); });
+
+/* ===== نمایندگان ===== */
+let agents=[];
+async function loadAgents(){
+  const list=$("bdList"); list.replaceChildren(hintEl("در حال بارگذاری..."));
+  try{ agents=(await listBody()).sort((a,b)=>a.username.localeCompare(b.username)); renderAgents(); }
+  catch(e){ list.replaceChildren(hintEl("خطا: "+e.message)); }
+}
+function renderAgents(){
+  const term=$("bdSearch").value.trim().toLowerCase(), list=$("bdList"); list.replaceChildren();
+  $("bdCount").textContent=agents.length?agents.length+" نماینده":"";
+  const f=agents.filter(u=>!term||u.username.toLowerCase().includes(term));
+  if(!f.length){ list.appendChild(hintEl(agents.length?"نماینده‌ای با این نام پیدا نشد":"هنوز نماینده‌ای ثبت نشده")); return; }
+  f.forEach(u=>{
+    const row=mk("div","row"), name=mk("span","d",u.username); name.style.direction="ltr";
+    const vals=mk("span","vals");
+    const ed=mk("button","delete-btn","✏️"); ed.type="button"; ed.addEventListener("click",()=>editAgent(u));
+    const del=mk("button","delete-btn","🗑️"); del.type="button"; del.addEventListener("click",()=>deleteAgent(u));
+    vals.append(ed,del); row.append(name,vals); list.appendChild(row);
+  });
+}
+let t1=null; $("bdSearch").addEventListener("input",()=>{ clearTimeout(t1); t1=setTimeout(renderAgents,200); });
+
+async function editAgent(u){
+  const nu=prompt("نام کاربری جدید (خالی = بدون تغییر):",u.username); if(nu===null) return;
+  const np=prompt("رمز عبور جدید (خالی = بدون تغییر):",""); if(np===null) return;
+  if(!nu.trim()&&!np.trim()) return;
+  try{
+    await raw({action:"update",userId:u.id,newUsername:nu.trim()||undefined,newPassword:np.trim()||undefined});
+    if(nu.trim()&&nu.trim().toLowerCase()!==u.username.toLowerCase())
+      await supabaseClient.from("agent_groups").update({username:nu.trim().toLowerCase()}).eq("user_id",u.id);
+    toast("نماینده به‌روزرسانی شد","ok"); loadAgents();
+  }catch(e){ toast("ویرایش ناموفق بود: "+e.message,"error"); }
+}
+async function deleteAgent(u){
+  if(!confirm("نماینده «"+u.username+"» به‌طور کامل حذف بشه؟ (حساب کاربری و آمارش)")) return;
+  try{
+    await raw({action:"delete",userId:u.id});
+    await supabaseClient.from("agent_groups").delete().eq("username",u.username.toLowerCase());
+    toast("نماینده حذف شد","ok"); loadAgents(); loadStats();
+  }catch(e){ toast("حذف ناموفق بود: "+e.message,"error"); }
+}
+
+$("bdNewUser").addEventListener("keydown",e=>{ if(e.key==="Enter") $("bdNewPass").focus(); });
+$("bdNewPass").addEventListener("keydown",e=>{ if(e.key==="Enter") $("bdCreate").click(); });
+$("bdCreate").addEventListener("click",async()=>{
+  const username=$("bdNewUser").value.trim().toLowerCase(), password=$("bdNewPass").value;
+  if(!username||!password){ msg("bdMsg","نام کاربری و رمز رو کامل وارد کنید","error"); return; }
+  if(password.length<6){ msg("bdMsg","رمز باید حداقل ۶ کاراکتر باشه","error"); return; }
+  $("bdCreate").disabled=true; msg("bdMsg","در حال ثبت...");
+  try{
+    await raw({action:"create",username,password});
+    await register([{username,grp:G}]);
+    msg("bdMsg","✔ نماینده «"+username+"» در گروه بدنه ثبت شد","ok");
+    $("bdNewUser").value=""; $("bdNewPass").value=""; loadAgents(); loadStats();
+  }catch(e){ msg("bdMsg","ثبت نشد: "+(e.message||explainError(e)),"error"); }
+  $("bdCreate").disabled=false;
+});
+
+/* ثبت گروهی */
+let bulkMode=false, pend=[];
+$("bdBulkToggle").addEventListener("click",()=>{
+  bulkMode=!bulkMode; $("bdSingle").hidden=bulkMode; $("bdBulk").hidden=!bulkMode;
+  $("bdBulkToggle").textContent=bulkMode?"ثبت تکی":"ثبت گروهی";
+});
+$("bdBulkGen").addEventListener("click",async()=>{
+  const lines=$("bdBulkText").value.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  if(!lines.length){ msg("bdMsg","لیست خالیه","error"); return; }
+  $("bdBulkGen").disabled=true; msg("bdMsg","در حال بررسی نام‌های تکراری...");
+  let existing; try{ existing=await fetchAllUsernames(); }catch(e){ msg("bdMsg","خطا: "+(e.message||e),"error"); $("bdBulkGen").disabled=false; return; }
+  $("bdBulkGen").disabled=false; msg("bdMsg","");
+  const ex=new Set(existing.map(u=>String(u).trim().toLowerCase())), seen=new Set(), used=new Set(), rows=[];
+  lines.forEach(line=>{
+    const username=line.toLowerCase().replace(/\s+/g,"");
+    if(!username||!/^[a-z0-9._-]+$/.test(username)){ rows.push({username:line,status:"invalid"}); return; }
+    if(ex.has(username)||seen.has(username)){ rows.push({username,status:"dup"}); return; }
+    seen.add(username); rows.push({username,password:genPasswordFor(username,used),status:"ok"});
+  });
+  pend=rows; renderBulk();
+});
+function renderBulk(){
+  const list=$("bdBulkList"); list.replaceChildren(); let ok=0,dup=0,inv=0;
+  pend.forEach((r,idx)=>{
+    if(r.status==="ok") ok++; else if(r.status==="dup") dup++; else inv++;
+    const row=mk("div","row"+(r.status==="dup"?" bu-dup":r.status==="invalid"?" bu-invalid":""));
+    const l=mk("span","d",r.username); l.style.direction="ltr"; const v=mk("span","vals");
+    if(r.status==="ok"){ const pw=mk("b",null,r.password); pw.style.cssText="direction:ltr;color:var(--ok)"; v.appendChild(pw); }
+    else{ const tg=mk("span",null,r.status==="dup"?"از قبل هست":"نامعتبر"); tg.style.cssText="font-size:12px;color:"+(r.status==="dup"?"var(--warn)":"var(--error)"); v.appendChild(tg); }
+    const del=mk("button","delete-btn","🗑️"); del.type="button"; del.addEventListener("click",()=>{ pend.splice(idx,1); renderBulk(); });
+    v.appendChild(del); row.append(l,v); list.appendChild(row);
+  });
+  animateNumber($("bdBOk"),ok); animateNumber($("bdBMiss"),dup); animateNumber($("bdBBad"),inv);
+  $("bdBulkPrev").style.display=pend.length?"block":"none";
+  $("bdBulkOk").textContent="تأیید و ثبت نهایی ("+ok+" نفر)"; $("bdBulkOk").disabled=ok===0;
+}
+$("bdBulkOk").addEventListener("click",async()=>{
+  const todo=pend.filter(r=>r.status==="ok"); if(!todo.length) return;
+  if(!confirm(todo.length+" نماینده‌ی جدید در گروه بدنه ساخته بشه؟")) return;
+  ["bdBulkOk","bdBulkCsv","bdBulkCancel"].forEach(i=>$(i).disabled=true);
+  let done=0; const failed=[], created=[];
+  for(const r of todo){
+    msg("bdMsg","در حال ثبت... "+done+" از "+todo.length);
+    try{ await raw({action:"create",username:r.username,password:r.password}); created.push({username:r.username,grp:G}); done++; }
+    catch(e){ failed.push(r.username+": "+e.message); }
+  }
+  try{ if(created.length) await register(created); }
+  catch(e){ failed.push("ثبت گروه ناموفق بود (در لیست ثالث دیده می‌شن): "+(e.message||explainError(e))); }
+  msg("bdMsg",failed.length?"✔ "+done+" نفر ساخته شد؛ "+failed.length+" مشکل ("+failed.slice(0,3).join(" | ")+")":"✔ همه‌ی "+done+" نماینده ثبت شدن",failed.length?"error":"ok");
+  pend=[]; $("bdBulkPrev").style.display="none"; $("bdBulkText").value="";
+  ["bdBulkOk","bdBulkCsv","bdBulkCancel"].forEach(i=>$(i).disabled=false);
+  loadAgents(); loadStats();
+});
+$("bdBulkCsv").addEventListener("click",()=>{
+  const rows=pend.filter(r=>r.status==="ok"); if(!rows.length){ toast("چیزی برای خروجی گرفتن نیست","error"); return; }
+  const csv="\ufeffusername,password\n"+rows.map(r=>csvCell(r.username)+","+csvCell(r.password)).join("\n");
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+  a.download="body-users-"+(jalaliOf(new Date()).replace(/\//g,"-")||"date")+".csv"; document.body.appendChild(a); a.click(); a.remove();
+});
+$("bdBulkCancel").addEventListener("click",()=>{ pend=[]; $("bdBulkPrev").style.display="none"; $("bdBulkText").value=""; msg("bdMsg",""); });
+
+/* به‌روزرسانی رمز */
+$("bdPwToggle").addEventListener("click",()=>{ $("bdPwWrap").hidden=!$("bdPwWrap").hidden; });
+$("bdPwFile").addEventListener("change",e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader(); r.onload=()=>{ $("bdPwText").value=String(r.result).replace(/^\ufeff/,""); }; r.readAsText(f,"UTF-8");
+});
+$("bdPwApply").addEventListener("click",async()=>{
+  const rawTxt=normalizeDigits($("bdPwText").value); if(!rawTxt.trim()){ msg("bdPwMsg","لیست خالیه","error"); return; }
+  $("bdPwApply").disabled=true; msg("bdPwMsg","در حال بررسی...");
+  let list; try{ list=await listBody(); }catch(e){ msg("bdPwMsg","خطا: "+e.message,"error"); $("bdPwApply").disabled=false; return; }
+  const map=new Map(list.map(u=>[u.username.toLowerCase(),u])), ups=new Map(); let miss=0,bad=0;
+  rawTxt.split(/\r?\n/).forEach(line=>{
+    const t=line.trim(); if(!t) return;
+    const p=t.split(/[\t,;\s]+/).filter(Boolean); if(p.length<2){ bad++; return; }
+    const un=p[0].replace(/^"|"$/g,"").toLowerCase(), pw=p[1].replace(/^"|"$/g,"");
+    if(un==="username") return; if(pw.length<6){ bad++; return; }
+    const u=map.get(un); if(!u){ miss++; return; } ups.set(u.id,{id:u.id,username:u.username,password:pw});
+  });
+  const arr=[...ups.values()];
+  if(!arr.length){ msg("bdPwMsg","مورد معتبری نبود ("+miss+" در این گروه نیستن، "+bad+" نامعتبر)","error"); $("bdPwApply").disabled=false; return; }
+  if(!confirm("رمز "+arr.length+" نماینده تغییر کنه؟\n("+miss+" نفر در این گروه نیستن، "+bad+" خط نامعتبر)")){ msg("bdPwMsg",""); $("bdPwApply").disabled=false; return; }
+  let done=0; const failed=[];
+  for(const r of arr){
+    msg("bdPwMsg","در حال به‌روزرسانی... "+done+" از "+arr.length);
+    try{ await raw({action:"update",userId:r.id,newPassword:r.password}); done++; }catch(e){ failed.push(r.username+": "+e.message); }
+  }
+  msg("bdPwMsg",failed.length?"✔ "+done+" نفر به‌روز شد؛ "+failed.length+" ناموفق ("+failed.slice(0,3).join(" | ")+")":"✔ رمز "+done+" نماینده به‌روزرسانی شد",failed.length?"error":"ok");
+  $("bdPwText").value=""; $("bdPwFile").value=""; $("bdPwApply").disabled=false;
+});
+
+/* ===== سرگروه‌ها (agent_leaders_body) ===== */
+let ldPend=[], ldAll=[];
+$("bdLdText").addEventListener("input",()=>{});
+$("bdLdCheck").addEventListener("click",async()=>{
+  msg("bdLdMsg",""); $("bdLdPrev").style.display="none"; ldPend=[];
+  const txt=$("bdLdText").value; if(!txt.trim()){ msg("bdLdMsg","لیست خالیه؛ داده‌ی اکسل رو پیست کن","error"); return; }
+  $("bdLdCheck").disabled=true; msg("bdLdMsg","در حال بررسی...");
+  let list; try{ list=await listBody(); }catch(e){ msg("bdLdMsg","خطا: "+e.message,"error"); $("bdLdCheck").disabled=false; return; }
+  $("bdLdCheck").disabled=false; msg("bdLdMsg","");
+  const map=new Map(list.map(u=>[u.username.toLowerCase(),u.username])), got=new Map(), miss=[]; let bad=0;
+  txt.split(/\r?\n/).forEach(line=>{
+    const t=line.trim(); if(!t) return;
+    let p=t.split("\t").map(x=>x.trim()); if(p.length<3) p=t.split(/\s{2,}/).map(x=>x.trim());
+    if(p.length<3){ bad++; return; }
+    const un=p[0].replace(/^"|"$/g,"").toLowerCase(); if(un==="username") return;
+    let first,lr; if(p.length>=4){ first=p[2]; lr=p.slice(3).join(" - "); } else { first=p[1]; lr=p[2]; }
+    const leaders=splitLeaders(lr); if(!leaders.length){ bad++; return; }
+    const real=map.get(un); if(!real){ miss.push(un); return; }
+    got.set(real,{username:real,first_name:first,leaders:leaders,updated_at:new Date().toISOString()});
+  });
+  ldPend=[...got.values()];
+  animateNumber($("bdLOk"),ldPend.length); animateNumber($("bdLMiss"),miss.length); animateNumber($("bdLBad"),bad);
+  $("bdLdSave").textContent="ثبت نهایی "+ldPend.length+" نفر"; $("bdLdSave").disabled=!ldPend.length;
+  $("bdLdPrev").style.display="block";
+  if(miss.length) msg("bdLdMsg","در گروه بدنه نیستن: "+[...new Set(miss)].slice(0,6).join(" | ")+(miss.length>6?" ...":""));
+  if(!ldPend.length) msg("bdLdMsg","هیچ مورد معتبری پیدا نشد","error");
+});
+$("bdLdCancel").addEventListener("click",()=>{ ldPend=[]; $("bdLdPrev").style.display="none"; msg("bdLdMsg",""); });
+$("bdLdSave").addEventListener("click",async()=>{
+  if(!ldPend.length) return;
+  ["bdLdSave","bdLdCancel","bdLdCheck"].forEach(i=>$(i).disabled=true);
+  let done=0;
+  for(let i=0;i<ldPend.length;i+=200){
+    const b=ldPend.slice(i,i+200); msg("bdLdMsg","در حال ذخیره... "+done+" از "+ldPend.length);
+    const {error}=await supabaseClient.from(T_LD).upsert(b,{onConflict:"username"});
+    if(error){ msg("bdLdMsg","ثبت متوقف شد ("+done+" نفر ثبت شده بود): "+explainError(error),"error"); ["bdLdSave","bdLdCancel","bdLdCheck"].forEach(i=>$(i).disabled=false); return; }
+    done+=b.length;
+  }
+  msg("bdLdMsg","✔ سرگروه "+done+" نماینده ثبت شد","ok");
+  ldPend=[]; $("bdLdPrev").style.display="none"; $("bdLdText").value="";
+  ["bdLdSave","bdLdCancel","bdLdCheck"].forEach(i=>$(i).disabled=false); loadSavedLeaders();
+});
+async function loadSavedLeaders(){
+  const list=$("bdLdList"); list.replaceChildren(hintEl("در حال بارگذاری..."));
+  const rows=[]; let from=0;
+  try{
+    while(true){
+      const {data,error}=await supabaseClient.from(T_LD).select("username,first_name,leaders").order("username",{ascending:true}).range(from,from+999);
+      if(error) throw error; rows.push(...data); if(data.length<1000) break; from+=1000;
+    }
+  }catch(e){ list.replaceChildren(hintEl(explainError(e))); return; }
+  ldAll=rows; renderSavedLeaders();
+}
+function renderSavedLeaders(){
+  const list=$("bdLdList"), term=$("bdLdSearch").value.trim().toLowerCase(); list.replaceChildren();
+  const counts=new Map(); ldAll.forEach(r=>(r.leaders||[]).forEach(l=>counts.set(l,(counts.get(l)||0)+1)));
+  const chips=$("bdLdChips"); chips.replaceChildren();
+  [...counts.entries()].sort((a,b)=>b[1]-a[1]).forEach(([n,c])=>{
+    const b=mk("button","chip-btn",n+" ("+c+")"); b.type="button";
+    b.addEventListener("click",()=>{ $("bdLdSearch").value=n; renderSavedLeaders(); }); chips.appendChild(b);
+  });
+  const f=!term?ldAll:ldAll.filter(r=>r.username.toLowerCase().includes(term)||String(r.first_name||"").toLowerCase().includes(term)||(r.leaders||[]).some(l=>l.toLowerCase().includes(term)));
+  $("bdLdCount").textContent=f.length?f.length+" مورد":"";
+  if(!f.length){ list.appendChild(hintEl(term?"چیزی پیدا نشد":"هنوز چیزی ثبت نشده")); return; }
+  f.slice(0,300).forEach(r=>{
+    const row=mk("div","row"), l=mk("span","d",r.username+(r.first_name?" — "+r.first_name:"")); l.style.direction="ltr";
+    const v=mk("span","vals"), ld=mk("b",null,(r.leaders||[]).join(" ، ")); ld.style.fontSize="12px";
+    const del=mk("button","delete-btn","🗑️"); del.type="button";
+    del.addEventListener("click",async()=>{
+      if(!confirm("سرگروه‌های «"+r.username+"» حذف بشه؟")) return;
+      const {error}=await supabaseClient.from(T_LD).delete().eq("username",r.username);
+      if(error){ toast("حذف نشد: "+explainError(error),"error"); return; }
+      toast("حذف شد","ok"); loadSavedLeaders();
+    });
+    v.append(ld,del); row.append(l,v); list.appendChild(row);
+  });
+  if(f.length>300) list.appendChild(hintEl("فقط ۳۰۰ مورد اول نمایش داده شد؛ جستجو کنید"));
+}
+let t2=null; $("bdLdSearch").addEventListener("input",()=>{ clearTimeout(t2); t2=setTimeout(renderSavedLeaders,200); });
+
+/* ===== ثبت سرگروه (leaders_body) ===== */
+async function loadNames(){
+  try{
+    const names=new Set(); let from=0;
+    while(true){
+      const {data,error}=await supabaseClient.from(T_LD).select("leaders").range(from,from+999);
+      if(error) throw error; data.forEach(r=>(r.leaders||[]).forEach(n=>names.add(n)));
+      if(data.length<1000) break; from+=1000;
+    }
+    $("bdLacNames").replaceChildren(...[...names].sort((a,b)=>a.localeCompare(b,"fa")).map(n=>{ const o=document.createElement("option"); o.value=n; return o; }));
+  }catch(e){}
+}
+$("bdLacGen").addEventListener("click",()=>{ const u=$("bdLacUser").value.trim().toLowerCase(); $("bdLacPass").value=genPasswordFor(u||"x.y",new Set()); });
+$("bdLacSave").addEventListener("click",async()=>{
+  const username=$("bdLacUser").value.trim().toLowerCase().replace(/\s+/g,""), password=$("bdLacPass").value, leaderName=$("bdLacName").value.trim();
+  if(!username||!password||!leaderName){ msg("bdLacMsg","نام کاربری، رمز و نام گروه رو کامل وارد کن","error"); return; }
+  if(!/^[a-z0-9._-]+$/.test(username)){ msg("bdLacMsg","نام کاربری فقط انگلیسی (حرف، عدد، . - _) باشه","error"); return; }
+  if(password.length<6){ msg("bdLacMsg","رمز باید حداقل ۶ کاراکتر باشه","error"); return; }
+  const btn=$("bdLacSave"); btn.disabled=true; msg("bdLacMsg","در حال ساخت حساب...");
+  try{
+    let createdNew=true;
+    try{ await raw({action:"create",username,password}); }
+    catch(err){
+      const {data}=await raw({action:"list"});
+      const u=(data||[]).find(x=>String(x.username).toLowerCase()===username);
+      if(!u) throw err; createdNew=false;
+      if(!confirm("این نام کاربری از قبل حساب داره.\nفقط به‌عنوان سرگروه بدنه ثبت بشه و رمزش هم تغییر کنه؟")){ msg("bdLacMsg","لغو شد"); btn.disabled=false; return; }
+      await raw({action:"update",userId:u.id,newPassword:password});
+    }
+    const ids=await register([{username,grp:GL}]); const id=ids.get(username);
+    if(!id) throw new Error("حساب ساخته شد ولی شناسه‌اش پیدا نشد؛ دوباره امتحان کن");
+    const {error}=await supabaseClient.from(T_LEAD).upsert({user_id:id,username,leader_name:leaderName},{onConflict:"user_id"});
+    if(error) throw error;
+    msg("bdLacMsg","✔ سرگروه «"+leaderName+"» ثبت شد — نام کاربری: "+username+" | رمز: "+password+(createdNew?"":" (رمز به‌روز شد)"),"ok");
+    $("bdLacUser").value=""; $("bdLacPass").value=""; $("bdLacName").value=""; loadLeaders();
+  }catch(err){ msg("bdLacMsg","ثبت نشد: "+(err.message||explainError(err)),"error"); }
+  btn.disabled=false;
+});
+async function loadLeaders(){
+  const list=$("bdLacList"); list.replaceChildren(hintEl("در حال بارگذاری..."));
+  const {data,error}=await supabaseClient.from(T_LEAD).select("*").order("created_at",{ascending:false});
+  list.replaceChildren();
+  if(error){ $("bdLacCount").textContent=""; list.appendChild(hintEl(explainError(error))); return; }
+  $("bdLacCount").textContent=data.length?data.length+" سرگروه":"";
+  if(!data.length){ list.appendChild(hintEl("هنوز سرگروهی ثبت نشده")); return; }
+  data.forEach(r=>{
+    const row=mk("div","row"), l=mk("span","d",(r.username||"—")+" — "+(r.leader_name||"")); l.style.direction="ltr";
+    const v=mk("span","vals");
+    const key=mk("button","delete-btn","🔑"); key.type="button"; key.title="تغییر رمز"; key.style.color="var(--accent2)";
+    key.addEventListener("click",async()=>{
+      const p=prompt("رمز جدید برای «"+r.username+"» (حداقل ۶ کاراکتر):",""); if(p===null) return;
+      if(p.length<6){ toast("رمز باید حداقل ۶ کاراکتر باشه","error"); return; }
+      try{ await raw({action:"update",userId:r.user_id,newPassword:p}); toast("رمز «"+r.username+"» عوض شد: "+p,"ok"); }
+      catch(e){ toast("تغییر رمز ناموفق بود: "+e.message,"error"); }
+    });
+    const del=mk("button","delete-btn","🗑️"); del.type="button"; del.title="برداشتن دسترسی سرگروه";
+    del.addEventListener("click",async()=>{
+      if(!confirm("دسترسی سرگروهی «"+r.username+"» برداشته بشه؟\n(حساب کاربری حذف نمی‌شه)")) return;
+      const {error}=await supabaseClient.from(T_LEAD).delete().eq("user_id",r.user_id);
+      if(error){ toast("حذف نشد: "+explainError(error),"error"); return; }
+      toast("دسترسی سرگروه برداشته شد","ok"); loadLeaders();
+    });
+    v.append(key,del); row.append(l,v); list.appendChild(row);
+  });
+}
+
+/* ===== تاریخچه (leader_activity_body) ===== */
+const AL={stat_edit:["✏️ اصلاح آمار","#4f7bff"],stat_add:["➕ ثبت آمار","#2fd3a7"],stat_delete:["🗑 حذف آمار","#ff6b7d"],error_add:["⚠️ ثبت مغایرت","#fbbf24"],error_resolve:["✅ رفع مغایرت","#4ade80"],target_change:["🎯 تغییر تارگت","#9b82ff"],export:["📥 خروجی اکسل","#9aa3c7"]};
+let ACT=[], fLeader="";
+const lname=r=>r.leader_name||r.leader_username||"—";
+async function loadActs(){
+  $("bdActList").replaceChildren(hintEl("در حال بارگذاری..."));
+  const {data,error}=await supabaseClient.from(T_ACT).select("*").order("created_at",{ascending:false}).limit(500);
+  if(error){ $("bdActList").replaceChildren(hintEl(explainError(error))); $("bdActCount").textContent="—"; return; }
+  ACT=data; renderActs();
+}
+function renderActs(){
+  const term=normalizeDigits($("bdActSearch").value.trim()).toLowerCase(), lc=new Map();
+  ACT.forEach(r=>lc.set(lname(r),(lc.get(lname(r))||0)+1));
+  const chips=$("bdActChips"); chips.replaceChildren();
+  [...lc.entries()].sort((a,b)=>b[1]-a[1]).forEach(([k,n])=>{
+    const b=mk("button","chip-btn","👤 "+k+" ("+n+")"); b.type="button";
+    if(k===fLeader){ b.style.borderColor="var(--accent1)"; b.style.background="linear-gradient(135deg,var(--accent1),var(--accent2))"; b.style.color="#fff"; }
+    b.addEventListener("click",()=>{ fLeader=(k===fLeader?"":k); renderActs(); }); chips.appendChild(b);
+  });
+  const rows=ACT.filter(r=>(!fLeader||lname(r)===fLeader)&&(!term||(r.summary||"").toLowerCase().includes(term)||(r.target_username||"").toLowerCase().includes(term)||lname(r).toLowerCase().includes(term)));
+  animateNumber($("bdActCount"),rows.length);
+  const list=$("bdActList"); list.replaceChildren();
+  if(!rows.length){ list.appendChild(hintEl(ACT.length?"چیزی پیدا نشد":"هنوز فعالیتی ثبت نشده")); return; }
+  rows.forEach(r=>{
+    const meta=AL[r.action]||[r.action,"#9aa3c7"], box=mk("div","err-item"); box.style.borderRightColor=meta[1];
+    const top=mk("div","err-top"), tag=mk("span",null,meta[0]); tag.style.cssText="font-size:12px;color:"+meta[1]+";font-weight:bold;white-space:nowrap";
+    top.append(mk("b",null,"👤 "+lname(r)),tag);
+    const foot=mk("div","err-foot"), d=new Date(r.created_at); let hm=""; try{ hm=d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}); }catch(e){}
+    foot.appendChild(mk("span","err-date",jalaliOf(d)+" — "+hm));
+    if(r.target_username){
+      const u=mk("span","err-user",r.target_username);
+      u.addEventListener("click",()=>{ m.classList.remove("show"); openUser(r.target_username); }); foot.appendChild(u);
+    }
+    box.append(top,mk("div","err-reason",lname(r)+" — "+r.summary),foot); list.appendChild(box);
+  });
+}
+let t3=null; $("bdActSearch").addEventListener("input",()=>{ clearTimeout(t3); t3=setTimeout(renderActs,200); });
+$("bdActClear").addEventListener("click",async()=>{
+  const typed=prompt("همه‌ی تاریخچه‌ی سرگروه‌های بدنه برای همیشه پاک می‌شه.\nبرای تأیید، کلمه‌ی «حذف» رو تایپ کن:");
+  if(typed===null) return;
+  if(typed.trim()!=="حذف"){ toast("تأیید نشد؛ چیزی حذف نشد","error"); return; }
+  const {error}=await supabaseClient.from(T_ACT).delete().not("id","is",null);
+  if(error){ toast("پاک نشد: "+explainError(error),"error"); return; }
+  toast("تاریخچه پاک شد","ok"); loadActs();
+});
+})();
+</script>
 <script id="sbp-script">
 (function(){
 "use strict";
@@ -7249,6 +7698,7 @@ var TL=[
  {k:"ann",t:"اعلان به نماینده‌ها",s:"پیام همگانی در پنل",c:"#ff6bd6",c2:"#ff9be8",i:IC.bell,id:"annOpen"},
  {k:"third",t:"گروه ثالث",s:"نمایندگان، سرگروه‌ها، تاریخچه",c:"#38b6ff",c2:"#4d6bff",i:IC.users,id:"thirdOpen"},
  {k:"na",t:"گروه غیر خودرویی",s:"نمایندگان، سرگروه‌ها، تاریخچه",c:"#ff8a3d",c2:"#ffb020",i:IC.block,id:"naOpen"},
+ {k:"bd",t:"گروه بدنه",s:"نمایندگان، سرگروه‌ها، تاریخچه",c:"#14d1b8",c2:"#3ddc84",i:'<path d="M4 15l1.5-5A2 2 0 0 1 7.4 8.5h9.2a2 2 0 0 1 1.9 1.5L20 15v3H4zM4 15h16M7 18v2M17 18v2"/>',id:"bdOpen"},
  {k:"top",t:"نمایندگان برتر",s:"رتبه‌بندی هر دو گروه",c:"#f5c542",c2:"#ffd978",i:IC.trophy,f:function(){openTop()}}
 ];
 
@@ -7308,7 +7758,8 @@ if(dash&&r2){
    ===================================================================== */
 var GROUPS=[
  {key:"third",title:"گروه ثالث",sub:"نمایندگان بدون گروه ویژه",c:"#38b6ff",c2:"#4d6bff",icon:IC.users},
- {key:"nonauto",title:"گروه غیر خودرویی",sub:"نمایندگان گروه غیر خودرویی",c:"#ffb020",c2:"#ff8a3d",icon:IC.block}
+ {key:"nonauto",title:"گروه غیر خودرویی",sub:"نمایندگان گروه غیر خودرویی",c:"#ffb020",c2:"#ff8a3d",icon:IC.block},
+ {key:"body",title:"گروه بدنه",sub:"نمایندگان گروه بدنه",c:"#14d1b8",c2:"#3ddc84",icon:'<path d="M4 15l1.5-5A2 2 0 0 1 7.4 8.5h9.2a2 2 0 0 1 1.9 1.5L20 15v3H4zM4 15h16M7 18v2M17 18v2"/>'}
 ];
 var ORDER=[7,14,30,0],LAB={7:"۷ روز",14:"۱۴ روز",30:"۳۰ روز",0:"کل دوره"};
 var range=0;try{var sr=parseInt(localStorage.getItem("admin_top_range"),10);if(ORDER.indexOf(sr)>-1)range=sr}catch(e){}
@@ -7373,16 +7824,16 @@ function pack(map){
   arr.forEach(function(x){tot+=x.v});
   return {list:arr,total:Math.round(tot*100)/100,n:arr.length};
 }
-function compute(n){
-  var set=n>0?new Set(DATA.dates.slice(-n)):null,T=new Map(),N=new Map();
-  DATA.rows.forEach(function(r){
-    if(set&&!set.has(r.d))return;
-    var g=DATA.gm.get(String(r.u).toLowerCase()),tg=g==="nonauto"?N:(!g?T:null);
-    if(!tg)return;
-    tg.set(r.u,(tg.get(r.u)||0)+r.v);
-  });
-  return {third:pack(T),nonauto:pack(N)};
-}
+   function compute(n){
+     var set=n>0?new Set(DATA.dates.slice(-n)):null,T=new Map(),N=new Map(),B=new Map();
+     DATA.rows.forEach(function(r){
+       if(set&&!set.has(r.d))return;
+       var g=DATA.gm.get(String(r.u).toLowerCase()),tg=g==="nonauto"?N:(g==="body"?B:(!g?T:null));
+       if(!tg)return;
+       tg.set(r.u,(tg.get(r.u)||0)+r.v);
+     });
+     return {third:pack(T),nonauto:pack(N),body:pack(B)};
+   }
 
 /* ---------- رندر ---------- */
 function countUp(el,to,delay){
@@ -7432,20 +7883,21 @@ function renderList(key){
     box.querySelectorAll(".tp-tr i").forEach(function(b){b.style.width=b.dataset.w+"%"});
   })});
 }
-function renderVs(){
-  var a=CUR.third.total,b=CUR.nonauto.total,s=a+b;
-  var pa=s?Math.round(a/s*1000)/10:50,pb=s?Math.round((100-pa)*10)/10:50;
-  G("tpVs").innerHTML=
-   '<div class="tp-vsrow">'+
-    '<span class="tp-vl" style="--c:#38b6ff"><i></i>گروه ثالث <b>'+pa+'%</b></span>'+
-    '<span class="tp-vsum">مجموع صدور هر دو گروه: <b>'+F(s)+'</b></span>'+
-    '<span class="tp-vl" style="--c:#ffb020"><i></i>گروه غیر خودرویی <b>'+pb+'%</b></span>'+
-   '</div>'+
-   '<div class="tp-vsbar"><span class="a" data-w="'+pa+'"></span><span class="b" data-w="'+pb+'"></span></div>';
-  requestAnimationFrame(function(){requestAnimationFrame(function(){
-    G("tpVs").querySelectorAll(".tp-vsbar span").forEach(function(e){e.style.width="calc("+e.dataset.w+"% - 2px)"});
-  })});
-}
+   function renderVs(){
+     var a=CUR.third.total,b=CUR.nonauto.total,c=CUR.body.total,s=a+b+c;
+     var pa=s?Math.round(a/s*1000)/10:33.3,pb=s?Math.round(b/s*1000)/10:33.3,pc=s?Math.round((100-pa-pb)*10)/10:33.4;
+     G("tpVs").innerHTML=
+      '<div class="tp-vsrow">'+
+       '<span class="tp-vl" style="--c:#38b6ff"><i></i>گروه ثالث <b>'+pa+'%</b></span>'+
+       '<span class="tp-vl" style="--c:#ffb020"><i></i>گروه غیر خودرویی <b>'+pb+'%</b></span>'+
+       '<span class="tp-vl" style="--c:#14d1b8"><i></i>گروه بدنه <b>'+pc+'%</b></span>'+
+       '<span class="tp-vsum">مجموع صدور: <b>'+F(s)+'</b></span>'+
+      '</div>'+
+      '<div class="tp-vsbar"><span class="a" data-w="'+pa+'"></span><span class="b" data-w="'+pb+'"></span><span class="c" data-w="'+pc+'"></span></div>';
+     requestAnimationFrame(function(){requestAnimationFrame(function(){
+       G("tpVs").querySelectorAll(".tp-vsbar span").forEach(function(e){e.style.width="calc("+e.dataset.w+"% - 3px)"});
+     })});
+   }
 function render(){
   if(!DATA)return;
   CUR=compute(range);
@@ -7458,7 +7910,7 @@ function render(){
 }
 function skel(){
   var h="",k;
-  for(k=0;k<2;k++){
+  for(k=0;k<GROUPS.length;k++){
     h+='<section class="tp-col" style="--c:'+GROUPS[k].c+';--c2:'+GROUPS[k].c2+'"><div class="tp-skl" style="width:55%;height:24px"></div><div class="tp-skl" style="height:170px;margin-top:18px"></div>';
     for(var j=0;j<4;j++)h+='<div class="tp-skl" style="height:36px;margin-top:10px"></div>';
     h+='</section>';
@@ -7538,5 +7990,18 @@ window.addEventListener("keydown",function(e){
 },true);
 })();
 </script>
+  <style id="bd-style">
+.qx-grid{grid-template-columns:repeat(9,minmax(0,1fr))}
+@media(max-width:1700px){.qx-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:620px){.qx-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tp-vsbar .c{background:linear-gradient(90deg,#14d1b8,#3ddc84);box-shadow:0 0 14px rgba(20,209,184,.6)}
+@media(min-width:1181px){
+  .tp-cols{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .tp-box{max-width:1500px}
+  .tp-r{grid-template-columns:28px 92px minmax(30px,1fr) auto}
+  .tp-sh{display:none}
+}
+#grpBar .sort-btn{font-size:12px;padding:9px 4px}
+</style>
 </body>
 </html>
