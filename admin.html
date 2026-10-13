@@ -6417,7 +6417,7 @@ var rz;window.addEventListener("resize",function(){clearTimeout(rz);rz=setTimeou
   l.insertBefore(i,l.firstChild);
 })();
 </script>
-  <!-- =====================================================================
+<!-- =====================================================================
      پنل مدیریت: منوی کناری حرفه‌ای (جایگزین بلوک قدیمی sb-style و sb-script)
      راهنما:
      1) بلوک قدیمی <style id="sb-style"> و <script id="sb-script"> رو کامل پاک کن.
@@ -6711,6 +6711,831 @@ side.addEventListener("mouseout",function(e){
   if(!n||!n.closest||!n.closest(".tab,.menu-item"))tip.classList.remove("show");
 });
 side.addEventListener("scroll",function(){tip.classList.remove("show")});
+})();
+</script>
+<!-- =====================================================================
+     پنل مدیریت: دکمه‌ی «نمودارها» کنار خروج
+     پنجره‌ی بازشو: روند صدور + پوشش آخرین روز + روند صدور به تفکیک گروه
+     ===================================================================== -->
+<style id="rp-style">
+.rp-modal{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);background:rgba(2,5,16,.78)}
+.rp-modal.rp-out{opacity:0;transition:opacity .2s ease}
+.rp-box{position:relative;width:100%;max-width:1240px;max-height:94vh;overflow-y:auto;overscroll-behavior:contain;
+  padding:26px 28px 28px;border-radius:26px;text-align:right;
+  background:
+    radial-gradient(600px circle at 100% 0%,rgba(47,123,255,.16),transparent 70%),
+    radial-gradient(500px circle at 0% 100%,rgba(20,209,184,.10),transparent 70%),
+    var(--card-bg);
+  border:1px solid var(--card-border);box-shadow:0 30px 90px rgba(0,0,0,.6),0 0 60px -20px var(--glow)}
+.rp-box::before{content:"";position:absolute;top:0;right:8%;left:8%;height:2px;border-radius:2px;
+  background:linear-gradient(90deg,transparent,var(--accent1),var(--accent2),var(--accent1),transparent);
+  background-size:200% 100%;animation:rpFlow 4s linear infinite}
+@keyframes rpFlow{to{background-position:-200% 0}}
+.rp-modal.show .rp-box{animation:rpPop .45s cubic-bezier(.2,.9,.25,1.05)}
+.rp-modal.rp-out .rp-box{animation:rpOut .2s ease forwards}
+@keyframes rpPop{from{opacity:0;transform:translateY(24px) scale(.95);filter:blur(6px)}}
+@keyframes rpOut{to{opacity:0;transform:translateY(12px) scale(.97)}}
+
+.rp-head{display:flex;align-items:center;gap:14px;margin-bottom:20px;padding-left:92px}
+.rp-ico{width:50px;height:50px;border-radius:15px;display:grid;place-items:center;flex:none;color:#fff;
+  background:linear-gradient(135deg,var(--accent1),var(--accent2));box-shadow:0 10px 26px -6px var(--glow)}
+.rp-ico svg{width:25px;height:25px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.rp-head h2{margin:0 0 4px;font-size:20px;font-weight:800}
+.rp-head p{margin:0;font-size:12.5px;color:var(--text-dim)}
+.rp-live{display:inline-flex;align-items:center;gap:7px;margin-right:auto;font-size:12px;color:#cfe0ff;
+  padding:5px 12px;border-radius:99px;background:rgba(47,123,255,.12);border:1px solid rgba(110,160,255,.28)}
+.rp-live i{width:7px;height:7px;border-radius:50%;background:#3ddc84;animation:nxPulse 2s infinite}
+
+.rp-tools{position:absolute;top:20px;left:20px;display:flex;gap:8px;z-index:3}
+.rp-tools button{width:36px;height:36px;padding:0;border-radius:12px;display:grid;place-items:center;
+  background:var(--row-bg);border:1px solid var(--row-border);color:var(--text-dim);transition:.25s}
+.rp-tools button svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}
+.rp-tools button:hover{filter:none;color:#fff;border-color:var(--accent1);box-shadow:0 0 18px var(--glow)}
+#rpX:hover{border-color:var(--error);background:rgba(255,93,122,.18);box-shadow:none}
+#rpX:hover svg{transform:rotate(90deg)}
+.rp-tools svg{transition:transform .35s}
+#rpRefresh.spin svg{animation:rpSpin .8s linear}
+@keyframes rpSpin{to{transform:rotate(360deg)}}
+
+.rp-body{display:grid;gap:16px}
+.rp-r1{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(0,1fr);gap:16px;align-items:stretch}
+@media(max-width:1000px){.rp-r1{grid-template-columns:minmax(0,1fr)}.rp-head{padding-left:0;margin-top:34px}}
+@media(max-width:560px){.rp-box{padding:20px 14px 18px;border-radius:20px}.rp-head h2{font-size:17px}.rp-live{display:none}}
+
+.rp-body .card{position:relative;display:flex;flex-direction:column;min-width:0;padding:18px 20px;border-radius:20px;
+  background:linear-gradient(180deg,rgba(255,255,255,.035),transparent 40%),rgba(6,13,36,.72);
+  border:1px solid var(--card-border);box-shadow:none;overflow:hidden;
+  transition:border-color .3s,box-shadow .3s}
+.rp-body .card:hover{border-color:rgba(100,150,255,.5);box-shadow:0 0 30px -8px var(--glow)}
+.rp-body .card::before{display:block;left:6%;right:6%;opacity:.55}
+.rp-body .card::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .3s;
+  background:radial-gradient(260px circle at var(--mx,50%) var(--my,50%),rgba(90,160,255,.13),transparent 70%)}
+.rp-body .card:hover::after{opacity:1}
+.rp-modal.show .rp-card{animation:rpUp .65s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--k,0)*110ms + 150ms)}
+@keyframes rpUp{from{opacity:0;transform:translateY(26px) scale(.98)}}
+
+.rp-body .az-h{font-size:15px;margin-bottom:10px}
+#azChart{flex:none;height:300px}
+#gtChart{flex:none;height:300px;min-height:0}
+.rp-body .gt-card{flex:none}
+
+/* کارت پوشش */
+.rp-cov .az-ringw{flex:1;flex-direction:column;flex-wrap:nowrap;justify-content:center;align-items:stretch;gap:20px}
+.rp-cov .az-ring{width:176px;height:176px;margin:0 auto;border-radius:50%;
+  background:radial-gradient(circle,rgba(20,209,184,.14),transparent 70%);animation:rpGlow 3.5s ease-in-out infinite}
+@keyframes rpGlow{50%{box-shadow:0 0 34px -6px rgba(20,209,184,.45)}}
+.rp-cov .az-ring svg{width:100%;height:100%}
+.rp-cov .az-ring b{font-size:34px;font-weight:800;text-shadow:0 0 20px rgba(20,209,184,.6)}
+.rp-cov .az-tk{width:100%;min-width:0;font-size:13px}
+.rp-cov .az-tk div{padding:10px 12px;margin-bottom:8px;border-radius:12px;justify-content:space-between;
+  background:rgba(47,123,255,.07);border:1px solid var(--card-border);transition:.2s}
+.rp-cov .az-tk div:hover{border-color:var(--accent1);transform:translateX(-3px)}
+.rp-cov .az-tk div:last-child{margin-bottom:0}
+.rp-cov .az-tk b{margin:0;font-size:14px}
+
+#rpBtn svg{width:15px;height:15px}
+#rpBtn{position:relative;overflow:hidden}
+#rpBtn::after{content:"";position:absolute;top:0;bottom:0;width:40%;left:-60%;
+  background:linear-gradient(105deg,transparent,rgba(120,180,255,.35),transparent);transform:skewX(-20deg);transition:left .6s}
+#rpBtn:hover::after{left:130%}
+@media(prefers-reduced-motion:reduce){
+  .rp-box::before,.rp-cov .az-ring,.rp-modal.show .rp-box,.rp-modal.show .rp-card{animation:none}
+}
+</style>
+
+<script id="rp-script">
+(function(){
+"use strict";
+var G=function(i){return document.getElementById(i)};
+if(G("rpModal"))return;
+
+var trendCard=G("azChart")&&G("azChart").closest(".card");
+var covCard=G("azRing")&&G("azRing").closest(".card");
+var grpCard=G("gtChart")&&G("gtChart").closest(".card");
+if(!trendCard||!covCard||!grpCard)return;
+
+/* ---------- پنجره ---------- */
+var m=document.createElement("div");
+m.className="modal rp-modal";m.id="rpModal";
+m.setAttribute("role","dialog");m.setAttribute("aria-modal","true");m.setAttribute("aria-labelledby","rpTitle");
+m.innerHTML=
+ '<div class="rp-box">'+
+  '<div class="rp-tools">'+
+   '<button type="button" id="rpRefresh" title="به‌روزرسانی" aria-label="به‌روزرسانی"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4v5h-5"/></svg></button>'+
+   '<button type="button" id="rpX" title="بستن (Esc)" aria-label="بستن"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>'+
+  '</div>'+
+  '<div class="rp-head">'+
+   '<span class="rp-ico"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span>'+
+   '<div><h2 id="rpTitle">نمودارهای صدور</h2><p>روند صدور، پوشش آخرین روز و مقایسه‌ی گروه‌ها</p></div>'+
+   '<span class="rp-live"><i></i>داده‌ی زنده</span>'+
+  '</div>'+
+  '<div class="rp-body"><div class="rp-r1" id="rpR1"></div><div id="rpR2"></div></div>'+
+ '</div>';
+document.body.appendChild(m);
+
+[trendCard,covCard,grpCard].forEach(function(c,i){c.classList.add("rp-card");c.style.setProperty("--k",i)});
+covCard.classList.add("rp-cov");
+G("rpR1").append(trendCard,covCard);
+G("rpR2").appendChild(grpCard);
+
+/* بقایای خالی داشبورد */
+var r1=document.querySelector(".az-r1");
+if(r1&&!r1.children.length)r1.remove();
+
+/* نور دنبال‌کننده‌ی موس روی کارت‌ها */
+m.addEventListener("pointermove",function(e){
+  var c=e.target.closest&&e.target.closest(".rp-card");if(!c)return;
+  var r=c.getBoundingClientRect();
+  c.style.setProperty("--mx",(e.clientX-r.left)+"px");
+  c.style.setProperty("--my",(e.clientY-r.top)+"px");
+});
+
+/* ---------- دکمه کنار خروج ---------- */
+var btn=document.createElement("button");
+btn.type="button";btn.className="pill-btn";btn.id="rpBtn";btn.title="نمودارهای صدور";
+btn.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l5-5 4 4 8-9"/><path d="M15 7h5v5"/></svg><span>نمودارها</span>';
+var lo=G("logoutBtn");
+if(lo&&lo.parentNode)lo.parentNode.insertBefore(btn,lo);
+else document.body.appendChild(btn);
+
+/* ---------- انیمیشن حلقه‌ی پوشش ---------- */
+function replayRing(){
+  var ring=G("azRing"),val=G("azRingV");
+  if(!ring||!val)return;
+  var pct=parseInt(val.textContent,10);
+  if(isNaN(pct))return;
+  ring.style.transition="none";
+  ring.setAttribute("stroke-dashoffset",100);
+  void ring.getBoundingClientRect();
+  setTimeout(function(){
+    ring.style.transition="";
+    ring.setAttribute("stroke-dashoffset",100-pct);
+  },320);
+  var t0=performance.now(),D=1100;
+  (function step(now){
+    var p=Math.min(1,(now-t0-320)/D);
+    if(p<0){requestAnimationFrame(step);return}
+    val.textContent=Math.round(pct*(1-Math.pow(1-p,3)))+"%";
+    if(p<1)requestAnimationFrame(step);else val.textContent=pct+"%";
+  })(performance.now());
+}
+
+/* ---------- باز و بسته ---------- */
+var timer=null;
+function open(){
+  if(typeof closeMenu==="function")try{closeMenu()}catch(e){}
+  clearTimeout(timer);
+  m.classList.remove("rp-out");m.classList.add("show");
+  document.body.style.overflow="hidden";
+  /* نمودارها بعد از نمایان شدن با اندازه‌ی واقعی دوباره رسم می‌شن */
+  setTimeout(function(){window.dispatchEvent(new Event("resize"))},60);
+  setTimeout(function(){window.dispatchEvent(new Event("resize"))},480);
+  replayRing();
+}
+function close(){
+  if(!m.classList.contains("show"))return;
+  m.classList.add("rp-out");
+  document.body.style.overflow="";
+  timer=setTimeout(function(){m.classList.remove("show","rp-out")},210);
+}
+btn.addEventListener("click",open);
+G("rpX").addEventListener("click",close);
+var down=null;
+m.addEventListener("mousedown",function(e){down=e.target});
+m.addEventListener("click",function(e){if(e.target===m&&down===m)close()});
+window.addEventListener("keydown",function(e){
+  if(e.key!=="Escape"||!m.classList.contains("show"))return;
+  if(document.querySelector(".modal.show:not(#rpModal)"))return;
+  e.stopPropagation();close();
+},true);
+
+/* ---------- به‌روزرسانی ---------- */
+G("rpRefresh").addEventListener("click",function(){
+  var b=this;b.classList.remove("spin");void b.offsetWidth;b.classList.add("spin");
+  if(typeof window.loadStats==="function")window.loadStats();
+  setTimeout(function(){window.dispatchEvent(new Event("resize"));replayRing()},1700);
+});
+})();
+</script>
+<!-- =====================================================================
+     پنل مدیریت: دسترسی سریع جدید + دکمه‌ی «برترین‌ها»
+     - کارت «سهم نمایندگان برتر» از داشبورد برداشته می‌شه
+     - دسترسی سریع تبدیل می‌شه به یک ردیف کامل با ۸ کاشی سه‌بعدی و نورانی
+     - دکمه‌ی «برترین‌ها» کنار «نمودارها»: نمایندگان برتر ثالث و غیر خودرویی
+     ===================================================================== -->
+<style id="tq-style">
+@property --qa{syntax:"<angle>";inherits:false;initial-value:0deg}
+
+/* ============ چیدمان ردیف دوم: تقویم | هوا ============ */
+.az-dash .az-r2.qx-two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.az-dash .az-r2.qx-two>.az-mid,.az-dash .az-r2.qx-two>.az-side{grid-column:auto}
+.az-dash .az-r2.qx-two>.az-side{display:flex;flex-direction:column;gap:14px}
+.az-dash .az-r2.qx-two .az-mid>.card{flex:1;display:flex;flex-direction:column}
+.az-dash .az-r2.qx-two .az-mid .az-cal{flex:1;grid-template-rows:auto;grid-auto-rows:minmax(34px,1fr)}
+.az-dash .az-r2.qx-two .az-clock.wx{justify-content:space-between;padding:20px}
+.az-dash .az-r2.qx-two .wx-time{font-size:52px}
+.az-dash .az-r2.qx-two .wx-ico{width:84px;height:84px}
+.az-dash .az-r2.qx-two .wx-temp{font-size:26px}
+.az-dash .az-r2.qx-two .wx-date{font-size:14px;margin-top:10px}
+.az-dash .az-r2.qx-two .wx-city{margin-top:10px}
+.az-dash .az-r2.qx-two .wx-days{margin-top:auto;padding-top:16px;gap:10px}
+.az-dash .az-r2.qx-two .wx-d{padding:14px 4px;font-size:12px}
+.az-dash .az-r2.qx-two .wx-d svg{width:38px;height:38px}
+@media(max-width:900px){.az-dash .az-r2.qx-two{grid-template-columns:minmax(0,1fr)}}
+
+/* ============ دسترسی سریع ============ */
+.qx{position:relative}
+.qx-head{display:flex;align-items:center;gap:12px;margin:2px 4px 14px}
+.qx-hi{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;color:#fff;flex:none;
+  background:linear-gradient(135deg,var(--accent1),var(--accent2));box-shadow:0 8px 22px -6px var(--glow)}
+.qx-hi svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.qx-head h3{margin:0;font-size:16px;font-weight:800}
+.qx-head p{margin:2px 0 0;font-size:12px;color:var(--text-dim)}
+.qx-line{flex:1;height:1px;margin-right:8px;background:linear-gradient(90deg,transparent,rgba(90,140,255,.5),var(--accent2),transparent);background-size:200% 100%;animation:qxFlow 5s linear infinite}
+@keyframes qxFlow{to{background-position:-200% 0}}
+.qx-grid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:12px}
+@media(max-width:1700px){.qx-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:620px){.qx-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+@keyframes qxSpin{to{--qa:360deg}}
+@keyframes qxIn{from{opacity:0;transform:translateY(24px) scale(.94)}}
+@keyframes qxRing{0%{opacity:.7;transform:scale(.9)}100%{opacity:0;transform:scale(1.45)}}
+@keyframes qxRp{to{transform:scale(22);opacity:0}}
+@keyframes qxPulse{70%{box-shadow:0 0 0 9px rgba(255,93,122,0)}100%{box-shadow:0 0 0 0 rgba(255,93,122,0)}}
+
+button.qx-t{
+  position:relative;isolation:isolate;overflow:hidden;
+  display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:14px;
+  min-height:140px;padding:16px;border-radius:22px;text-align:right;white-space:normal;
+  font-weight:normal;font-size:13px;color:var(--text);
+  background:
+    radial-gradient(170px circle at 100% 0%,color-mix(in srgb,var(--c) 24%,transparent),transparent 70%),
+    linear-gradient(180deg,rgba(255,255,255,.045),transparent 50%),
+    rgba(6,13,36,.8);
+  border:1px solid color-mix(in srgb,var(--c) 26%,var(--card-border));
+  box-shadow:0 14px 30px -18px color-mix(in srgb,var(--c) 90%,transparent),inset 0 1px 0 rgba(255,255,255,.07);
+  transform:perspective(800px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translateY(var(--ty,0px));
+  transition:transform .25s ease-out,border-color .3s,box-shadow .3s;
+  animation:qxIn .75s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i)*70ms + 150ms);
+}
+button.qx-t:hover{
+  filter:none;--ty:-5px;
+  border-color:color-mix(in srgb,var(--c) 75%,transparent);
+  box-shadow:0 24px 46px -16px color-mix(in srgb,var(--c) 95%,transparent),0 0 0 1px color-mix(in srgb,var(--c) 30%,transparent),inset 0 1px 0 rgba(255,255,255,.14);
+}
+button.qx-t:active{transform:perspective(800px) scale(.97)}
+button.qx-t:focus-visible{outline:2px solid var(--c);outline-offset:3px}
+/* حلقه‌ی نئونی چرخان */
+button.qx-t::before{
+  content:"";position:absolute;inset:-1px;border-radius:inherit;padding:1.6px;pointer-events:none;z-index:2;
+  background:conic-gradient(from var(--qa),transparent 0deg,var(--c) 70deg,var(--c2) 140deg,transparent 220deg,transparent 360deg);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;
+  opacity:0;transition:opacity .35s;animation:qxSpin 3.6s linear infinite paused;
+}
+button.qx-t:hover::before{opacity:1;animation-play-state:running}
+/* نورافکن دنبال‌کننده‌ی موس */
+button.qx-t::after{
+  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:0;transition:opacity .3s;
+  background:radial-gradient(190px circle at var(--mx,50%) var(--my,50%),color-mix(in srgb,var(--c) 34%,transparent),transparent 70%);
+}
+button.qx-t:hover::after{opacity:1}
+
+.qx-ic{position:relative;width:54px;height:54px;border-radius:17px;display:grid;place-items:center;color:#fff;flex:none;
+  background:linear-gradient(135deg,var(--c),var(--c2));
+  box-shadow:0 10px 24px -6px color-mix(in srgb,var(--c) 85%,transparent),inset 0 1px 0 rgba(255,255,255,.4);
+  transition:transform .5s cubic-bezier(.34,1.56,.64,1)}
+.qx-ic svg{width:27px;height:27px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.qx-ic::after{content:"";position:absolute;inset:-5px;border-radius:21px;border:1px solid var(--c);opacity:0;pointer-events:none}
+button.qx-t:hover .qx-ic{transform:translateY(-3px) rotate(-8deg) scale(1.1)}
+button.qx-t:hover .qx-ic::after{animation:qxRing 1.4s ease-out infinite}
+.qx-tx{position:relative}
+.qx-tx b{display:block;font-size:14.5px;font-weight:800;line-height:1.5}
+.qx-tx small{display:block;margin-top:2px;font-size:11.5px;line-height:1.6;color:var(--text-dim)}
+.qx-wm{position:absolute;left:-14px;bottom:-18px;width:100px;height:100px;fill:none;stroke:var(--c);stroke-width:1.1;stroke-linecap:round;stroke-linejoin:round;
+  opacity:.08;transform:rotate(-12deg);z-index:-1;pointer-events:none;transition:opacity .5s,transform .6s cubic-bezier(.2,.8,.2,1)}
+button.qx-t:hover .qx-wm{opacity:.18;transform:rotate(0) scale(1.15)}
+.qx-ar{position:absolute;left:14px;bottom:16px;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;
+  background:color-mix(in srgb,var(--c) 22%,transparent);border:1px solid color-mix(in srgb,var(--c) 45%,transparent);
+  opacity:0;transform:translateX(10px);transition:opacity .3s,transform .4s cubic-bezier(.2,.8,.2,1)}
+.qx-ar svg{width:15px;height:15px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+button.qx-t:hover .qx-ar{opacity:1;transform:none}
+.qx-bd{position:absolute;top:14px;left:14px;min-width:24px;height:24px;padding:0 7px;border-radius:99px;display:none;place-items:center;
+  font-size:12px;font-weight:800;color:#fff;background:var(--error);box-shadow:0 0 0 0 rgba(255,93,122,.6);animation:qxPulse 2s infinite}
+.qx-bd.on{display:grid}
+.qx-rp{position:absolute;border-radius:50%;pointer-events:none;width:12px;height:12px;margin:-6px 0 0 -6px;z-index:0;
+  background:color-mix(in srgb,var(--c) 70%,#fff);opacity:.5;animation:qxRp .65s ease-out forwards}
+
+/* ============ دکمه‌ی برترین‌ها ============ */
+#tpBtn{position:relative;overflow:hidden}
+#tpBtn svg{stroke:#f5c542;filter:drop-shadow(0 0 6px rgba(245,197,66,.6))}
+#tpBtn::after{content:"";position:absolute;top:0;bottom:0;width:40%;left:-60%;
+  background:linear-gradient(105deg,transparent,rgba(245,197,66,.35),transparent);transform:skewX(-20deg);transition:left .6s}
+#tpBtn:hover::after{left:130%}
+
+/* ============ پنجره‌ی نمایندگان برتر ============ */
+.tp-modal{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);background:rgba(2,5,16,.8)}
+.tp-modal.tp-out{opacity:0;transition:opacity .2s ease}
+.tp-box{position:relative;width:100%;max-width:1180px;max-height:94vh;overflow-y:auto;overscroll-behavior:contain;
+  padding:26px 28px 28px;border-radius:26px;text-align:right;
+  background:radial-gradient(620px circle at 100% 0%,rgba(56,182,255,.14),transparent 70%),
+             radial-gradient(560px circle at 0% 100%,rgba(255,176,32,.11),transparent 70%),var(--card-bg);
+  border:1px solid var(--card-border);box-shadow:0 30px 90px rgba(0,0,0,.65),0 0 60px -20px var(--glow)}
+.tp-box::before{content:"";position:absolute;top:0;right:8%;left:8%;height:2px;border-radius:2px;
+  background:linear-gradient(90deg,transparent,#38b6ff,#f5c542,#ffb020,transparent);background-size:200% 100%;animation:tpFlow 4s linear infinite}
+@keyframes tpFlow{to{background-position:-200% 0}}
+.tp-modal.show .tp-box{animation:tpPop .45s cubic-bezier(.2,.9,.25,1.05)}
+.tp-modal.tp-out .tp-box{animation:tpOut .2s ease forwards}
+@keyframes tpPop{from{opacity:0;transform:translateY(26px) scale(.95);filter:blur(6px)}}
+@keyframes tpOut{to{opacity:0;transform:translateY(12px) scale(.97)}}
+
+.tp-tools{position:absolute;top:20px;left:20px;display:flex;gap:8px;z-index:3}
+.tp-tools button{width:36px;height:36px;padding:0;border-radius:12px;display:grid;place-items:center;
+  background:var(--row-bg);border:1px solid var(--row-border);color:var(--text-dim);font-weight:normal;transition:.25s}
+.tp-tools button svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round;transition:transform .35s}
+.tp-tools button:hover{filter:none;color:#fff;border-color:var(--accent1);box-shadow:0 0 18px var(--glow)}
+#tpX:hover{border-color:var(--error);background:rgba(255,93,122,.18);box-shadow:none}
+#tpX:hover svg{transform:rotate(90deg)}
+#tpRefresh.spin svg{animation:tpSpin .8s linear}
+@keyframes tpSpin{to{transform:rotate(360deg)}}
+
+.tp-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px;padding-left:92px}
+.tp-ico{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;flex:none;color:#3b2a05;
+  background:linear-gradient(135deg,#ffe08a,#e0a21f);box-shadow:0 10px 28px -6px rgba(245,197,66,.6)}
+.tp-ico svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.tp-head h2{margin:0 0 4px;font-size:20px;font-weight:800}
+.tp-head p{margin:0;font-size:12.5px;color:var(--text-dim)}
+
+.tp-seg{position:relative;display:grid;grid-template-columns:repeat(4,1fr);margin-right:auto;min-width:300px;padding:4px;border-radius:14px;
+  background:var(--row-bg);border:1px solid var(--row-border)}
+.tp-seg .tp-ind{position:absolute;top:4px;bottom:4px;right:4px;width:calc((100% - 8px)/4);border-radius:10px;
+  background:linear-gradient(135deg,var(--accent1),var(--accent2));box-shadow:0 8px 20px -6px var(--glow);
+  transition:transform .4s cubic-bezier(.4,0,.2,1)}
+.tp-seg button{position:relative;z-index:1;padding:8px 10px;border-radius:10px;background:transparent;box-shadow:none;
+  color:var(--text-dim);font-weight:600;font-size:12px}
+.tp-seg button:hover{filter:none;color:var(--text)}
+.tp-seg button.on{color:#fff}
+
+/* نوار مقایسه‌ی دو گروه */
+.tp-vs{margin-bottom:16px;padding:14px 18px;border-radius:18px;background:rgba(6,13,36,.6);border:1px solid var(--card-border)}
+.tp-vsrow{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px;font-size:13px}
+.tp-vl{display:inline-flex;align-items:center;gap:8px}
+.tp-vl i{width:10px;height:10px;border-radius:50%;background:var(--c);box-shadow:0 0 12px var(--c)}
+.tp-vl b{direction:ltr;font-size:15px;color:var(--c)}
+.tp-vsum{font-size:12px;color:var(--text-dim)}
+.tp-vsum b{color:var(--text);direction:ltr;display:inline-block}
+.tp-vsbar{display:flex;gap:4px;height:12px;direction:rtl}
+.tp-vsbar span{display:block;height:100%;width:0;border-radius:99px;transition:width 1.2s cubic-bezier(.2,.8,.2,1) .25s}
+.tp-vsbar .a{background:linear-gradient(90deg,#38b6ff,#4d6bff);box-shadow:0 0 14px rgba(56,182,255,.6)}
+.tp-vsbar .b{background:linear-gradient(90deg,#ffb020,#ff8a3d);box-shadow:0 0 14px rgba(255,176,32,.6)}
+
+.tp-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+@media(max-width:900px){.tp-cols{grid-template-columns:minmax(0,1fr)}.tp-head{padding-left:0;margin-top:36px}.tp-seg{margin-right:0;width:100%;min-width:0}}
+@media(max-width:560px){.tp-box{padding:20px 14px 18px;border-radius:20px}.tp-head h2{font-size:17px}}
+
+.tp-col{position:relative;overflow:hidden;min-width:0;padding:18px 18px 16px;border-radius:22px;
+  background:radial-gradient(260px circle at 100% 0%,color-mix(in srgb,var(--c) 18%,transparent),transparent 70%),
+             linear-gradient(180deg,rgba(255,255,255,.035),transparent 40%),rgba(6,13,36,.75);
+  border:1px solid color-mix(in srgb,var(--c) 28%,var(--card-border));transition:border-color .3s,box-shadow .3s}
+.tp-col:hover{border-color:color-mix(in srgb,var(--c) 60%,transparent);box-shadow:0 0 36px -10px var(--c)}
+.tp-col::before{content:"";position:absolute;top:0;left:8%;right:8%;height:2px;background:linear-gradient(90deg,transparent,var(--c),var(--c2),transparent);opacity:.8}
+.tp-col::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .3s;
+  background:radial-gradient(280px circle at var(--mx,50%) var(--my,50%),color-mix(in srgb,var(--c) 14%,transparent),transparent 70%)}
+.tp-col:hover::after{opacity:1}
+.tp-modal.show .tp-col{animation:tpUp .65s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--k,0)*120ms + 120ms)}
+@keyframes tpUp{from{opacity:0;transform:translateY(26px) scale(.98)}}
+
+.tp-ch{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.tp-ci{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;color:#fff;flex:none;
+  background:linear-gradient(135deg,var(--c),var(--c2));box-shadow:0 10px 24px -8px var(--c)}
+.tp-ci svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.tp-ch h3{margin:0 0 3px;font-size:16px;font-weight:800}
+.tp-ch p{margin:0;font-size:11.5px;color:var(--text-dim)}
+.tp-cn{margin-right:auto;font-size:12px;padding:5px 12px;border-radius:99px;white-space:nowrap;
+  background:color-mix(in srgb,var(--c) 14%,transparent);border:1px solid color-mix(in srgb,var(--c) 35%,transparent);color:var(--text)}
+.tp-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.tp-chips span{font-size:12px;color:var(--text-dim);padding:5px 12px;border-radius:99px;background:rgba(47,123,255,.07);border:1px solid var(--card-border)}
+.tp-chips b{color:var(--text);direction:ltr;display:inline-block;font-variant-numeric:tabular-nums}
+
+/* سکو */
+.tp-pod{direction:ltr;display:flex;align-items:flex-end;justify-content:center;gap:10px;margin:22px 0 14px;min-height:220px}
+.tp-s{flex:1;max-width:150px;min-width:0;display:flex;flex-direction:column;align-items:center;cursor:pointer}
+.tp-s.p1{--g:#f5c542;--m:linear-gradient(135deg,#ffe08a,#e0a21f)}
+.tp-s.p2{--g:#c5cde6;--m:linear-gradient(135deg,#eef1fb,#8f99bb)}
+.tp-s.p3{--g:#e6a071;--m:linear-gradient(135deg,#f3be98,#b0683a)}
+.tp-av{position:relative;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:22px;color:#1b1405;
+  background:var(--m);box-shadow:0 0 0 3px rgba(255,255,255,.08),0 0 28px -2px var(--g);
+  transition:transform .4s cubic-bezier(.34,1.56,.64,1);
+  animation:tpAv .7s cubic-bezier(.34,1.56,.64,1) backwards;animation-delay:calc(var(--d,0ms) + 350ms)}
+.tp-s.p1 .tp-av{width:72px;height:72px;font-size:28px}
+.tp-s:hover .tp-av{transform:translateY(-5px) scale(1.07)}
+@keyframes tpAv{from{opacity:0;transform:translateY(-30px) scale(.4)}}
+.tp-crown{position:absolute;top:-27px;left:50%;margin-left:-15px;width:30px;height:30px;color:#f5c542;
+  filter:drop-shadow(0 0 8px #f5c542);animation:tpFloat 2.6s ease-in-out infinite}
+.tp-crown svg{width:100%;height:100%;fill:currentColor;stroke:#b9801a;stroke-width:1;stroke-linejoin:round}
+@keyframes tpFloat{50%{transform:translateY(-4px) rotate(-4deg)}}
+.tp-sp{position:absolute;width:6px;height:6px;border-radius:50%;background:#fff;box-shadow:0 0 10px 2px #f5c542;opacity:0;animation:tpTw 2.4s ease-in-out infinite}
+.tp-sp.s1{top:-2px;right:-12px}.tp-sp.s2{bottom:6px;left:-14px;animation-delay:.8s}.tp-sp.s3{top:24px;right:-18px;animation-delay:1.5s}
+@keyframes tpTw{0%,100%{opacity:0;transform:scale(.3)}50%{opacity:1;transform:scale(1)}}
+.tp-n{max-width:100%;direction:ltr;unicode-bidi:plaintext;font-size:12.5px;font-weight:700;margin:9px 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  animation:tpFade .5s ease backwards;animation-delay:calc(var(--d,0ms) + 450ms)}
+.tp-v{font-size:14px;font-weight:800;direction:ltr;color:var(--g);font-variant-numeric:tabular-nums;text-shadow:0 0 14px color-mix(in srgb,var(--g) 60%,transparent);
+  animation:tpFade .5s ease backwards;animation-delay:calc(var(--d,0ms) + 500ms)}
+@keyframes tpFade{from{opacity:0;transform:translateY(8px)}}
+.tp-bl{position:relative;overflow:hidden;width:100%;margin-top:8px;padding-top:8px;border-radius:14px 14px 4px 4px;display:grid;place-items:start center;
+  font-weight:800;font-size:20px;color:var(--g);
+  background:linear-gradient(180deg,color-mix(in srgb,var(--g) 34%,transparent),color-mix(in srgb,var(--g) 4%,transparent));
+  border:1px solid color-mix(in srgb,var(--g) 42%,transparent);border-bottom:0;
+  transform-origin:bottom;animation:tpRise .9s cubic-bezier(.2,.9,.25,1.05) backwards;animation-delay:var(--d,0ms)}
+.tp-s.p1 .tp-bl{height:100px}.tp-s.p2 .tp-bl{height:74px}.tp-s.p3 .tp-bl{height:56px}
+@keyframes tpRise{from{transform:scaleY(0);opacity:0}}
+.tp-s.p1 .tp-bl::after{content:"";position:absolute;top:0;bottom:0;width:40%;left:-60%;
+  background:linear-gradient(105deg,transparent,rgba(255,255,255,.28),transparent);transform:skewX(-20deg);animation:tpShine 3.6s ease-in-out 1.6s infinite}
+@keyframes tpShine{0%{left:-60%}55%,100%{left:140%}}
+.tp-s.tp-e{opacity:.35;cursor:default}
+.tp-s.tp-e .tp-av{background:rgba(70,120,255,.12);color:var(--text-dim);box-shadow:none;border:1px dashed var(--card-border)}
+
+/* لیست */
+.tp-list{display:grid;gap:7px}
+.tp-list.exp{max-height:380px;overflow-y:auto;padding-left:4px}
+.tp-r{display:grid;grid-template-columns:30px 118px minmax(40px,1fr) auto 46px;align-items:center;gap:10px;padding:8px 12px;border-radius:13px;cursor:pointer;
+  background:rgba(47,123,255,.06);border:1px solid var(--card-border);
+  transition:border-color .25s,transform .25s,background .25s,box-shadow .25s;
+  animation:tpSlide .5s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i)*55ms + 450ms)}
+@keyframes tpSlide{from{opacity:0;transform:translateX(22px)}}
+.tp-r:hover{border-color:var(--c);transform:translateX(-4px);background:color-mix(in srgb,var(--c) 10%,transparent);box-shadow:0 0 22px -8px var(--c)}
+.tp-rk{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;font-size:12px;font-weight:800;background:color-mix(in srgb,var(--c) 22%,transparent)}
+.tp-un{direction:ltr;unicode-bidi:plaintext;text-align:right;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tp-tr{height:7px;border-radius:9px;background:rgba(70,120,255,.14);overflow:hidden;direction:ltr}
+.tp-tr i{display:block;height:100%;width:0;border-radius:9px;background:linear-gradient(90deg,var(--c),var(--c2));
+  box-shadow:0 0 10px color-mix(in srgb,var(--c) 70%,transparent);
+  transition:width 1.1s cubic-bezier(.2,.8,.2,1);transition-delay:calc(var(--i,0)*55ms + 450ms)}
+.tp-rv{font-weight:800;font-size:13px;direction:ltr;font-variant-numeric:tabular-nums}
+.tp-sh{font-style:normal;font-size:11px;color:var(--text-dim);direction:ltr;text-align:left}
+@media(max-width:560px){.tp-r{grid-template-columns:28px 90px minmax(30px,1fr) auto}.tp-sh{display:none}}
+button.tp-more{margin-top:10px;width:100%;padding:9px;border-radius:12px;background:var(--row-bg);border:1px solid var(--row-border);
+  color:var(--text);font-weight:600;font-size:12px}
+button.tp-more:hover{filter:none;border-color:var(--c);box-shadow:0 0 18px -6px var(--c)}
+.tp-empty{padding:46px 12px;text-align:center;font-size:13px;color:var(--text-dim)}
+
+/* اسکلت بارگذاری */
+.tp-skl{border-radius:14px;background:linear-gradient(90deg,rgba(70,120,255,.08),rgba(120,170,255,.2),rgba(70,120,255,.08));background-size:200% 100%;animation:tpSk 1.3s linear infinite}
+@keyframes tpSk{to{background-position:-200% 0}}
+
+@media(prefers-reduced-motion:reduce){
+  .tp-box::before,.tp-crown,.tp-sp,.tp-s.p1 .tp-bl::after,.tp-skl,.qx-line,button.qx-t::before{animation:none!important}
+  .tp-modal.show .tp-box,.tp-modal.show .tp-col,.tp-av,.tp-bl,.tp-n,.tp-v,.tp-r,button.qx-t{animation:none!important}
+}
+</style>
+
+<script id="tq-script">
+(function(){
+"use strict";
+var G=function(i){return document.getElementById(i)};
+if(G("tpModal")||G("qxDock"))return;
+
+var F=function(n){return typeof fmt==="function"?fmt(n):String(Math.round(Number(n)*100)/100)};
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function pad(n){return("0"+n).slice(-2)}
+function norm(d){
+  d=typeof normalizeDigits==="function"?normalizeDigits(String(d)):String(d);
+  var m=/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/.exec(d.trim());
+  return m?m[1]+"/"+pad(m[2])+"/"+pad(m[3]):null;
+}
+var REDUCE=window.matchMedia("(prefers-reduced-motion:reduce)").matches;
+var FINE=window.matchMedia("(hover:hover) and (pointer:fine)").matches&&!REDUCE;
+
+var IC={
+ chart:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+ cal:'<rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/>',
+ doc:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>',
+ alert:'<path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01"/>',
+ bell:'<path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15 9a4 4 0 0 1 0 6"/><path d="M18 6a8 8 0 0 1 0 12"/>',
+ users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.2a6.5 6.5 0 0 1 3.5 5.8"/>',
+ block:'<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>',
+ trophy:'<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/>',
+ bolt:'<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+ arrow:'<path d="M15 6l-6 6 6 6"/>',
+ refresh:'<path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4v5h-5"/>',
+ x:'<path d="M6 6l12 12M18 6L6 18"/>',
+ crown:'<path d="M3 8l4 4 5-7 5 7 4-4-2 11H5z"/>'
+};
+function sv(p){return '<svg viewBox="0 0 24 24" aria-hidden="true">'+p+'</svg>'}
+
+/* =====================================================================
+   بخش ۱) تمیز کردن داشبورد: برداشتن کارت برترین‌ها و دسترسی سریع قدیمی
+   ===================================================================== */
+var dash=G("azDash"),r2=dash&&dash.querySelector(".az-r2");
+if(dash&&r2){
+  /* کارت قدیمی برترین‌ها پنهان نگه داشته می‌شه تا اسکریپت داشبورد خطا نده */
+  var bars=G("azBars"),topCard=bars&&bars.closest(".card");
+  if(topCard&&topCard.parentNode===r2){
+    var keep=document.createElement("div");keep.hidden=true;keep.id="qxKeep";
+    keep.appendChild(topCard);dash.appendChild(keep);
+  }
+  var qa=dash.querySelector(".az-qa"),qaCard=qa&&qa.closest(".card");
+  if(qaCard)qaCard.remove();
+  r2.classList.add("qx-two");
+}
+
+/* =====================================================================
+   بخش ۲) دسترسی سریع
+   ===================================================================== */
+var TL=[
+ {k:"daily",t:"ثبت روزانه",s:"ثبت دسته‌ای و مدیریت کاربران",c:"#2f7bff",c2:"#38b6ff",i:IC.chart,f:function(){if(window.showMainTab)window.showMainTab("stats")}},
+ {k:"period",t:"ثبت مجموع بازه",s:"سابقه‌ی دوره‌های قبل",c:"#3ddc84",c2:"#14d1b8",i:IC.cal,f:function(){if(window.showMainTab)window.showMainTab("period")}},
+ {k:"ord",t:"شماره سفارش‌ها",s:"ثبت و جستجوی سفارش",c:"#9b5cff",c2:"#c27bff",i:IC.doc,id:"ordOpen"},
+ {k:"err",t:"مغایرت‌ها",s:"مغایرت‌های باز",c:"#ff5d7a",c2:"#ff8a3d",i:IC.alert,id:"errOpen"},
+ {k:"ann",t:"اعلان به نماینده‌ها",s:"پیام همگانی در پنل",c:"#ff6bd6",c2:"#ff9be8",i:IC.bell,id:"annOpen"},
+ {k:"third",t:"گروه ثالث",s:"نمایندگان، سرگروه‌ها، تاریخچه",c:"#38b6ff",c2:"#4d6bff",i:IC.users,id:"thirdOpen"},
+ {k:"na",t:"گروه غیر خودرویی",s:"نمایندگان، سرگروه‌ها، تاریخچه",c:"#ff8a3d",c2:"#ffb020",i:IC.block,id:"naOpen"},
+ {k:"top",t:"نمایندگان برتر",s:"رتبه‌بندی هر دو گروه",c:"#f5c542",c2:"#ffd978",i:IC.trophy,f:function(){openTop()}}
+];
+
+if(dash&&r2){
+  var qx=document.createElement("section");
+  qx.className="qx";qx.id="qxDock";
+  qx.innerHTML=
+   '<div class="qx-head"><span class="qx-hi">'+sv(IC.bolt)+'</span><div><h3>دسترسی سریع</h3><p>میانبر همه‌ی بخش‌های پنل، فقط یک کلیک</p></div><span class="qx-line"></span></div>'+
+   '<div class="qx-grid" id="qxGrid"></div>';
+  dash.insertBefore(qx,r2.nextSibling);
+  var grid=G("qxGrid");
+
+  TL.forEach(function(t,i){
+    var b=document.createElement("button");
+    b.type="button";b.className="qx-t";b.dataset.k=t.k;b.title=t.t;
+    b.style.cssText="--c:"+t.c+";--c2:"+t.c2+";--i:"+i;
+    b.innerHTML=
+      '<span class="qx-ic">'+sv(t.i)+'</span>'+
+      '<span class="qx-tx"><b>'+t.t+'</b><small>'+t.s+'</small></span>'+
+      '<span class="qx-ar">'+sv(IC.arrow)+'</span>'+
+      '<span class="qx-bd"></span>'+
+      '<svg class="qx-wm" viewBox="0 0 24 24" aria-hidden="true">'+t.i+'</svg>';
+
+    b.addEventListener("click",function(e){
+      var r=b.getBoundingClientRect(),rp=document.createElement("span");
+      rp.className="qx-rp";rp.style.left=(e.clientX-r.left||r.width/2)+"px";rp.style.top=(e.clientY-r.top||r.height/2)+"px";
+      b.appendChild(rp);setTimeout(function(){rp.remove()},700);
+      if(t.f)t.f();else if(t.id){var el=G(t.id);if(el)el.click()}
+    });
+    b.addEventListener("pointermove",function(e){
+      var r=b.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;
+      b.style.setProperty("--mx",x+"px");b.style.setProperty("--my",y+"px");
+      if(FINE){
+        b.style.setProperty("--ry",((x/r.width-.5)*10).toFixed(2)+"deg");
+        b.style.setProperty("--rx",((.5-y/r.height)*10).toFixed(2)+"deg");
+      }
+    });
+    b.addEventListener("pointerleave",function(){b.style.setProperty("--rx","0deg");b.style.setProperty("--ry","0deg")});
+    grid.appendChild(b);
+  });
+
+  /* بج زنده‌ی مغایرت‌ها */
+  var eb=G("errBadge");
+  function syncErr(){
+    var n=parseInt((eb&&eb.textContent)||"0",10)||0;
+    var t=grid.querySelector('[data-k="err"]');if(!t)return;
+    var bd=t.querySelector(".qx-bd"),sm=t.querySelector("small");
+    bd.textContent=n||"";bd.classList.toggle("on",n>0);
+    sm.textContent=n?(n+" مورد منتظر رسیدگی"):"همه‌ی موارد رفع شده";
+  }
+  if(eb){new MutationObserver(syncErr).observe(eb,{childList:true,characterData:true,subtree:true})}
+  syncErr();
+}
+
+/* =====================================================================
+   بخش ۳) پنجره‌ی نمایندگان برتر
+   ===================================================================== */
+var GROUPS=[
+ {key:"third",title:"گروه ثالث",sub:"نمایندگان بدون گروه ویژه",c:"#38b6ff",c2:"#4d6bff",icon:IC.users},
+ {key:"nonauto",title:"گروه غیر خودرویی",sub:"نمایندگان گروه غیر خودرویی",c:"#ffb020",c2:"#ff8a3d",icon:IC.block}
+];
+var ORDER=[7,14,30,0],LAB={7:"۷ روز",14:"۱۴ روز",30:"۳۰ روز",0:"کل دوره"};
+var range=0;try{var sr=parseInt(localStorage.getItem("admin_top_range"),10);if(ORDER.indexOf(sr)>-1)range=sr}catch(e){}
+var DATA=null,CUR=null,EXP={},busy=false,tmr=null;
+
+var m=document.createElement("div");
+m.className="modal tp-modal";m.id="tpModal";
+m.setAttribute("role","dialog");m.setAttribute("aria-modal","true");m.setAttribute("aria-labelledby","tpTitle");
+m.innerHTML=
+ '<div class="tp-box">'+
+  '<div class="tp-tools">'+
+   '<button type="button" id="tpRefresh" title="به‌روزرسانی" aria-label="به‌روزرسانی">'+sv(IC.refresh)+'</button>'+
+   '<button type="button" id="tpX" title="بستن (Esc)" aria-label="بستن">'+sv(IC.x)+'</button>'+
+  '</div>'+
+  '<div class="tp-head">'+
+   '<span class="tp-ico">'+sv(IC.trophy)+'</span>'+
+   '<div><h2 id="tpTitle">نمایندگان برتر</h2><p>رتبه‌بندی بر اساس مجموع صدور، جدا برای هر گروه</p></div>'+
+   '<div class="tp-seg" id="tpSeg"><span class="tp-ind"></span>'+
+    ORDER.map(function(n){return '<button type="button" data-n="'+n+'">'+LAB[n]+'</button>'}).join("")+
+   '</div>'+
+  '</div>'+
+  '<div class="tp-vs" id="tpVs"></div>'+
+  '<div class="tp-cols" id="tpCols"></div>'+
+ '</div>';
+document.body.appendChild(m);
+
+/* دکمه‌ی هدر کنار «نمودارها» */
+var btn=document.createElement("button");
+btn.type="button";btn.className="pill-btn";btn.id="tpBtn";btn.title="نمایندگان برتر";
+btn.innerHTML=sv(IC.trophy)+'<span>برترین‌ها</span>';
+var rpb=G("rpBtn"),lo=G("logoutBtn");
+if(rpb&&rpb.parentNode)rpb.parentNode.insertBefore(btn,rpb);
+else if(lo&&lo.parentNode)lo.parentNode.insertBefore(btn,lo);
+else document.body.appendChild(btn);
+
+/* ---------- داده ---------- */
+async function fetchData(){
+  var gm=new Map(),from=0,r;
+  while(true){
+    r=await supabaseClient.from("agent_groups").select("username,grp").range(from,from+999);
+    if(r.error)break;
+    r.data.forEach(function(x){gm.set(String(x.username).toLowerCase(),x.grp)});
+    if(r.data.length<1000)break;from+=1000;
+  }
+  var rows=[],ds={};from=0;
+  while(true){
+    r=await supabaseClient.from("orders").select("username,order_date,order_count")
+      .order("order_date",{ascending:true}).order("username",{ascending:true}).range(from,from+999);
+    if(r.error)throw r.error;
+    r.data.forEach(function(o){
+      var d=norm(o.order_date);if(!d)return;
+      rows.push({u:o.username,d:d,v:Number(o.order_count)||0});ds[d]=1;
+    });
+    if(r.data.length<1000)break;from+=1000;
+  }
+  return {gm:gm,rows:rows,dates:Object.keys(ds).sort(),at:Date.now()};
+}
+function pack(map){
+  var arr=[],tot=0;
+  map.forEach(function(v,u){v=Math.round(v*100)/100;if(v>0)arr.push({u:u,v:v})});
+  arr.sort(function(a,b){return b.v-a.v||a.u.localeCompare(b.u)});
+  arr.forEach(function(x){tot+=x.v});
+  return {list:arr,total:Math.round(tot*100)/100,n:arr.length};
+}
+function compute(n){
+  var set=n>0?new Set(DATA.dates.slice(-n)):null,T=new Map(),N=new Map();
+  DATA.rows.forEach(function(r){
+    if(set&&!set.has(r.d))return;
+    var g=DATA.gm.get(String(r.u).toLowerCase()),tg=g==="nonauto"?N:(!g?T:null);
+    if(!tg)return;
+    tg.set(r.u,(tg.get(r.u)||0)+r.v);
+  });
+  return {third:pack(T),nonauto:pack(N)};
+}
+
+/* ---------- رندر ---------- */
+function countUp(el,to,delay){
+  if(REDUCE){el.textContent=F(to);return}
+  setTimeout(function(){
+    var t0=performance.now(),D=1100;
+    (function step(now){
+      var p=Math.min(1,(now-t0)/D),e=1-Math.pow(1-p,3);
+      el.textContent=p<1?String(Math.round(to*e*10)/10):F(to);
+      if(p<1)requestAnimationFrame(step);
+    })(t0);
+  },delay);
+}
+function slot(x,i){
+  var p=i+1,dl=[350,150,250][i];
+  if(!x)return '<div class="tp-s tp-e p'+p+'" style="--d:'+dl+'ms"><div class="tp-av">?</div><b class="tp-n">—</b><span class="tp-v">&nbsp;</span><div class="tp-bl"><span>'+p+'</span></div></div>';
+  return '<div class="tp-s p'+p+'" data-u="'+esc(x.u)+'" style="--d:'+dl+'ms">'+
+   '<div class="tp-av">'+(p===1?'<span class="tp-crown">'+sv(IC.crown)+'</span><i class="tp-sp s1"></i><i class="tp-sp s2"></i><i class="tp-sp s3"></i>':'')+esc(String(x.u).charAt(0).toUpperCase())+'</div>'+
+   '<b class="tp-n" title="'+esc(x.u)+'">'+esc(x.u)+'</b>'+
+   '<span class="tp-v" data-to="'+x.v+'" data-d="'+(dl+700)+'">0</span>'+
+   '<div class="tp-bl"><span>'+p+'</span></div></div>';
+}
+function colShell(g,k){
+  var d=CUR[g.key],l=d.list,avg=d.n?d.total/d.n:0,body;
+  if(!l.length)body='<div class="tp-empty">در این بازه آماری برای این گروه ثبت نشده</div>';
+  else body='<div class="tp-pod">'+slot(l[1],1)+slot(l[0],0)+slot(l[2],2)+'</div><div class="tp-lw" data-g="'+g.key+'"></div>';
+  return '<section class="tp-col" style="--c:'+g.c+';--c2:'+g.c2+';--k:'+k+'">'+
+   '<div class="tp-ch"><span class="tp-ci">'+sv(g.icon)+'</span><div><h3>'+g.title+'</h3><p>'+g.sub+'</p></div><span class="tp-cn">'+d.n+' نماینده</span></div>'+
+   '<div class="tp-chips"><span>مجموع صدور <b>'+F(d.total)+'</b></span><span>میانگین هر نماینده <b>'+F(avg)+'</b></span></div>'+body+'</section>';
+}
+function renderList(key){
+  var box=document.querySelector('.tp-lw[data-g="'+key+'"]');if(!box)return;
+  var d=CUR[key],l=d.list;
+  if(l.length<=3){box.innerHTML="";return}
+  var exp=!!EXP[key],to=exp?l.length:Math.min(l.length,10),max=l[0].v,h="",i,x;
+  for(i=3;i<to;i++){
+    x=l[i];
+    h+='<div class="tp-r" data-u="'+esc(x.u)+'" style="--i:'+Math.min(i-3,12)+'">'+
+     '<span class="tp-rk">'+(i+1)+'</span><span class="tp-un" title="'+esc(x.u)+'">'+esc(x.u)+'</span>'+
+     '<div class="tp-tr"><i data-w="'+(x.v/max*100).toFixed(1)+'"></i></div>'+
+     '<span class="tp-rv">'+F(x.v)+'</span>'+
+     '<em class="tp-sh">'+(d.total?Math.round(x.v/d.total*1000)/10:0)+'%</em></div>';
+  }
+  box.innerHTML='<div class="tp-list'+(exp?' exp':'')+'">'+h+'</div>'+
+    (l.length>10?'<button type="button" class="tp-more" data-g="'+key+'">'+(exp?'جمع کردن لیست':'نمایش همه ('+l.length+' نماینده)')+'</button>':'');
+  requestAnimationFrame(function(){requestAnimationFrame(function(){
+    box.querySelectorAll(".tp-tr i").forEach(function(b){b.style.width=b.dataset.w+"%"});
+  })});
+}
+function renderVs(){
+  var a=CUR.third.total,b=CUR.nonauto.total,s=a+b;
+  var pa=s?Math.round(a/s*1000)/10:50,pb=s?Math.round((100-pa)*10)/10:50;
+  G("tpVs").innerHTML=
+   '<div class="tp-vsrow">'+
+    '<span class="tp-vl" style="--c:#38b6ff"><i></i>گروه ثالث <b>'+pa+'%</b></span>'+
+    '<span class="tp-vsum">مجموع صدور هر دو گروه: <b>'+F(s)+'</b></span>'+
+    '<span class="tp-vl" style="--c:#ffb020"><i></i>گروه غیر خودرویی <b>'+pb+'%</b></span>'+
+   '</div>'+
+   '<div class="tp-vsbar"><span class="a" data-w="'+pa+'"></span><span class="b" data-w="'+pb+'"></span></div>';
+  requestAnimationFrame(function(){requestAnimationFrame(function(){
+    G("tpVs").querySelectorAll(".tp-vsbar span").forEach(function(e){e.style.width="calc("+e.dataset.w+"% - 2px)"});
+  })});
+}
+function render(){
+  if(!DATA)return;
+  CUR=compute(range);
+  renderVs();
+  G("tpCols").innerHTML=GROUPS.map(colShell).join("");
+  GROUPS.forEach(function(g){renderList(g.key)});
+  G("tpCols").querySelectorAll(".tp-v[data-to]").forEach(function(el){
+    countUp(el,parseFloat(el.dataset.to),parseInt(el.dataset.d,10)||600);
+  });
+}
+function skel(){
+  var h="",k;
+  for(k=0;k<2;k++){
+    h+='<section class="tp-col" style="--c:'+GROUPS[k].c+';--c2:'+GROUPS[k].c2+'"><div class="tp-skl" style="width:55%;height:24px"></div><div class="tp-skl" style="height:170px;margin-top:18px"></div>';
+    for(var j=0;j<4;j++)h+='<div class="tp-skl" style="height:36px;margin-top:10px"></div>';
+    h+='</section>';
+  }
+  return h;
+}
+async function load(force){
+  if(busy)return;busy=true;
+  if(!DATA){G("tpCols").innerHTML=skel();G("tpVs").innerHTML=""}
+  try{DATA=await fetchData();render()}
+  catch(e){
+    console.warn("top agents:",e);
+    if(!DATA)G("tpCols").innerHTML='<div class="tp-empty" style="grid-column:1/-1">خواندن آمار ناموفق بود؛ دوباره امتحان کنید</div>';
+  }
+  busy=false;
+}
+
+/* ---------- نوار انتخاب بازه ---------- */
+function syncSeg(){
+  var i=ORDER.indexOf(range);
+  G("tpSeg").querySelector(".tp-ind").style.transform="translateX("+(-i*100)+"%)";
+  G("tpSeg").querySelectorAll("button").forEach(function(b){b.classList.toggle("on",+b.dataset.n===range)});
+}
+G("tpSeg").addEventListener("click",function(e){
+  var b=e.target.closest("button");if(!b)return;
+  range=+b.dataset.n;EXP={};
+  try{localStorage.setItem("admin_top_range",String(range))}catch(x){}
+  syncSeg();render();
+});
+syncSeg();
+
+/* ---------- تعامل‌ها ---------- */
+G("tpCols").addEventListener("click",function(e){
+  var more=e.target.closest(".tp-more");
+  if(more){var k=more.dataset.g;EXP[k]=!EXP[k];renderList(k);return}
+  var u=e.target.closest("[data-u]");
+  if(u){
+    var name=u.dataset.u;closeTop();
+    setTimeout(function(){if(typeof window.openUser==="function")window.openUser(name)},140);
+  }
+});
+G("tpCols").addEventListener("pointermove",function(e){
+  var c=e.target.closest&&e.target.closest(".tp-col");if(!c)return;
+  var r=c.getBoundingClientRect();
+  c.style.setProperty("--mx",(e.clientX-r.left)+"px");c.style.setProperty("--my",(e.clientY-r.top)+"px");
+});
+G("tpRefresh").addEventListener("click",function(){
+  var b=this;b.classList.remove("spin");void b.offsetWidth;b.classList.add("spin");
+  DATA=null;load(true);
+});
+
+function openTop(){
+  if(typeof closeMenu==="function")try{closeMenu()}catch(e){}
+  clearTimeout(tmr);
+  m.classList.remove("tp-out");m.classList.add("show");
+  document.body.style.overflow="hidden";
+  syncSeg();
+  if(!DATA)load();
+  else if(Date.now()-DATA.at>60000){render();DATA=null;load()}
+  else render();
+}
+function closeTop(){
+  if(!m.classList.contains("show"))return;
+  m.classList.add("tp-out");
+  document.body.style.overflow="";
+  tmr=setTimeout(function(){m.classList.remove("show","tp-out")},210);
+}
+btn.addEventListener("click",openTop);
+G("tpX").addEventListener("click",closeTop);
+var down=null;
+m.addEventListener("mousedown",function(e){down=e.target});
+m.addEventListener("click",function(e){if(e.target===m&&down===m)closeTop()});
+window.addEventListener("keydown",function(e){
+  if(e.key!=="Escape"||!m.classList.contains("show"))return;
+  if(document.querySelector(".modal.show:not(#tpModal)"))return;
+  e.stopPropagation();closeTop();
+},true);
 })();
 </script>
 </body>
