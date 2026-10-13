@@ -4054,12 +4054,14 @@ $("ldSearch").addEventListener("input", () => { clearTimeout(ldTimer); ldTimer =
 </script>
 <script>
 (function(){
-  const TABS = [
-    { id: "usersModal",   label: "نمایندگان",   open: () => $("usersOpen") },
-    { id: "leadersModal", label: "سرگروه‌ها",   open: () => $("ldOpen") },
-    { id: "lacModal",     label: "ثبت سرگروه", open: () => $("lacOpen") },
-    { id: "actModal",     label: "تاریخچه",     open: () => $("actOpen") }
-  ];
+const TABS = [
+  { id: "usersModal",   label: "نمایندگان",    open: () => $("usersOpen") },
+  { id: "leadersModal", label: "سرگروه‌ها",    open: () => $("ldOpen") },
+  { id: "lacModal",     label: "ثبت سرگروه",  open: () => $("lacOpen") },
+  { id: "actModal",     label: "تاریخچه",      open: () => $("actOpen") },
+  { id: "cdModal",      label: "کوردینیتورها", open: () => $("cdOpen") },
+  { id: "tkModal",      label: "تیکت‌ها",       open: () => $("tkOpen") }
+];
 
 
 
@@ -8003,5 +8005,254 @@ window.addEventListener("keydown",function(e){
 }
 #grpBar .sort-btn{font-size:12px;padding:9px 4px}
 </style>
+<style id="cd-style">
+#thirdTabs{grid-template-columns:repeat(6,1fr)!important;max-width:620px!important}
+#thirdTabs .tab-ind{width:calc((100% - 10px)/6)!important}
+#thirdTabs button{font-size:11px;padding:10px 2px}
+.cd-box{max-width:560px;text-align:right}
+.tk-sum{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.tk-sum .chip-btn.on{border-color:var(--accent1);background:linear-gradient(135deg,var(--accent1),var(--accent2));color:#fff}
+.tk-form{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.tk-form select{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font:inherit;font-size:14px;outline:0}
+.tk-form select option{background:#07102c;color:#e8efff}
+.tk-form .wide{grid-column:1/-1}
+.tk-cnt{font-weight:800;font-size:15px;direction:ltr;color:var(--accent2)}
+</style>
+
+<script id="cd-script">
+(function(){
+"use strict";
+const GRP="third_coord";
+
+/* فراخوانی مستقیم ادمین (بدون فیلتر گروه‌ها) */
+async function raw(p){
+  const {data:s}=await supabaseClient.auth.getSession();
+  const res=await fetch(ADMIN_FN_URL,{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+s.session.access_token},body:JSON.stringify(p)});
+  const j=await res.json(); if(!res.ok) throw new Error(j.error||"خطای نامشخص"); return j;
+}
+async function findId(username){
+  const {data}=await raw({action:"list"});
+  const u=(data||[]).find(x=>String(x.username).toLowerCase()===username);
+  return u?u.id:null;
+}
+const msg=(id,t,c)=>{const e=$(id);e.textContent=t;e.style.color=c==="error"?"var(--error)":c==="ok"?"var(--ok)":"var(--text-dim)"};
+const SV=p=>'<svg viewBox="0 0 24 24" aria-hidden="true">'+p+'</svg>';
+
+/* دکمه‌های مخفی که نوار تب‌ها بهشون کلیک می‌کنه */
+["cdOpen","tkOpen"].forEach(id=>{const b=document.createElement("button");b.type="button";b.id=id;b.hidden=true;document.body.appendChild(b)});
+
+/* ---------- پنجره‌ها ---------- */
+const cd=document.createElement("div");
+cd.className="modal";cd.id="cdModal";cd.setAttribute("role","dialog");cd.setAttribute("aria-modal","true");
+cd.innerHTML=
+'<div class="modal-box cd-box">'+
+ '<div class="card-head"><div class="card-icon">'+SV('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/><path d="M17 3l1.5 1.5L21 2"/>')+'</div><div><h2>کوردینیتورهای ثالث</h2><p>ثبت کوردینیتور جدید و تعیین رمز ورود</p></div></div>'+
+ '<label class="field" for="cdUser">نام کاربری</label>'+
+ '<input class="ltr" id="cdUser" type="text" placeholder="مثلاً a.naderi" autocomplete="off" spellcheck="false">'+
+ '<label class="field" for="cdName" style="margin-top:12px">نام و نام خانوادگی (اختیاری)</label>'+
+ '<input id="cdName" type="text" autocomplete="off">'+
+ '<label class="field" for="cdPass" style="margin-top:12px">رمز عبور</label>'+
+ '<div class="date-row" style="margin-bottom:0"><input class="ltr" id="cdPass" type="text" placeholder="حداقل ۶ کاراکتر" autocomplete="off"><button type="button" class="chip" id="cdGen">تولید رمز</button></div>'+
+ '<button type="button" class="full" id="cdSave" style="margin-top:14px">ثبت کوردینیتور</button>'+
+ '<div id="cdMsg" role="status" aria-live="polite" style="text-align:center;font-size:13px;min-height:18px;margin-top:10px;color:var(--text-dim);line-height:1.9"></div>'+
+ '<div class="sub-title"><span>کوردینیتورهای ثبت‌شده</span><span id="cdCount"></span></div>'+
+ '<div class="history" id="cdList" style="max-height:300px"></div>'+
+ '<div class="actions" style="margin-top:16px"><button type="button" class="secondary full" id="cdClose">بستن</button></div>'+
+'</div>';
+document.body.appendChild(cd);
+
+const tk=document.createElement("div");
+tk.className="modal";tk.id="tkModal";tk.setAttribute("role","dialog");tk.setAttribute("aria-modal","true");
+tk.innerHTML=
+'<div class="modal-box cd-box">'+
+ '<div class="card-head"><div class="card-icon">'+SV('<path d="M4 8a2 2 0 0 0 0 4v0a2 2 0 0 0 0 4v2h16v-2a2 2 0 0 0 0-4 2 2 0 0 0 0-4V6H4z"/><path d="M14 6v12" stroke-dasharray="2 2.5"/>')+'</div><div><h2>تعداد تیکت کوردینیتورها</h2><p>ثبت تعداد تیکت هر کوردینیتور در هر تاریخ</p></div></div>'+
+ '<div class="tk-form">'+
+  '<select id="tkWho" class="wide"></select>'+
+  '<input class="ltr" id="tkDate" type="text" placeholder="تاریخ (مثلاً 1405/07/20)" inputmode="numeric" autocomplete="off">'+
+  '<input id="tkCount" type="number" step="any" min="0" placeholder="تعداد تیکت">'+
+  '<button type="button" class="chip" id="tkToday" style="padding:10px">امروز</button>'+
+  '<button type="button" id="tkSave">ثبت / جایگزینی</button>'+
+ '</div>'+
+ '<div class="hint">اگه برای همون کوردینیتور و همون تاریخ قبلاً تعداد ثبت شده باشه، مقدار جدید جایگزین می‌شه. روی هر ردیف بزنی، مقدارش برای ویرایش بالا میاد.</div>'+
+ '<div id="tkMsg" role="status" aria-live="polite" style="text-align:center;font-size:13px;min-height:18px;margin-top:8px;color:var(--text-dim)"></div>'+
+ '<div class="sub-title"><span>تاریخچه‌ی تیکت‌ها</span><span id="tkCountAll"></span></div>'+
+ '<div class="tk-sum" id="tkSum"></div>'+
+ '<div class="history" id="tkList" style="max-height:300px"></div>'+
+ '<div class="actions" style="margin-top:16px"><button type="button" class="secondary full" id="tkClose">بستن</button></div>'+
+'</div>';
+document.body.appendChild(tk);
+
+bindModal("cdOpen","cdModal","cdClose",()=>{msg("cdMsg","");loadCoords()});
+bindModal("tkOpen","tkModal","tkClose",async()=>{msg("tkMsg","");if(!$("tkDate").value)$("tkDate").value=todayJalali();await loadCoords();loadTickets()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){cd.classList.remove("show");tk.classList.remove("show")}});
+
+/* =========================================================
+   کوردینیتورها
+   ========================================================= */
+let COORDS=[];
+
+$("cdGen").addEventListener("click",()=>{
+  const u=$("cdUser").value.trim().toLowerCase();
+  $("cdPass").value=genPasswordFor(u||"x.y",new Set());
+});
+
+$("cdSave").addEventListener("click",async()=>{
+  const username=$("cdUser").value.trim().toLowerCase().replace(/\s+/g,"");
+  const password=$("cdPass").value, fullName=$("cdName").value.trim();
+  if(!username||!password){msg("cdMsg","نام کاربری و رمز رو کامل وارد کن","error");return}
+  if(!/^[a-z0-9._-]+$/.test(username)){msg("cdMsg","نام کاربری فقط انگلیسی (حرف، عدد، . - _) باشه","error");return}
+  if(password.length<6){msg("cdMsg","رمز باید حداقل ۶ کاراکتر باشه","error");return}
+
+  const btn=$("cdSave");btn.disabled=true;msg("cdMsg","در حال ساخت حساب...");
+  try{
+    let createdNew=true;
+    try{ await raw({action:"create",username,password}); }
+    catch(err){
+      const old=await findId(username);
+      if(!old)throw err;
+      if(!confirm("این نام کاربری از قبل حساب داره.\nبه‌عنوان کوردینیتور ثبت بشه و رمزش هم تغییر کنه؟\n(از لیست نمایندگان گروه‌ها خارج می‌شه)")){msg("cdMsg","لغو شد");btn.disabled=false;return}
+      createdNew=false;
+      await raw({action:"update",userId:old,newPassword:password});
+    }
+    const id=await findId(username);
+    if(!id)throw new Error("حساب ساخته شد ولی شناسه‌اش پیدا نشد؛ دوباره امتحان کن");
+
+    /* جدا کردن از نمایندگان: گروه مخصوص */
+    const g=await supabaseClient.from("agent_groups").upsert({username,user_id:id,grp:GRP},{onConflict:"username"});
+    if(g.error)throw g.error;
+    const c=await supabaseClient.from("coordinators_third").upsert({user_id:id,username,full_name:fullName||null},{onConflict:"user_id"});
+    if(c.error)throw c.error;
+
+    msg("cdMsg","✔ کوردینیتور «"+(fullName||username)+"» ثبت شد — نام کاربری: "+username+" | رمز: "+password+(createdNew?"":" (رمز به‌روز شد)"),"ok");
+    $("cdUser").value="";$("cdPass").value="";$("cdName").value="";
+    loadCoords();
+    if(typeof loadStats==="function")loadStats();
+  }catch(err){
+    msg("cdMsg","ثبت نشد: "+(err.message||explainError(err)),"error");
+  }
+  btn.disabled=false;
+});
+
+async function loadCoords(){
+  const list=$("cdList");list.replaceChildren(hintEl("در حال بارگذاری..."));
+  const {data,error}=await supabaseClient.from("coordinators_third").select("*").order("created_at",{ascending:false});
+  list.replaceChildren();
+  if(error){$("cdCount").textContent="";list.appendChild(hintEl(explainError(error)));return}
+  COORDS=data||[];
+  $("cdCount").textContent=COORDS.length?COORDS.length+" نفر":"";
+  fillSelect();
+  if(!COORDS.length){list.appendChild(hintEl("هنوز کوردینیتوری ثبت نشده"));return}
+  COORDS.forEach(r=>{
+    const row=mk("div","row");
+    const left=mk("span","d",r.username+(r.full_name?" — "+r.full_name:""));left.style.direction="ltr";
+    const vals=mk("span","vals");
+
+    const key=mk("button","delete-btn","🔑");key.type="button";key.title="تغییر رمز";key.style.color="var(--accent2)";
+    key.addEventListener("click",async()=>{
+      const p=prompt("رمز جدید برای «"+r.username+"» (حداقل ۶ کاراکتر):","");
+      if(p===null)return;
+      if(p.length<6){toast("رمز باید حداقل ۶ کاراکتر باشه","error");return}
+      try{await raw({action:"update",userId:r.user_id,newPassword:p});toast("رمز «"+r.username+"» عوض شد: "+p,"ok")}
+      catch(e){toast("تغییر رمز ناموفق بود: "+e.message,"error")}
+    });
+
+    const del=mk("button","delete-btn","🗑️");del.type="button";del.title="حذف کوردینیتور";
+    del.addEventListener("click",async()=>{
+      if(!confirm("کوردینیتور «"+r.username+"» با حساب کاربری و همه‌ی تیکت‌های ثبت‌شده‌اش حذف بشه؟"))return;
+      try{
+        await raw({action:"delete",userId:r.user_id});
+        await supabaseClient.from("coordinator_tickets").delete().eq("username",r.username);
+        await supabaseClient.from("coordinators_third").delete().eq("user_id",r.user_id);
+        await supabaseClient.from("agent_groups").delete().eq("username",r.username);
+        toast("کوردینیتور حذف شد","ok");loadCoords();loadTickets();
+        if(typeof loadStats==="function")loadStats();
+      }catch(e){toast("حذف ناموفق بود: "+e.message,"error")}
+    });
+    vals.append(key,del);row.append(left,vals);list.appendChild(row);
+  });
+}
+
+/* =========================================================
+   تیکت‌ها
+   ========================================================= */
+let TICKETS=[],filter="";
+
+function fillSelect(){
+  const s=$("tkWho"),cur=s.value;
+  s.replaceChildren();
+  const first=document.createElement("option");first.value="";first.textContent=COORDS.length?"انتخاب کوردینیتور...":"اول یک کوردینیتور ثبت کن";
+  s.appendChild(first);
+  COORDS.forEach(c=>{const o=document.createElement("option");o.value=c.username;o.textContent=c.username+(c.full_name?" — "+c.full_name:"");s.appendChild(o)});
+  if(cur)s.value=cur;
+}
+
+$("tkToday").addEventListener("click",()=>{const t=todayJalali();if(t)$("tkDate").value=t});
+
+$("tkSave").addEventListener("click",async()=>{
+  const username=$("tkWho").value;
+  const date=normalizeDigits($("tkDate").value.trim());
+  const cnt=parseFloat(normalizeDigits($("tkCount").value));
+  if(!username){msg("tkMsg","کوردینیتور رو انتخاب کن","error");return}
+  if(!/^\d{4}\/\d{2}\/\d{2}$/.test(date)){msg("tkMsg","تاریخ رو به فرمت 1405/07/20 وارد کن","error");return}
+  if(isNaN(cnt)||cnt<0){msg("tkMsg","تعداد تیکت رو درست وارد کن","error");return}
+
+  const btn=$("tkSave");btn.disabled=true;msg("tkMsg","در حال ذخیره...");
+  const {error}=await supabaseClient.from("coordinator_tickets")
+    .upsert({username,ticket_date:date,ticket_count:cnt},{onConflict:"username,ticket_date"});
+  btn.disabled=false;
+  if(error){msg("tkMsg","ثبت نشد: "+explainError(error),"error");return}
+  msg("tkMsg","✔ "+fmt(cnt)+" تیکت برای «"+username+"» در تاریخ "+date+" ثبت شد","ok");
+  $("tkCount").value="";
+  loadTickets();
+});
+
+async function loadTickets(){
+  const list=$("tkList");list.replaceChildren(hintEl("در حال بارگذاری..."));
+  const {data,error}=await supabaseClient.from("coordinator_tickets").select("*")
+    .order("ticket_date",{ascending:false}).order("username",{ascending:true}).limit(1000);
+  if(error){list.replaceChildren(hintEl(explainError(error)));return}
+  TICKETS=data||[];
+  renderTickets();
+}
+
+function renderTickets(){
+  const list=$("tkList"),sum=$("tkSum");
+  list.replaceChildren();sum.replaceChildren();
+
+  const totals=new Map();
+  TICKETS.forEach(t=>totals.set(t.username,(totals.get(t.username)||0)+(Number(t.ticket_count)||0)));
+  [...totals.entries()].sort((a,b)=>b[1]-a[1]).forEach(([u,n])=>{
+    const b=mk("button","chip-btn"+(filter===u?" on":""),u+" ("+fmt(n)+")");b.type="button";
+    b.addEventListener("click",()=>{filter=(filter===u?"":u);renderTickets()});
+    sum.appendChild(b);
+  });
+
+  const rows=filter?TICKETS.filter(t=>t.username===filter):TICKETS;
+  let all=0;rows.forEach(t=>all+=Number(t.ticket_count)||0);
+  $("tkCountAll").textContent=rows.length?rows.length+" ثبت — مجموع "+fmt(all):"";
+  if(!rows.length){list.appendChild(hintEl("هنوز تیکتی ثبت نشده"));return}
+
+  rows.slice(0,300).forEach(t=>{
+    const row=mk("div","row");row.style.cursor="pointer";
+    const left=mk("span","d",t.ticket_date+"  ·  "+t.username);left.style.direction="ltr";
+    const vals=mk("span","vals");
+    const n=mk("b","tk-cnt",fmt(t.ticket_count));
+    const del=mk("button","delete-btn","🗑️");del.type="button";del.title="حذف این ثبت";
+    del.addEventListener("click",async ev=>{
+      ev.stopPropagation();
+      if(!confirm("تیکت‌های «"+t.username+"» در تاریخ "+t.ticket_date+" حذف بشه؟"))return;
+      const {error}=await supabaseClient.from("coordinator_tickets").delete().eq("id",t.id);
+      if(error){toast("حذف نشد: "+explainError(error),"error");return}
+      toast("حذف شد","ok");loadTickets();
+    });
+    row.addEventListener("click",()=>{
+      $("tkWho").value=t.username;$("tkDate").value=t.ticket_date;$("tkCount").value=t.ticket_count;$("tkCount").focus();
+    });
+    vals.append(n,del);row.append(left,vals);list.appendChild(row);
+  });
+  if(rows.length>300)list.appendChild(hintEl("فقط ۳۰۰ مورد اول نمایش داده شد؛ از چیپ‌های بالا فیلتر کن"));
+}
+})();
+</script>
 </body>
 </html>
