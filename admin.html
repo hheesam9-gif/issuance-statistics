@@ -6417,5 +6417,301 @@ var rz;window.addEventListener("resize",function(){clearTimeout(rz);rz=setTimeou
   l.insertBefore(i,l.firstChild);
 })();
 </script>
+  <!-- =====================================================================
+     پنل مدیریت: منوی کناری حرفه‌ای (جایگزین بلوک قدیمی sb-style و sb-script)
+     راهنما:
+     1) بلوک قدیمی <style id="sb-style"> و <script id="sb-script"> رو کامل پاک کن.
+     2) کل این فایل رو جاش بذار (بعد از nx-script و بقیه‌ی بلوک‌ها، قبل از </body>).
+     امکانات:
+       - انیمیشن نرم عرض منو، آیکون‌ها دقیقاً سر جاشون می‌مونن (هیچ پرشی نیست)
+       - متن‌ها با افکت محو + بلور + لغزش و ورود پله‌ای (stagger) ظاهر/پنهان می‌شن
+       - حالت «پیش‌نمایش با موس»: وقتی منو بسته‌ست، موس رو بیاری روش موقت باز می‌شه
+         (روی محتوا شناور، بدون جابه‌جا کردن صفحه)؛ با دکمه یا Ctrl+B ثابت باز می‌شه
+       - دکمه‌ی شیشه‌ای با حلقه‌ی نبض، پیکان چرخان و افکت موج هنگام کلیک
+       - نور دنبال‌کننده‌ی موس روی آیتم‌ها + نوار نئونی کنار تب فعال
+       - تولتیپ با عنوان و زیرعنوان و فلش
+       - بج اعلان‌ها در حالت بسته به نقطه‌ی کوچک روی آیکون تبدیل می‌شه
+       - نمودارها بعد از پایان انیمیشن خودکار دوباره با عرض جدید رسم می‌شن
+       - انتخاب کاربر یادش می‌مونه؛ از prefers-reduced-motion هم پیروی می‌کنه
+     ===================================================================== -->
+<style id="sbp-style">
+:root{--sb-ease:cubic-bezier(.65,0,.25,1);--sb-dur:.5s}
+body{--sbw:240px}
+body.sb-collapsed{--sbw:76px}
+body.sb-peek{--sbw:240px}
+html.sb-noanim *,html.sb-noanim *::before,html.sb-noanim *::after{transition:none!important;animation:none!important}
+
+/* ---------- دکمه + تولتیپ فقط دسکتاپ ---------- */
+@media(max-width:900px){#sbBtn,#sbTip{display:none!important}}
+
+@media(min-width:901px){
+  .nx-shell{transition:grid-template-columns var(--sb-dur) var(--sb-ease)}
+  .nx-shell.nx-collapsed{grid-template-columns:76px minmax(0,1fr)}
+
+  /* خود منو */
+  .nx-side{
+    width:100%;justify-self:start;overflow-x:hidden;z-index:60;
+    transition:width var(--sb-dur) var(--sb-ease),box-shadow .45s ease,background .45s ease;
+  }
+  .nx-shell.sb-peek .nx-side{
+    width:240px;
+    background:linear-gradient(180deg,rgba(8,16,40,.98),rgba(3,7,18,.995));
+    box-shadow:-26px 0 60px -12px rgba(0,0,0,.7),-1px 0 0 rgba(90,140,255,.28),0 0 40px -8px var(--glow);
+  }
+
+  /* لوگو */
+  .nx-logo{padding:4px 5px 14px;overflow:hidden;white-space:nowrap}
+  .nx-logo:has(.lg-img){padding-inline:2px}
+  .nx-logo div{transition:opacity .28s ease,transform .45s var(--sb-ease),filter .3s;transition-delay:.12s}
+  .nx-shell.nx-collapsed:not(.sb-peek) .nx-logo div{
+    opacity:0;transform:translateX(14px);filter:blur(3px);transition-duration:.15s,.3s,.2s;transition-delay:0s}
+
+  /* عنوان بخش‌ها => تبدیل به خط جداکننده */
+  .nx-t{
+    box-sizing:border-box;height:34px;overflow:hidden;white-space:nowrap;
+    transition:height var(--sb-dur) var(--sb-ease),padding var(--sb-dur) var(--sb-ease),margin var(--sb-dur) var(--sb-ease),color .22s ease,background .4s ease;
+  }
+  .nx-shell.nx-collapsed:not(.sb-peek) .nx-t{
+    height:1px;padding:0;margin:12px 14px;color:transparent;
+    background:linear-gradient(90deg,transparent,rgba(90,140,255,.45),transparent);
+  }
+
+  /* آیتم‌ها: چیدمان ثابت؛ فقط متن محو می‌شه و آیکون جابه‌جا نمی‌شه */
+  .nx-side .main-tabs .tab,.nx-side .menu-item{position:relative;overflow:hidden;white-space:nowrap}
+  .nx-side .sb-lb{flex:1;min-width:0;text-align:right}
+  .nx-side .menu-item-text{min-width:0}
+  .nx-side .sb-lb,.nx-side .menu-item-text{
+    transition:opacity .3s ease,transform .5s var(--sb-ease),filter .35s ease;
+    transition-delay:calc(var(--i,0)*16ms + 90ms);
+  }
+  .nx-shell.nx-collapsed:not(.sb-peek) .nx-side .sb-lb,
+  .nx-shell.nx-collapsed:not(.sb-peek) .nx-side .menu-item-text{
+    opacity:0;transform:translateX(16px);filter:blur(4px);
+    transition-duration:.15s,.3s,.2s;transition-delay:0s;
+  }
+
+  /* بج اعلان‌ها: همیشه absolute؛ در حالت بسته می‌شه نقطه‌ی قرمز روی گوشه‌ی آیکون */
+  .nx-side .menu-item-badge{
+    position:absolute;left:12px;top:50%;transform:translateY(-50%);
+    transition:left var(--sb-dur) var(--sb-ease),top var(--sb-dur) var(--sb-ease),transform var(--sb-dur) var(--sb-ease),background .3s,box-shadow .3s;
+  }
+  .nx-shell.nx-collapsed:not(.sb-peek) .nx-side .menu-item-badge:not(:empty){
+    left:6px;top:4px;transform:none;min-width:16px;padding:0 4px;font-size:10px;line-height:16px;
+    background:var(--error);box-shadow:0 0 0 2px #050b20,0 0 10px rgba(255,93,122,.6);
+  }
+}
+
+/* ---------- نوار نئونی تب فعال ---------- */
+.nx-side .main-tabs .tab::before{
+  content:"";position:absolute;right:0;top:50%;width:3px;height:0;border-radius:3px 0 0 3px;
+  background:linear-gradient(180deg,#fff,var(--accent2));box-shadow:0 0 12px var(--accent2);
+  transform:translateY(-50%);transition:height .4s var(--sb-ease);
+}
+.nx-side .main-tabs .tab.active::before{height:58%}
+
+/* ---------- نور دنبال‌کننده‌ی موس ---------- */
+.nx-side .main-tabs .tab:not(.active):hover,
+.nx-side .menu-item:not(.featured):not(.danger):hover{
+  background:radial-gradient(120px circle at var(--mx,50%) var(--my,50%),rgba(90,160,255,.24),rgba(47,123,255,.05) 72%);
+  border-color:rgba(90,140,255,.3);
+}
+.nx-side .menu-item.danger:hover{
+  background:radial-gradient(120px circle at var(--mx,50%) var(--my,50%),rgba(255,93,122,.26),rgba(255,93,122,.05) 72%);
+}
+
+/* ---------- ورود پله‌ای آیتم‌ها (یک‌بار، هنگام نمایش پنل) ---------- */
+@keyframes sbIn{from{opacity:0;transform:translateX(18px)}}
+.nx-side .main-tabs .tab,.nx-side .menu-item{
+  animation:sbIn .6s var(--sb-ease) backwards;animation-delay:calc(var(--i,0)*35ms + 120ms);
+}
+.nx-side .nx-logo{animation:sbIn .6s var(--sb-ease) backwards}
+
+/* ---------- دکمه‌ی باز و بسته ---------- */
+#sbBtn{
+  position:fixed;top:24px;right:calc(var(--sbw) - 16px);z-index:80;
+  width:32px;height:32px;padding:0;border-radius:50%;overflow:hidden;cursor:pointer;
+  display:grid;place-items:center;color:#cfe3ff;border:1px solid transparent;
+  background:linear-gradient(145deg,#112456,#050d26) padding-box,linear-gradient(135deg,var(--accent1),var(--accent2)) border-box;
+  box-shadow:0 0 0 4px rgba(3,7,18,.85),0 0 16px var(--glow);
+  transition:right var(--sb-dur) var(--sb-ease),transform .25s var(--sb-ease),box-shadow .3s,color .3s;
+  animation:sbPulse 3.2s ease-out infinite;
+}
+@keyframes sbPulse{
+  0%{box-shadow:0 0 0 4px rgba(3,7,18,.85),0 0 0 4px var(--glow)}
+  70%,100%{box-shadow:0 0 0 4px rgba(3,7,18,.85),0 0 0 15px transparent}
+}
+#sbBtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round;
+  transition:transform var(--sb-dur) var(--sb-ease);position:relative}
+body.sb-collapsed #sbBtn svg{transform:rotate(180deg)}
+#sbBtn:hover{filter:none;color:#fff;transform:scale(1.14);animation:none;
+  box-shadow:0 0 0 4px rgba(3,7,18,.85),0 0 28px var(--glow),inset 0 0 12px rgba(120,170,255,.3)}
+#sbBtn:active{transform:scale(.9)}
+#sbBtn:focus-visible{outline:2px solid var(--accent2);outline-offset:4px}
+.sb-rip{position:absolute;border-radius:50%;pointer-events:none;background:rgba(255,255,255,.55);
+  width:8px;height:8px;margin:-4px 0 0 -4px;animation:sbRip .6s ease-out forwards}
+@keyframes sbRip{to{transform:scale(7);opacity:0}}
+
+/* ---------- تولتیپ ---------- */
+#sbTip{
+  position:fixed;z-index:300;pointer-events:none;padding:8px 14px;border-radius:12px;direction:rtl;white-space:nowrap;
+  background:rgba(5,11,34,.97);border:1px solid var(--card-border);
+  box-shadow:var(--card-shadow),0 0 22px var(--glow);
+  opacity:0;transform:translateX(10px) scale(.96);
+  transition:opacity .16s ease,transform .24s var(--sb-ease);
+}
+#sbTip.show{opacity:1;transform:none}
+#sbTip b{display:block;font-size:12.5px}
+#sbTip small{display:block;font-size:11px;color:var(--text-dim);margin-top:2px}
+#sbTip small:empty{display:none}
+#sbTip::after{
+  content:"";position:absolute;top:50%;right:-5px;width:8px;height:8px;margin-top:-4px;rotate:45deg;
+  background:rgba(5,11,34,.97);border:solid var(--card-border);border-width:1px 1px 0 0;
+}
+
+@media(prefers-reduced-motion:reduce){
+  .nx-shell,.nx-side,.nx-side *,#sbBtn,#sbBtn svg,#sbTip{transition-duration:.01s!important;transition-delay:0s!important}
+  #sbBtn,.nx-side .tab,.nx-side .menu-item,.nx-logo{animation:none!important}
+}
+</style>
+
+<script id="sbp-script">
+(function(){
+"use strict";
+var shell=document.querySelector(".nx-shell"),app=document.getElementById("app"),side=shell&&shell.querySelector(".nx-side");
+if(!shell||!app||!side)return;
+
+/* پاک‌سازی نسخه‌ی قبلی (اگه هنوز توی فایل مونده باشه) */
+["sb-style"].forEach(function(id){var e=document.getElementById(id);if(e)e.remove()});
+["sbBtn","sbTip"].forEach(function(id){var e=document.getElementById(id);if(e)e.remove()});
+
+var KEY="admin_side_collapsed",DUR=500;
+var mq=window.matchMedia("(min-width:901px)");
+side.id="nxSideNav";
+
+/* متن تب‌ها رو بپیچ تا جدا انیمیت بشه */
+side.querySelectorAll(".main-tabs .tab").forEach(function(t){
+  Array.prototype.slice.call(t.childNodes).forEach(function(n){
+    if(n.nodeType===3&&n.nodeValue.trim()){
+      var s=document.createElement("span");s.className="sb-lb";s.textContent=n.nodeValue.trim();t.replaceChild(s,n);
+    }
+  });
+});
+/* شماره‌ی ردیف برای ورود پله‌ای */
+side.querySelectorAll(".main-tabs .tab,.menu-item").forEach(function(el,i){el.style.setProperty("--i",i)});
+
+/* ---------- دکمه ---------- */
+var btn=document.createElement("button");
+btn.type="button";btn.id="sbBtn";btn.setAttribute("aria-controls","nxSideNav");
+btn.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+app.appendChild(btn);
+
+var tip=document.createElement("div");tip.id="sbTip";tip.innerHTML="<b></b><small></small>";
+document.body.appendChild(tip);
+var tipB=tip.querySelector("b"),tipS=tip.querySelector("small");
+
+var pt=null,rz=null;
+function collapsed(){return shell.classList.contains("nx-collapsed")}
+function peeking(){return shell.classList.contains("sb-peek")}
+function canPeek(){return mq.matches&&collapsed()&&window.matchMedia("(hover:hover)").matches}
+function peek(on){
+  if(on&&!canPeek())return;
+  shell.classList.toggle("sb-peek",!!on);
+  document.body.classList.toggle("sb-peek",!!on);
+  tip.classList.remove("show");
+}
+function redraw(){clearTimeout(rz);rz=setTimeout(function(){window.dispatchEvent(new Event("resize"))},DUR+80)}
+
+function set(c,instant){
+  var root=document.documentElement;
+  if(instant)root.classList.add("sb-noanim");
+  peek(false);
+  shell.classList.toggle("nx-collapsed",c);
+  document.body.classList.toggle("sb-collapsed",c);
+  btn.setAttribute("aria-expanded",String(!c));
+  var t=c?"باز کردن منو (Ctrl+B)":"بستن منو (Ctrl+B)";
+  btn.title=t;btn.setAttribute("aria-label",t);
+  tip.classList.remove("show");
+  try{localStorage.setItem(KEY,c?"1":"0")}catch(e){}
+  if(instant){void shell.offsetWidth;root.classList.remove("sb-noanim")}
+  else redraw();
+}
+var start=false;try{start=localStorage.getItem(KEY)==="1"}catch(e){}
+set(start,true);
+
+/* کلیک دکمه + افکت موج */
+btn.addEventListener("click",function(e){
+  var r=btn.getBoundingClientRect(),rip=document.createElement("span");
+  rip.className="sb-rip";rip.style.left=(e.clientX-r.left||16)+"px";rip.style.top=(e.clientY-r.top||16)+"px";
+  btn.appendChild(rip);setTimeout(function(){rip.remove()},650);
+  clearTimeout(pt);
+  if(peeking()){peek(false);set(false)}      /* وسط پیش‌نمایش کلیک شد => ثابت باز بمونه */
+  else set(!collapsed());
+});
+
+/* میانبر Ctrl+B (فاز capture تا نسخه‌ی قدیمی، اگه مونده باشه، تداخل نکنه) */
+window.addEventListener("keydown",function(e){
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="b"&&!app.hidden){
+    var tg=e.target,tn=tg&&tg.tagName;
+    if(tn==="INPUT"||tn==="TEXTAREA"||(tg&&tg.isContentEditable))return;
+    e.preventDefault();e.stopImmediatePropagation();btn.click();
+  }
+},true);
+
+/* ---------- پیش‌نمایش با موس ---------- */
+side.addEventListener("mouseenter",function(){
+  clearTimeout(pt);if(canPeek())pt=setTimeout(function(){peek(true)},260);
+});
+side.addEventListener("mouseleave",function(){
+  clearTimeout(pt);pt=setTimeout(function(){peek(false)},220);
+});
+btn.addEventListener("mouseenter",function(){clearTimeout(pt)});
+btn.addEventListener("mouseleave",function(){if(peeking()){clearTimeout(pt);pt=setTimeout(function(){peek(false)},260)}});
+/* دسترسی با کیبورد: فوکوس روی آیتم‌ها منو رو موقت باز می‌کنه */
+side.addEventListener("focusin",function(e){if(e.target.matches&&e.target.matches(":focus-visible"))peek(true)});
+side.addEventListener("focusout",function(e){if(!side.contains(e.relatedTarget))peek(false)});
+side.addEventListener("click",function(e){
+  if(e.target.closest(".tab,.menu-item")){clearTimeout(pt);tip.classList.remove("show");if(peeking())peek(false)}
+});
+var onMq=function(){if(!mq.matches)peek(false)};
+if(mq.addEventListener)mq.addEventListener("change",onMq);else if(mq.addListener)mq.addListener(onMq);
+
+/* ---------- نور دنبال‌کننده‌ی موس ---------- */
+side.addEventListener("pointermove",function(e){
+  var el=e.target.closest(".tab,.menu-item");if(!el||!side.contains(el))return;
+  var r=el.getBoundingClientRect();
+  el.style.setProperty("--mx",(e.clientX-r.left)+"px");
+  el.style.setProperty("--my",(e.clientY-r.top)+"px");
+});
+
+/* ---------- تولتیپ (فقط حالت کاملاً بسته) ---------- */
+function titleOf(el){
+  var tx=el.querySelector(".menu-item-text"),sub="",t="";
+  if(tx){
+    var sm=tx.querySelector("small");sub=sm?sm.textContent.trim():"";
+    var c=tx.cloneNode(true);c.querySelectorAll("small").forEach(function(n){n.remove()});
+    t=c.textContent.replace(/\s+/g," ").trim();
+  }else{
+    var lb=el.querySelector(".sb-lb");t=(lb?lb.textContent:el.textContent).replace(/\s+/g," ").trim();
+  }
+  return [t,sub];
+}
+side.addEventListener("mouseover",function(e){
+  if(!mq.matches||!collapsed()||peeking())return;
+  var el=e.target.closest(".tab,.menu-item");
+  if(!el||!side.contains(el))return;
+  var d=titleOf(el);if(!d[0])return;
+  tipB.textContent=d[0];tipS.textContent=d[1];
+  var r=el.getBoundingClientRect();
+  tip.style.top=(r.top+r.height/2-tip.offsetHeight/2)+"px";
+  tip.style.left=Math.max(8,r.left-tip.offsetWidth-14)+"px";
+  tip.classList.add("show");
+});
+side.addEventListener("mouseout",function(e){
+  var n=e.relatedTarget;
+  if(!n||!n.closest||!n.closest(".tab,.menu-item"))tip.classList.remove("show");
+});
+side.addEventListener("scroll",function(){tip.classList.remove("show")});
+})();
+</script>
 </body>
 </html>
