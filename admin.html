@@ -4053,7 +4053,7 @@ $("ldSearch").addEventListener("input", () => { clearTimeout(ldTimer); ldTimer =
 })();
 </script>
 <script>
-(function(){
+document.addEventListener("DOMContentLoaded", function(){
 const TABS = [
   { id: "usersModal",   label: "نمایندگان",    open: () => $("usersOpen") },
   { id: "leadersModal", label: "سرگروه‌ها",    open: () => $("ldOpen") },
