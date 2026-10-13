@@ -8268,5 +8268,318 @@ function renderTickets(){
 }
 })();
 </script>
+  <!-- =====================================================================
+     پنل مدیریت: پنجره‌های گروه ثالث / غیر خودرویی / بدنه (نسخه‌ی حرفه‌ای)
+     راهنما: کل این فایل رو درست قبل از </body> بچسبون (بعد از آخرین بلوک، یعنی بعد از cd-script).
+     چیزی از کدهای قبلی لازم نیست پاک بشه؛ همه‌ی دکمه‌ها و منطق‌ها دست‌نخورده می‌مونن.
+
+     چی عوض می‌شه:
+     - پنجره از همون نقطه‌ای که کلیک کردی با یک موج دایره‌ای باز می‌شه
+     - هر گروه رنگ هویتی خودش رو داره (ثالث آبی، غیر خودرویی نارنجی، بدنه فیروزه‌ای) و
+       همه‌ی دکمه‌ها، ورودی‌ها و تب‌های داخلش با همون رنگ می‌شن
+     - هدر چسبان با آیکون چرخان، نام گروه، بخش فعلی، تعداد نماینده‌ی زنده و دکمه‌ی بستن
+     - تب‌ها با آیکون و نشانگر نورانی؛ محتوای هر تب پله‌پله وارد می‌شه
+     - ردیف‌های لیست با تأخیر کوچک یکی‌یکی ظاهر می‌شن
+     - جابه‌جایی بین تب‌های گروه ثالث نرم و سبک انجام می‌شه (بدون تکرار موج)
+     - prefers-reduced-motion رعایت شده
+     ===================================================================== -->
+<style id="gp-style">
+@property --gpx{syntax:"<percentage>";inherits:false;initial-value:10%}
+@property --gpy{syntax:"<percentage>";inherits:false;initial-value:0%}
+@property --gpa{syntax:"<angle>";inherits:false;initial-value:0deg}
+
+/* ---------- رنگ هویتی هر گروه (همه‌ی accentهای داخل پنجره عوض می‌شن) ---------- */
+.gp-modal,#thirdBar{
+  --accent1:var(--gc);--accent2:var(--gc2);
+  --glow:color-mix(in srgb,var(--gc) 45%,transparent);
+}
+.gp-third,#thirdBar{--gc:#38b6ff;--gc2:#4d6bff}
+.gp-na{--gc:#ffb020;--gc2:#ff8a3d}
+.gp-body{--gc:#14d1b8;--gc2:#3ddc84}
+
+/* ---------- پس‌زمینه‌ی تیره با نور رنگی از نقطه‌ی کلیک ---------- */
+.gp-modal{
+  background:radial-gradient(900px circle at var(--vx,50%) var(--vy,50%),color-mix(in srgb,var(--gc) 22%,transparent),rgba(2,5,16,.86) 62%);
+  backdrop-filter:blur(10px) saturate(130%);-webkit-backdrop-filter:blur(10px) saturate(130%);
+}
+.gp-modal.show{animation:gpFade .35s ease}
+@keyframes gpFade{from{opacity:0}}
+.gp-third{padding-top:84px}
+.gp-third .gp-box{max-height:calc(100dvh - 104px)}
+
+/* ---------- خود پنجره ---------- */
+.gp-box{
+  max-width:680px!important;padding:26px;text-align:right;
+  background:
+    radial-gradient(520px circle at var(--gpx) var(--gpy),color-mix(in srgb,var(--gc) 20%,transparent),transparent 65%),
+    radial-gradient(460px circle at calc(100% - var(--gpx)) 100%,color-mix(in srgb,var(--gc2) 14%,transparent),transparent 65%),
+    var(--card-bg)!important;
+  border:1px solid color-mix(in srgb,var(--gc) 38%,var(--card-border))!important;
+  box-shadow:0 40px 100px rgba(0,0,0,.65),0 0 80px -26px var(--gc)!important;
+  animation:gpDrift 14s ease-in-out infinite alternate;
+  overscroll-behavior:contain;
+}
+.gp-box::before{display:none}
+@keyframes gpDrift{to{--gpx:90%;--gpy:35%}}
+
+/* موج دایره‌ای از نقطه‌ی کلیک (فقط برای باز شدن اول) */
+.gp-modal.show.gp-play .gp-box{animation:gpReveal .75s cubic-bezier(.2,.85,.25,1) both,gpDrift 14s ease-in-out infinite alternate;transform-origin:var(--ox,50%) var(--oy,50%)}
+@keyframes gpReveal{
+  from{clip-path:circle(0px at var(--ox,50%) var(--oy,50%));opacity:0;transform:scale(.88) translateY(20px)}
+  35%{opacity:1}
+  to{clip-path:circle(170vmax at var(--ox,50%) var(--oy,50%));opacity:1;transform:none}
+}
+/* جابه‌جایی بین تب‌های گروه: نرم و سبک */
+.gp-modal.show.gp-soft .gp-box{animation:gpSoft .38s cubic-bezier(.2,.8,.2,1) both,gpDrift 14s ease-in-out infinite alternate}
+@keyframes gpSoft{from{opacity:0;transform:translateY(14px) scale(.985);filter:blur(4px)}}
+
+/* ---------- هدر چسبان ---------- */
+.gp-top{
+  position:sticky;top:0;z-index:6;margin:-26px -26px 18px;padding:22px 26px 0;border-radius:22px 22px 0 0;
+  background:linear-gradient(180deg,rgba(7,14,38,.95),rgba(7,14,38,.84));
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+}
+.gp-top::after{
+  content:"";position:absolute;left:0;right:0;bottom:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--gc),var(--gc2),transparent);background-size:200% 100%;animation:gpFlow 5s linear infinite;
+}
+@keyframes gpFlow{to{background-position:-200% 0}}
+.gp-hd{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.gp-top:not(:has(.third-tabs)) .gp-hd{margin-bottom:0;padding-bottom:16px}
+
+.gp-ic{position:relative;flex:none;width:52px;height:52px;border-radius:16px;display:grid;place-items:center;color:#fff;overflow:visible;
+  background:linear-gradient(135deg,var(--gc),var(--gc2));
+  box-shadow:0 12px 30px -8px var(--gc),inset 0 1px 0 rgba(255,255,255,.4)}
+.gp-ic svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.gp-ic::before{
+  content:"";position:absolute;inset:-5px;border-radius:21px;padding:1.6px;pointer-events:none;
+  background:conic-gradient(from var(--gpa),transparent 0deg,var(--gc) 70deg,var(--gc2) 140deg,transparent 220deg,transparent 360deg);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;
+  animation:gpSpin 3.6s linear infinite}
+@keyframes gpSpin{to{--gpa:360deg}}
+.gp-ic::after{content:"";position:absolute;inset:0;border-radius:inherit;overflow:hidden;pointer-events:none;
+  background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.4) 50%,transparent 65%);background-size:250% 100%;background-position:150% 0;animation:gpShine 4.5s ease-in-out 1s infinite}
+@keyframes gpShine{0%{background-position:150% 0}45%,100%{background-position:-60% 0}}
+
+.gp-tt{min-width:0}
+.gp-tt h2{margin:0 0 4px;font-size:19px;font-weight:800}
+.gp-sec{margin:0;font-size:12.5px;color:var(--text-dim)}
+.gp-sec.swap{animation:gpSwap .4s cubic-bezier(.2,.8,.2,1)}
+@keyframes gpSwap{from{opacity:0;transform:translateY(6px)}}
+
+.gp-cnt{margin-right:auto;display:inline-flex;align-items:center;gap:8px;font-size:12px;padding:6px 13px;border-radius:99px;white-space:nowrap;
+  color:var(--text);background:color-mix(in srgb,var(--gc) 14%,transparent);border:1px solid color-mix(in srgb,var(--gc) 36%,transparent)}
+.gp-cnt i{width:7px;height:7px;border-radius:50%;background:#3ddc84;animation:nxPulse 2s infinite}
+.gp-cnt b{direction:ltr;font-variant-numeric:tabular-nums}
+.gp-x{flex:none;width:36px;height:36px;padding:0;border-radius:12px;display:grid;place-items:center;font-weight:normal;
+  background:var(--row-bg);border:1px solid var(--row-border);color:var(--text-dim);transition:.25s}
+.gp-x svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;transition:transform .35s}
+.gp-x:hover{filter:none;color:#fff;border-color:var(--error);background:rgba(255,93,122,.2)}
+.gp-x:hover svg{transform:rotate(90deg)}
+
+/* ---------- تب‌ها ---------- */
+.gp-box .third-tabs,#thirdBar .third-tabs{
+  background:rgba(4,10,30,.62)!important;border:1px solid color-mix(in srgb,var(--gc) 24%,var(--card-border));border-radius:16px;padding:5px;margin:0 0 14px}
+.gp-box .third-tabs button,#thirdBar .third-tabs button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 2px;font-size:11.5px;transition:color .3s}
+.gp-ti{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;transition:transform .45s cubic-bezier(.34,1.56,.64,1)}
+.third-tabs button:hover .gp-ti{transform:translateY(-1px)}
+.third-tabs button.active .gp-ti{transform:translateY(-1px) scale(1.18);filter:drop-shadow(0 0 6px rgba(255,255,255,.6))}
+.gp-box .third-tabs .tab-ind,#thirdBar .third-tabs .tab-ind{
+  background:linear-gradient(135deg,var(--gc),var(--gc2));
+  box-shadow:0 8px 24px -6px var(--gc),inset 0 1px 0 rgba(255,255,255,.35)}
+#thirdBar .third-tabs{box-shadow:0 18px 50px -10px rgba(0,0,0,.7),0 0 40px -14px var(--gc)!important}
+
+/* ---------- ورود پله‌ای محتوا ---------- */
+.gp-box .third-pane.show{animation:none}
+.gp-box .third-pane.show>*,.gp-flat>*:not(.gp-top){
+  animation:gpUp .55s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--n,0)*40ms + 60ms)}
+@keyframes gpUp{from{opacity:0;transform:translateY(16px)}}
+.gp-box .row,.gp-box .err-item{animation:gpRow .45s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--r,0)*28ms + 100ms)}
+@keyframes gpRow{from{opacity:0;transform:translateX(18px)}}
+
+/* ---------- ظاهر عناصر داخل پنجره با رنگ گروه ---------- */
+.gp-box .card-icon{box-shadow:0 0 20px -4px var(--glow);border-color:color-mix(in srgb,var(--gc) 40%,var(--row-border))}
+.gp-box .card-icon svg{stroke:var(--gc)}
+.gp-box input:focus,.gp-box textarea:focus{
+  border-color:var(--gc);box-shadow:0 0 0 3px color-mix(in srgb,var(--gc) 26%,transparent),0 10px 28px -12px var(--gc)}
+.gp-box .history .row{transition:border-color .25s,transform .25s,box-shadow .25s,background .25s}
+.gp-box .history .row:hover{border-color:var(--gc);transform:translateX(-3px);background:color-mix(in srgb,var(--gc) 9%,transparent);box-shadow:0 0 22px -10px var(--gc)}
+.gp-box .sub-title{border-top-color:color-mix(in srgb,var(--gc) 22%,var(--row-border))}
+.gp-box button.full:not(.secondary),.gp-box .actions button:not(.secondary):not(.del-btn){box-shadow:0 12px 26px -12px var(--gc)}
+.gp-box .chip-btn:hover,.gp-box button.chip:hover{border-color:var(--gc)}
+.gp-box ::-webkit-scrollbar-thumb{background:linear-gradient(180deg,var(--gc),var(--gc2))}
+
+@media(max-width:560px){
+  .gp-box{padding:20px 16px}
+  .gp-top{margin:-20px -16px 16px;padding:18px 16px 0}
+  .gp-cnt{display:none}
+  .gp-x{margin-right:auto}
+  .gp-tt h2{font-size:17px}
+}
+@media(prefers-reduced-motion:reduce){
+  .gp-box,.gp-modal.show,.gp-modal.show.gp-play .gp-box,.gp-modal.show.gp-soft .gp-box,
+  .gp-ic::before,.gp-ic::after,.gp-top::after,.gp-box .third-pane.show>*,.gp-flat>*,.gp-box .row,.gp-box .err-item,.gp-sec.swap{animation:none!important}
+}
+</style>
+
+<script id="gp-script">
+(function(){
+"use strict";
+function boot(){
+  var $=function(i){return document.getElementById(i)};
+  var P={
+    users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.2a6.5 6.5 0 0 1 3.5 5.8"/>',
+    lead:'<circle cx="12" cy="6.5" r="3"/><circle cx="5" cy="17.5" r="2.5"/><circle cx="19" cy="17.5" r="2.5"/><path d="M12 9.5v3M12 12.5l-5 3M12 12.5l5 3"/>',
+    shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
+    clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    coord:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+    ticket:'<path d="M4 8a2 2 0 0 0 0 4 2 2 0 0 0 0 4v2h16v-2a2 2 0 0 0 0-4 2 2 0 0 0 0-4V6H4z"/><path d="M14 6v12"/>',
+    block:'<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>',
+    car:'<path d="M4 15l1.5-5A2 2 0 0 1 7.4 8.5h9.2a2 2 0 0 1 1.9 1.5L20 15v3H4zM4 15h16M7 18v2M17 18v2"/>',
+    x:'<path d="M6 6l12 12M18 6L6 18"/>'
+  };
+  var sv=function(p,c){return '<svg class="'+(c||"")+'" viewBox="0 0 24 24" aria-hidden="true">'+p+'</svg>'};
+  var GR={
+    third:{cls:"gp-third",name:"گروه ثالث",icon:"users"},
+    na:{cls:"gp-na",name:"گروه غیر خودرویی",icon:"block"},
+    body:{cls:"gp-body",name:"گروه بدنه",icon:"car"}
+  };
+  var MODALS=[
+    ["usersModal","third","نمایندگان"],["leadersModal","third","سرگروه‌ها"],["lacModal","third","ثبت سرگروه"],
+    ["actModal","third","تاریخچه"],["cdModal","third","کوردینیتورها"],["tkModal","third","تیکت‌ها"],
+    ["naModal","na",null],["bdModal","body",null]
+  ];
+  var TAB_ICONS=["users","lead","shield","clock","coord","ticket"];
+
+  /* نقطه‌ی آخرین کلیک: مبدأ موج */
+  var ox=innerWidth/2,oy=innerHeight/2,lastPtr=0,lastClose=0;
+  document.addEventListener("pointerdown",function(e){ox=e.clientX;oy=e.clientY;lastPtr=Date.now()},true);
+
+  /* ---------- تعداد نماینده‌ها (زنده، با کش یک‌دقیقه‌ای) ---------- */
+  var cache=null,cacheP=null;
+  function counts(){
+    if(cache&&Date.now()-cache.t<60000)return Promise.resolve(cache);
+    if(cacheP)return cacheP;
+    cacheP=(async function(){
+      var q=function(t){return t.select("username",{count:"exact",head:true})};
+      try{
+        var a=await q(supabaseClient.from("profiles")),
+            b=await q(supabaseClient.from("agent_groups")),
+            n=await q(supabaseClient.from("agent_groups").eq("grp","nonauto")),
+            d=await q(supabaseClient.from("agent_groups").eq("grp","body"));
+        cache={t:Date.now(),third:Math.max(0,(a.count||0)-(b.count||0)),na:n.count||0,body:d.count||0};
+      }catch(e){cache=null}
+      cacheP=null;return cache;
+    })();
+    return cacheP;
+  }
+  function fillCount(m,g){
+    var el=m.querySelector(".gp-cnt b");if(!el)return;
+    counts().then(function(c){
+      if(!c)return;
+      if(typeof animateNumber==="function")animateNumber(el,c[g]);else el.textContent=c[g];
+    });
+  }
+
+  /* ---------- ساخت هدر و آماده‌سازی هر پنجره ---------- */
+  function setSec(m,text){
+    var s=m.querySelector(".gp-sec");if(!s||!text||s.textContent===text)return;
+    s.textContent=text;s.classList.remove("swap");void s.offsetWidth;s.classList.add("swap");
+  }
+  function activeTabText(m){
+    var b=m.querySelector(".third-tabs button.active");return b?b.textContent.trim():"";
+  }
+  function indexRows(root){
+    root.querySelectorAll(".row,.err-item").forEach(function(r){
+      var i=Array.prototype.indexOf.call(r.parentNode.children,r);r.style.setProperty("--r",Math.min(i,14));
+    });
+  }
+
+  function deco(id,g,sec){
+    var m=$(id),box=m&&m.querySelector(".modal-box");
+    if(!box||box.classList.contains("gp-box"))return;
+    var G=GR[g];
+    m.classList.add("gp-modal",G.cls);box.classList.add("gp-box");
+    if(!box.querySelector(":scope > .third-tabs"))box.classList.add("gp-flat");
+
+    var top=document.createElement("div");top.className="gp-top";
+    top.innerHTML=
+      '<div class="gp-hd"><span class="gp-ic">'+sv(P[G.icon])+'</span>'+
+      '<div class="gp-tt"><h2>'+G.name+'</h2><p class="gp-sec">'+(sec||"")+'</p></div>'+
+      '<span class="gp-cnt"><i></i><b>—</b> نماینده</span>'+
+      '<button type="button" class="gp-x" title="بستن (Esc)" aria-label="بستن">'+sv(P.x)+'</button></div>';
+    box.insertBefore(top,box.firstChild);
+
+    var tabs=box.querySelector(":scope > .third-tabs");
+    if(tabs){
+      top.appendChild(tabs);
+      tabs.querySelectorAll("button").forEach(function(b,i){
+        if(!b.querySelector(".gp-ti"))b.insertAdjacentHTML("afterbegin",sv(P[["users","lead","shield","clock"][i]]||P.users,"gp-ti"));
+      });
+      new MutationObserver(function(){setSec(m,activeTabText(m))}).observe(tabs,{attributes:true,attributeFilter:["class"],subtree:true});
+    }
+
+    /* دکمه‌ی بستن: همون دکمه‌ی بستن اصلی هر پنجره رو صدا می‌زنه */
+    top.querySelector(".gp-x").addEventListener("click",function(){
+      var c=box.querySelector("#usersCloseBtn,#ldCloseBtn,#lacClose,#actCloseBtn,#cdClose,#tkClose,#naClose,#bdClose");
+      if(c)c.click();else m.classList.remove("show");
+    });
+
+    /* شماره‌ی ورود پله‌ای */
+    box.querySelectorAll(":scope > .third-pane").forEach(function(p){
+      Array.prototype.forEach.call(p.children,function(c,i){c.style.setProperty("--n",Math.min(i,10))});
+    });
+    if(box.classList.contains("gp-flat")){
+      Array.prototype.forEach.call(box.children,function(c,i){c.style.setProperty("--n",Math.min(i,10))});
+    }
+
+    /* ردیف‌هایی که بعداً ساخته می‌شن هم ورود پله‌ای بگیرن */
+    new MutationObserver(function(ms){
+      ms.forEach(function(r){r.addedNodes.forEach(function(n){
+        if(n.nodeType!==1)return;
+        if(n.matches&&n.matches(".row,.err-item"))indexRows(n.parentNode);
+        else if(n.querySelector)indexRows(n);
+      })});
+    }).observe(box,{childList:true,subtree:true});
+
+    /* تشخیص باز و بسته شدن */
+    var was=m.classList.contains("show");
+    new MutationObserver(function(){
+      var now=m.classList.contains("show");
+      if(now===was)return;was=now;
+      if(!now){m.classList.remove("gp-play","gp-soft");lastClose=Date.now();return}
+      open(m,box,g,sec);
+    }).observe(m,{attributes:true,attributeFilter:["class"]});
+  }
+
+  function open(m,box,g,sec){
+    var soft=Date.now()-lastClose<250;                 /* جابه‌جایی بین تب‌های گروه */
+    var useP=Date.now()-lastPtr<1500;
+    var px=useP?ox:innerWidth/2,py=useP?oy:innerHeight/2;
+    m.classList.remove("gp-play","gp-soft");
+    m.style.setProperty("--vx",px+"px");m.style.setProperty("--vy",py+"px");
+    void box.offsetWidth;
+    var r=box.getBoundingClientRect();
+    box.style.setProperty("--ox",(px-r.left)+"px");box.style.setProperty("--oy",(py-r.top)+"px");
+    box.scrollTop=0;
+    m.classList.add(soft?"gp-soft":"gp-play");
+    setSec(m,sec||activeTabText(m));
+    fillCount(m,g);
+  }
+
+  MODALS.forEach(function(x){deco(x[0],x[1],x[2])});
+
+  /* ---------- نوار تب‌های گروه ثالث (بالای صفحه) ---------- */
+  var bar=$("thirdTabs");
+  if(bar){
+    bar.querySelectorAll("button").forEach(function(b,i){
+      if(!b.querySelector(".gp-ti"))b.insertAdjacentHTML("afterbegin",sv(P[TAB_ICONS[i]]||P.users,"gp-ti"));
+    });
+  }
+}
+/* نوار گروه ثالث توی DOMContentLoaded ساخته می‌شه؛ این بلاک بعد از اون اجرا می‌شه */
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
+})();
+</script>
 </body>
 </html>
