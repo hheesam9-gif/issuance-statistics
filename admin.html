@@ -8269,24 +8269,27 @@ function renderTickets(){
 })();
 </script>
 <!-- =====================================================================
-     پنل مدیریت: پنجره‌های گروه ثالث / غیر خودرویی / بدنه — نسخه ۲
+     پنل مدیریت: پنجره‌های گروه ثالث / غیر خودرویی / بدنه — نسخه ۳
      راهنما:
-     1) بلوک قبلی (<style id="gp-style"> و <script id="gp-script">) رو کامل پاک کن.
+     1) بلوک قبلی (<style id="gp-style"> و <script id="gp-script"> از نسخه‌ی ۲) رو کامل پاک کن.
      2) کل این فایل رو جاش بذار، درست قبل از </body> و بعد از cd-script.
 
-     چی درست شد:
-     - هدر دیگه sticky با margin منفی نیست؛ پنجره حالا دو بخش داره: هدر ثابت + ناحیه‌ی اسکرول
-       (دیگه هیچ متنی زیر هدر نمی‌ره)
-     - عنوان تکراری «مدیریت نمایندگان» برداشته شد (هدر خودش می‌گه)
-     - شمارنده‌ی نماینده درست کار می‌کنه (کوئری قبلی اشتباه بود) و تا وقتی داده نیومده نمایش داده نمی‌شه
+     چی عوض شد:
+     - گروه ثالث دیگه نوار تب جدا بالای صفحه و ۶ پنجره‌ی جدا نداره.
+       حالا یک پنجره‌ی واحد با تب‌های داخلی داره، دقیقاً مثل غیر خودرویی و بدنه:
+       نمایندگان | سرگروه‌ها | ثبت سرگروه | تاریخچه | کوردینیتورها | تیکت‌ها
+     - محتوا و منطق هر تب همون قبلیه (فقط جاش عوض شده)؛ هیچ دکمه یا شناسه‌ای تغییر نکرده
      ===================================================================== -->
 <style id="gp-style">
 @property --gpx{syntax:"<percentage>";inherits:false;initial-value:10%}
 @property --gpy{syntax:"<percentage>";inherits:false;initial-value:0%}
 @property --gpa{syntax:"<angle>";inherits:false;initial-value:0deg}
 
-.gp-modal,#thirdBar{--accent1:var(--gc);--accent2:var(--gc2);--glow:color-mix(in srgb,var(--gc) 45%,transparent)}
-.gp-third,#thirdBar{--gc:#38b6ff;--gc2:#4d6bff}
+/* نوار تب قدیمی ثالث و پنجره‌های جداشون دیگه استفاده نمی‌شن */
+#thirdBar,.gp-old{display:none!important}
+
+.gp-modal{--accent1:var(--gc);--accent2:var(--gc2);--glow:color-mix(in srgb,var(--gc) 45%,transparent)}
+.gp-third{--gc:#38b6ff;--gc2:#4d6bff}
 .gp-na{--gc:#ffb020;--gc2:#ff8a3d}
 .gp-body{--gc:#14d1b8;--gc2:#3ddc84}
 
@@ -8295,9 +8298,7 @@ function renderTickets(){
   backdrop-filter:blur(10px) saturate(130%);-webkit-backdrop-filter:blur(10px) saturate(130%)}
 .gp-modal.show{animation:gpFade .35s ease}
 @keyframes gpFade{from{opacity:0}}
-.gp-third{padding-top:84px}
 
-/* ---------- قاب: ستونی؛ هدر ثابت + بدنه‌ی اسکرول‌شونده ---------- */
 .gp-box{
   display:flex!important;flex-direction:column;overflow:hidden!important;padding:0!important;
   width:100%;max-width:700px!important;max-height:min(92vh,880px)!important;text-align:right;
@@ -8308,7 +8309,6 @@ function renderTickets(){
   border:1px solid color-mix(in srgb,var(--gc) 40%,var(--card-border))!important;border-radius:24px!important;
   box-shadow:0 40px 100px rgba(0,0,0,.65),0 0 80px -26px var(--gc)!important;
   animation:gpDrift 14s ease-in-out infinite alternate}
-.gp-third .gp-box{max-height:calc(100dvh - 108px)!important}
 .gp-box::before{display:none}
 @keyframes gpDrift{to{--gpx:90%;--gpy:35%}}
 
@@ -8317,8 +8317,6 @@ function renderTickets(){
   from{clip-path:circle(0px at var(--ox,50%) var(--oy,50%));opacity:0;transform:scale(.88) translateY(20px)}
   35%{opacity:1}
   to{clip-path:circle(170vmax at var(--ox,50%) var(--oy,50%));opacity:1;transform:none}}
-.gp-modal.show.gp-soft .gp-box{animation:gpSoft .38s cubic-bezier(.2,.8,.2,1) both,gpDrift 14s ease-in-out infinite alternate}
-@keyframes gpSoft{from{opacity:0;transform:translateY(14px) scale(.985);filter:blur(4px)}}
 
 /* ---------- هدر ---------- */
 .gp-top{
@@ -8331,8 +8329,7 @@ function renderTickets(){
 @keyframes gpFlow{to{background-position:-200% 0}}
 .gp-wm{position:absolute;left:-18px;top:-22px;width:150px;height:150px;fill:none;stroke:var(--gc);stroke-width:.9;stroke-linecap:round;stroke-linejoin:round;
   opacity:.1;transform:rotate(-12deg);pointer-events:none}
-.gp-hd{position:relative;display:flex;align-items:center;gap:14px;padding-bottom:18px}
-.gp-top:has(.third-tabs) .gp-hd{padding-bottom:16px}
+.gp-hd{position:relative;display:flex;align-items:center;gap:14px;padding-bottom:16px}
 
 .gp-ic{position:relative;flex:none;width:54px;height:54px;border-radius:17px;display:grid;place-items:center;color:#fff;
   background:linear-gradient(135deg,var(--gc),var(--gc2));box-shadow:0 12px 30px -8px var(--gc),inset 0 1px 0 rgba(255,255,255,.4)}
@@ -8364,31 +8361,31 @@ function renderTickets(){
 .gp-x:hover{filter:none;color:#fff;border-color:var(--error);background:rgba(255,93,122,.2)}
 .gp-x:hover svg{transform:rotate(90deg)}
 
-/* ---------- تب‌ها ---------- */
+/* ---------- تب‌ها (۴ تایی برای غیر خودرویی و بدنه، ۶ تایی برای ثالث) ---------- */
 .gp-top .third-tabs{position:relative;background:rgba(3,8,26,.7)!important;border:1px solid color-mix(in srgb,var(--gc) 26%,var(--card-border));border-radius:16px;padding:5px;margin:0 0 16px}
-#thirdBar .third-tabs{background:rgba(5,11,34,.9)!important;border:1px solid color-mix(in srgb,var(--gc) 30%,var(--card-border));border-radius:18px;
-  box-shadow:0 18px 50px -10px rgba(0,0,0,.7),0 0 40px -14px var(--gc)!important}
-.gp-top .third-tabs button,#thirdBar .third-tabs button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 2px;font-size:11.5px;transition:color .3s}
+.gp-top .third-tabs.gp-t6{grid-template-columns:repeat(6,1fr)}
+.gp-top .third-tabs.gp-t6 .tab-ind{width:calc((100% - 10px)/6)}
+.gp-top .third-tabs button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 2px;font-size:11.5px;transition:color .3s}
+.gp-t6 button{font-size:11px!important}
 .gp-ti{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;transition:transform .45s cubic-bezier(.34,1.56,.64,1)}
 .third-tabs button:hover .gp-ti{transform:translateY(-1px)}
 .third-tabs button.active .gp-ti{transform:translateY(-1px) scale(1.18);filter:drop-shadow(0 0 6px rgba(255,255,255,.6))}
-.gp-top .third-tabs .tab-ind,#thirdBar .third-tabs .tab-ind{
-  background:linear-gradient(135deg,var(--gc),var(--gc2));box-shadow:0 8px 24px -6px var(--gc),inset 0 1px 0 rgba(255,255,255,.35)}
+.gp-top .third-tabs .tab-ind{background:linear-gradient(135deg,var(--gc),var(--gc2));box-shadow:0 8px 24px -6px var(--gc),inset 0 1px 0 rgba(255,255,255,.35)}
 
 /* ---------- ناحیه‌ی اسکرول ---------- */
 .gp-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:22px 26px 26px}
 .gp-scroll::-webkit-scrollbar{width:7px}
 .gp-scroll::-webkit-scrollbar-thumb{background:linear-gradient(180deg,var(--gc),var(--gc2));border-radius:99px}
-.gp-flat .gp-scroll>h3:first-child{display:none}            /* عنوان تکراری، هدر خودش می‌گه */
-.gp-scroll>.card-head:first-child{margin-top:0}
+/* عنوان تکراری و دکمه‌ی بستن قدیمی پنجره‌های ثالث (هدر و × جاشون رو می‌گیرن) */
+.gp-scroll .third-pane>h3:first-child{display:none}
+.gp-scroll .third-pane>.actions:has(#usersCloseBtn,#ldCloseBtn,#lacClose,#actCloseBtn,#cdClose,#tkClose){display:none}
 
 .gp-scroll .third-pane.show{animation:none}
-.gp-scroll .third-pane.show>*,.gp-flat .gp-scroll>*{animation:gpUp .55s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--n,0)*40ms + 60ms)}
+.gp-scroll .third-pane.show>*{animation:gpUp .55s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--n,0)*40ms + 60ms)}
 @keyframes gpUp{from{opacity:0;transform:translateY(16px)}}
 .gp-scroll .row,.gp-scroll .err-item{animation:gpRow .45s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--r,0)*28ms + 100ms)}
 @keyframes gpRow{from{opacity:0;transform:translateX(18px)}}
 
-/* ---------- عناصر داخل با رنگ گروه ---------- */
 .gp-scroll .card-icon{box-shadow:0 0 20px -4px var(--glow);border-color:color-mix(in srgb,var(--gc) 40%,var(--row-border))}
 .gp-scroll .card-icon svg{stroke:var(--gc)}
 .gp-scroll input:focus,.gp-scroll textarea:focus,.gp-scroll select:focus{
@@ -8404,10 +8401,11 @@ function renderTickets(){
 @media(max-width:560px){
   .gp-top{padding:18px 16px 0}.gp-scroll{padding:18px 16px 22px}
   .gp-cnt{display:none!important}.gp-x{margin-right:auto}.gp-tt h2{font-size:17px}.gp-ic{width:46px;height:46px}.gp-wm{display:none}
+  .gp-t6 button{font-size:10px!important}
 }
 @media(prefers-reduced-motion:reduce){
-  .gp-box,.gp-modal.show,.gp-modal.show.gp-play .gp-box,.gp-modal.show.gp-soft .gp-box,.gp-ic::before,.gp-ic::after,.gp-top::after,
-  .gp-scroll .third-pane.show>*,.gp-flat .gp-scroll>*,.gp-scroll .row,.gp-scroll .err-item,.gp-sec.swap,.gp-cnt.ok{animation:none!important}
+  .gp-box,.gp-modal.show,.gp-modal.show.gp-play .gp-box,.gp-ic::before,.gp-ic::after,.gp-top::after,
+  .gp-scroll .third-pane.show>*,.gp-scroll .row,.gp-scroll .err-item,.gp-sec.swap,.gp-cnt.ok{animation:none!important}
 }
 </style>
 
@@ -8427,20 +8425,63 @@ function boot(){
     car:'<path d="M4 15l1.5-5A2 2 0 0 1 7.4 8.5h9.2a2 2 0 0 1 1.9 1.5L20 15v3H4zM4 15h16M7 18v2M17 18v2"/>',
     x:'<path d="M6 6l12 12M18 6L6 18"/>'
   };
+  var TAB_ICONS=["users","lead","shield","clock","coord","ticket"];
   var sv=function(p,c){return '<svg class="'+(c||"")+'" viewBox="0 0 24 24" aria-hidden="true">'+p+'</svg>'};
   var GR={
     third:{cls:"gp-third",name:"گروه ثالث",icon:"users"},
     na:{cls:"gp-na",name:"گروه غیر خودرویی",icon:"block"},
     body:{cls:"gp-body",name:"گروه بدنه",icon:"car"}
   };
-  var MODALS=[
-    ["usersModal","third","مدیریت نمایندگان"],["leadersModal","third","سرگروه‌های نمایندگان"],["lacModal","third","ثبت سرگروه"],
-    ["actModal","third","تاریخچه‌ی فعالیت"],["cdModal","third","کوردینیتورها"],["tkModal","third","تیکت‌ها"],
-    ["naModal","na",null],["bdModal","body",null]
-  ];
-  var TAB_ICONS=["users","lead","shield","clock","coord","ticket"];
 
-  var ox=innerWidth/2,oy=innerHeight/2,lastPtr=0,lastClose=0;
+  /* ---------- گروه ثالث: ساخت یک پنجره‌ی واحد با ۶ تب از پنجره‌های قبلی ---------- */
+  var SRC=[ /* [پنجره‌ی قدیمی، دکمه‌ی بارگذاری داده‌ی همون تب، برچسب تب] */
+    ["usersModal","usersOpen","نمایندگان"],["leadersModal","ldOpen","سرگروه‌ها"],["lacModal","lacOpen","ثبت سرگروه"],
+    ["actModal","actOpen","تاریخچه"],["cdModal","cdOpen","کوردینیتورها"],["tkModal","tkOpen","تیکت‌ها"]
+  ];
+  var third=$("gpThird");
+  if(!third){
+    third=document.createElement("div");
+    third.className="modal";third.id="gpThird";third.setAttribute("role","dialog");third.setAttribute("aria-modal","true");
+    third.innerHTML=
+      '<div class="modal-box" style="max-width:700px;text-align:right;">'+
+       '<div class="third-tabs gp-t6" id="gpTabs"><span class="tab-ind"></span>'+
+        SRC.map(function(s){return '<button type="button">'+s[2]+'</button>'}).join("")+'</div>'+
+       SRC.map(function(s,i){return '<div class="third-pane'+(i?"":" show")+'" id="gpP'+i+'"></div>'}).join("")+
+       '<div class="actions" style="margin-top:16px"><button type="button" class="secondary full" id="gpClose">بستن</button></div>'+
+      '</div>';
+    document.body.appendChild(third);
+
+    SRC.forEach(function(s,i){
+      var old=$(s[0]),ob=old&&old.querySelector(".modal-box"),pane=$("gpP"+i);
+      if(!ob)return;
+      while(ob.firstChild)pane.appendChild(ob.firstChild);   /* همه‌ی کنترل‌ها با شناسه‌ها و رویدادهاشون منتقل می‌شن */
+      old.classList.add("gp-old");
+    });
+
+    var tabBtns=[].slice.call($("gpTabs").querySelectorAll("button")),ind=$("gpTabs").querySelector(".tab-ind");
+    var showTab=function(i){
+      tabBtns.forEach(function(b,k){b.classList.toggle("active",k===i)});
+      ind.style.transform="translateX("+(-i*100)+"%)";
+      SRC.forEach(function(s,k){$("gpP"+k).classList.toggle("show",k===i)});
+      var load=$(SRC[i][1]);if(load)load.click();             /* همون بارگذاری داده‌ی قبلی */
+    };
+    tabBtns.forEach(function(b,i){b.addEventListener("click",function(){showTab(i)})});
+    $("gpClose").addEventListener("click",function(){third.classList.remove("show")});
+    third.addEventListener("click",function(e){if(e.target===third)third.classList.remove("show")});
+    document.addEventListener("keydown",function(e){if(e.key==="Escape")third.classList.remove("show")});
+
+    /* دکمه‌ی «گروه ثالث» (منو و دسترسی سریع) حالا همین پنجره رو باز می‌کنه */
+    document.addEventListener("click",function(e){
+      if(!(e.target.closest&&e.target.closest("#thirdOpen")))return;
+      e.stopImmediatePropagation();e.preventDefault();
+      if(typeof closeMenu==="function")try{closeMenu()}catch(x){}
+      third.classList.add("show");showTab(0);
+    },true);
+  }
+
+  var MODALS=[["gpThird","third",null],["naModal","na",null],["bdModal","body",null]];
+
+  var ox=innerWidth/2,oy=innerHeight/2,lastPtr=0;
   document.addEventListener("pointerdown",function(e){ox=e.clientX;oy=e.clientY;lastPtr=Date.now()},true);
 
   /* ---------- تعداد نماینده‌ها (کش یک‌دقیقه‌ای) ---------- */
@@ -8482,7 +8523,7 @@ function boot(){
     });
   }
 
-  function deco(id,g,sec){
+  function deco(id,g){
     var m=$(id),box=m&&m.querySelector(".modal-box");
     if(!box||box.classList.contains("gp-box"))return;
     var G=GR[g];
@@ -8493,32 +8534,29 @@ function boot(){
     top.innerHTML=
       sv(P[G.icon],"gp-wm")+
       '<div class="gp-hd"><span class="gp-ic">'+sv(P[G.icon])+'</span>'+
-      '<div class="gp-tt"><h2>'+G.name+'</h2><p class="gp-sec">'+(sec||"")+'</p></div>'+
+      '<div class="gp-tt"><h2>'+G.name+'</h2><p class="gp-sec"></p></div>'+
       '<span class="gp-cnt"><i></i><b>0</b> نماینده</span>'+
       '<button type="button" class="gp-x" title="بستن (Esc)" aria-label="بستن">'+sv(P.x)+'</button></div>';
 
-    /* محتوای قبلی میره داخل ناحیه‌ی اسکرول؛ هدر بیرونش می‌مونه */
     var sc=document.createElement("div");sc.className="gp-scroll";
     while(box.firstChild)sc.appendChild(box.firstChild);
     if(tabs){
       top.appendChild(tabs);
       tabs.querySelectorAll("button").forEach(function(b,i){
-        if(!b.querySelector(".gp-ti"))b.insertAdjacentHTML("afterbegin",sv(P[["users","lead","shield","clock"][i]]||P.users,"gp-ti"));
+        if(!b.querySelector(".gp-ti"))b.insertAdjacentHTML("afterbegin",sv(P[TAB_ICONS[i]]||P.users,"gp-ti"));
       });
       new MutationObserver(function(){setSec(m,activeTabText(m))}).observe(tabs,{attributes:true,attributeFilter:["class"],subtree:true});
-    }else box.classList.add("gp-flat");
+    }
     box.appendChild(top);box.appendChild(sc);
 
     top.querySelector(".gp-x").addEventListener("click",function(){
-      var c=box.querySelector("#usersCloseBtn,#ldCloseBtn,#lacClose,#actCloseBtn,#cdClose,#tkClose,#naClose,#bdClose");
+      var c=box.querySelector("#gpClose,#naClose,#bdClose");
       if(c)c.click();else m.classList.remove("show");
     });
 
     sc.querySelectorAll(":scope > .third-pane").forEach(function(p){
       Array.prototype.forEach.call(p.children,function(c,i){c.style.setProperty("--n",Math.min(i,10))});
     });
-    if(box.classList.contains("gp-flat"))
-      Array.prototype.forEach.call(sc.children,function(c,i){c.style.setProperty("--n",Math.min(i,10))});
 
     new MutationObserver(function(ms){
       ms.forEach(function(r){r.addedNodes.forEach(function(n){
@@ -8532,32 +8570,26 @@ function boot(){
     new MutationObserver(function(){
       var now=m.classList.contains("show");
       if(now===was)return;was=now;
-      if(!now){m.classList.remove("gp-play","gp-soft");lastClose=Date.now();return}
-      open(m,box,sc,g,sec);
+      if(!now){m.classList.remove("gp-play");return}
+      open(m,box,sc,g);
     }).observe(m,{attributes:true,attributeFilter:["class"]});
   }
 
-  function open(m,box,sc,g,sec){
-    var soft=Date.now()-lastClose<250;
+  function open(m,box,sc,g){
     var useP=Date.now()-lastPtr<1500;
     var px=useP?ox:innerWidth/2,py=useP?oy:innerHeight/2;
-    m.classList.remove("gp-play","gp-soft");
+    m.classList.remove("gp-play");
     m.style.setProperty("--vx",px+"px");m.style.setProperty("--vy",py+"px");
     void box.offsetWidth;
     var r=box.getBoundingClientRect();
     box.style.setProperty("--ox",(px-r.left)+"px");box.style.setProperty("--oy",(py-r.top)+"px");
     sc.scrollTop=0;
-    m.classList.add(soft?"gp-soft":"gp-play");
-    setSec(m,sec||activeTabText(m));
+    m.classList.add("gp-play");
+    setSec(m,activeTabText(m));
     fillCount(m,g);
   }
 
-  MODALS.forEach(function(x){deco(x[0],x[1],x[2])});
-
-  var bar=$("thirdTabs");
-  if(bar)bar.querySelectorAll("button").forEach(function(b,i){
-    if(!b.querySelector(".gp-ti"))b.insertAdjacentHTML("afterbegin",sv(P[TAB_ICONS[i]]||P.users,"gp-ti"));
-  });
+  MODALS.forEach(function(x){deco(x[0],x[1])});
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
 })();
