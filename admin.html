@@ -6398,5 +6398,24 @@ var rz;window.addEventListener("resize",function(){clearTimeout(rz);rz=setTimeou
   .az-dash .az-br{flex:none}
 }
 </style>
+  <!-- ===== جایگزینی لوگوی کوه با کاراکتر ===== -->
+<!-- فایل logo.png رو کنار admin.html (کنار hero.webp) بذار. این بلاک رو درست قبل از </body> بچسبون. -->
+<style id="lg-style">
+.nx-logo svg{display:none}
+.nx-logo .lg-img{width:48px;height:48px;object-fit:contain;flex:none;
+  filter:drop-shadow(0 0 10px var(--accent1));transition:transform .3s}
+.nx-logo:hover .lg-img{transform:scale(1.08) rotate(-4deg)}
+.nx-collapsed .nx-logo .lg-img{width:40px;height:40px}
+</style>
+<script id="lg-script">
+(function(){
+  var l=document.querySelector(".nx-logo");
+  if(!l||l.querySelector(".lg-img"))return;
+  var i=document.createElement("img");
+  i.className="lg-img";i.src="logo.png";i.alt="";i.width=48;i.height=48;
+  i.onerror=function(){i.remove();var s=l.querySelector("svg");if(s)s.style.display="block"};
+  l.insertBefore(i,l.firstChild);
+})();
+</script>
 </body>
 </html>
