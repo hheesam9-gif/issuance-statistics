@@ -10,21 +10,7 @@
 <script>
   /* اعمال تم قبل از رسم صفحه تا موقع لود چشمک نزنه */
   try { if (localStorage.getItem("site_theme") === "light") document.documentElement.setAttribute("data-theme", "light"); } catch (e) {}
-  /* اعمال تم فصلی قبل از رسم صفحه (بر اساس ماه شمسی، یا انتخاب دستی ذخیره‌شده) */
-  try {
-    function seasonFromMonthPre(m) {
-      if (m >= 1 && m <= 3) return "spring";
-      if (m >= 4 && m <= 6) return "summer";
-      if (m >= 7 && m <= 9) return "autumn";
-      return "winter";
-    }
-    var partsPre = new Intl.DateTimeFormat("en-u-ca-persian-nu-latn", { month: "numeric" }).formatToParts(new Date());
-    var mmPre = partsPre.find(function (p) { return p.type === "month"; });
-    var monthPre = mmPre ? parseInt(mmPre.value, 10) : 1;
-    var savedSeason = localStorage.getItem("site_season") || "auto";
-    var seasonPre = savedSeason === "auto" ? seasonFromMonthPre(monthPre) : savedSeason;
-    document.documentElement.setAttribute("data-season", seasonPre);
-  } catch (e) {}
+
 </script>
  <script src="admin-agents-info.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -67,28 +53,8 @@
     --ok: #15803d; --warn: #b45309; --error: #dc2626;
   }
 
-  /* ---------- تم فصلی: رنگ اصلی و حباب‌های پس‌زمینه بر اساس فصل ---------- */
-  :root[data-season="spring"] { --accent1: #ff8fc0; --accent2: #2bc48f; --blob1: rgba(255, 143, 192, 0.42); --blob2: rgba(43, 196, 143, 0.30); --blob3: rgba(255, 214, 102, 0.22); }
-  :root[data-season="summer"] { --accent1: #ffb020; --accent2: #22b8cf; --blob1: rgba(255, 176, 32, 0.36); --blob2: rgba(34, 184, 207, 0.32); --blob3: rgba(255, 99, 132, 0.20); }
-  :root[data-season="autumn"] { --accent1: #e8672c; --accent2: #c68a3d; --blob1: rgba(232, 103, 44, 0.42); --blob2: rgba(198, 138, 61, 0.32); --blob3: rgba(122, 58, 34, 0.24); }
-  :root[data-season="winter"] { --accent1: #4f8dff; --accent2: #9fd7ff; --blob1: rgba(79, 141, 255, 0.40); --blob2: rgba(159, 215, 255, 0.34); --blob3: rgba(214, 232, 255, 0.24); }
 
-  [data-theme="light"][data-season="spring"] { --blob1: rgba(255, 143, 192, 0.36); --blob2: rgba(43, 196, 143, 0.26); --blob3: rgba(255, 214, 102, 0.24); }
-  [data-theme="light"][data-season="summer"] { --blob1: rgba(255, 176, 32, 0.30); --blob2: rgba(34, 184, 207, 0.26); --blob3: rgba(255, 99, 132, 0.18); }
-  [data-theme="light"][data-season="autumn"] { --blob1: rgba(232, 103, 44, 0.32); --blob2: rgba(198, 138, 61, 0.26); --blob3: rgba(122, 58, 34, 0.18); }
-  [data-theme="light"][data-season="winter"] { --blob1: rgba(79, 141, 255, 0.30); --blob2: rgba(159, 215, 255, 0.28); --blob3: rgba(214, 232, 255, 0.26); }
 
-  /* ---------- ذره‌های فصلی (گلبرگ/درخشش/برگ/برف) ---------- */
-  .season-fx { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
-  .season-particle {
-    position: absolute; top: -40px; line-height: 1; opacity: 0.55; will-change: transform;
-    animation-name: seasonFall; animation-timing-function: linear; animation-iteration-count: infinite;
-  }
-  @keyframes seasonFall {
-    from { transform: translateY(-10vh) translateX(0) rotate(0deg); }
-    to { transform: translateY(112vh) translateX(var(--drift, 0px)) rotate(360deg); }
-  }
-  @media (prefers-reduced-motion: reduce) { .season-particle { animation: none; display: none; } }
 
   html { margin: 0; min-height: 100%; background: var(--page-base); }
   body {
@@ -677,7 +643,7 @@ button.sort-btn.active { background: linear-gradient(135deg, var(--accent1), var
     <div class="blob b3"></div>
     <div class="dots"></div>
     <div class="grain"></div>
-    <div class="season-fx" id="seasonFx" aria-hidden="true"></div>
+
   </div>
 
   <!-- ورود مدیر -->
@@ -768,10 +734,7 @@ button.sort-btn.active { background: linear-gradient(135deg, var(--accent1), var
               <span class="menu-item-text">گروه ثالث<small>نمایندگان، سرگروه‌ها و تاریخچه</small></span>
             </button>
 
-            <button type="button" class="menu-item" id="seasonToggle" role="menuitem">
-              <span class="menu-item-icon" id="seasonEmoji" style="font-size:15px;">🍂</span>
-              <span class="menu-item-text"><span id="seasonLabel">تم فصلی</span><small>تغییر رنگ و افکت پس‌زمینه</small></span>
-            </button>
+
 
             <div class="menu-divider"></div>
             <button type="button" class="menu-item danger" id="wipeOpen" role="menuitem">
@@ -1225,98 +1188,6 @@ button.sort-btn.active { background: linear-gradient(135deg, var(--accent1), var
     if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleTheme(); }
   });
 
-  /* ---------- تم فصلی ---------- */
-  const SEASON_ORDER = ["auto", "spring", "summer", "autumn", "winter"];
-  const SEASON_META = {
-    spring: { emoji: "🌸", label: "بهار", particles: ["🌸", "🌿"] },
-    summer: { emoji: "☀️", label: "تابستان", particles: ["✨", "🌞"] },
-    autumn: { emoji: "🍂", label: "پاییز", particles: ["🍂", "🍁"] },
-    winter: { emoji: "❄️", label: "زمستان", particles: ["❄️"] }
-  };
-
-  function seasonFromMonth(m) {
-    if (m >= 1 && m <= 3) return "spring";
-    if (m >= 4 && m <= 6) return "summer";
-    if (m >= 7 && m <= 9) return "autumn";
-    return "winter";
-  }
-  function currentJalaliMonth() {
-    try {
-      const parts = new Intl.DateTimeFormat("en-u-ca-persian-nu-latn", { month: "numeric" }).formatToParts(new Date());
-      const mm = parts.find(p => p.type === "month");
-      return mm ? parseInt(mm.value, 10) : 1;
-    } catch (e) { return 1; }
-  }
-  function resolveSeason(pref) { return pref === "auto" ? seasonFromMonth(currentJalaliMonth()) : pref; }
-
-  function renderSeasonParticles(season) {
-    const fx = document.getElementById("seasonFx");
-    if (!fx) return;
-    fx.replaceChildren();
-    const meta = SEASON_META[season];
-    if (!meta) return;
-    const count = season === "summer" ? 10 : 16;
-    for (let i = 0; i < count; i++) {
-      const span = document.createElement("span");
-      span.className = "season-particle";
-      span.textContent = meta.particles[i % meta.particles.length];
-      const left = Math.random() * 100;
-      const duration = 10 + Math.random() * 14;
-      const delay = -1 * Math.random() * duration;
-      const drift = Math.round(Math.random() * 80 - 40) + "px";
-      const size = 12 + Math.random() * 12;
-      span.style.left = left + "%";
-      span.style.fontSize = size + "px";
-      span.style.animationDuration = duration + "s";
-      span.style.animationDelay = delay + "s";
-      span.style.setProperty("--drift", drift);
-      fx.appendChild(span);
-    }
-  }
-
-  function applySeason(pref) {
-    const season = resolveSeason(pref);
-    root.setAttribute("data-season", season);
-    const meta = SEASON_META[season];
-    const emojiEl = document.getElementById("seasonEmoji");
-    const labelEl = document.getElementById("seasonLabel");
-    if (emojiEl) emojiEl.textContent = meta.emoji;
-    if (labelEl) labelEl.textContent = pref === "auto" ? (meta.label + " (خودکار)") : meta.label;
-    renderSeasonParticles(season);
-  }
-
-  let seasonPref = (function () { try { return localStorage.getItem("site_season") || "auto"; } catch (e) { return "auto"; } })();
-  applySeason(seasonPref);
-
-  // مقدار مشترک فصل رو از دیتابیس می‌خونیم (اگه سرپرست قبلاً از یه دستگاه دیگه تنظیمش کرده باشه)
-  // این همون مقداریه که تو پنل نماینده‌ها هم (فقط برای نمایش، بدون دکمه‌ی تغییر) خونده می‌شه
-  async function loadSeasonFromServer() {
-    try {
-      const { data, error } = await supabaseClient
-        .from("app_settings").select("value").eq("key", "season").maybeSingle();
-      if (error) { console.warn("app_settings read failed:", error.message); return; }
-      if (data && data.value && data.value !== seasonPref) {
-        seasonPref = data.value;
-        try { localStorage.setItem("site_season", seasonPref); } catch (e) {}
-        applySeason(seasonPref);
-      }
-    } catch (e) { console.warn("app_settings read failed:", e); }
-  }
-
-  async function saveSeasonToServer(pref) {
-    const { error } = await supabaseClient
-      .from("app_settings")
-      .upsert({ key: "season", value: pref, updated_at: new Date().toISOString() }, { onConflict: "key" });
-    if (error) toast("تم فصلی برای بقیه ذخیره نشد: " + explainError(error), "error");
-  }
-
-  document.getElementById("seasonToggle").addEventListener("click", async () => {
-    const idx = SEASON_ORDER.indexOf(seasonPref);
-    seasonPref = SEASON_ORDER[(idx + 1) % SEASON_ORDER.length];
-    try { localStorage.setItem("site_season", seasonPref); } catch (e) {}
-    applySeason(seasonPref);
-    await saveSeasonToServer(seasonPref);
-  });
 
   /* ---------- ابزارها ---------- */
   // گرد کردن اعداد اعشاری برای نمایش (مثلاً 1074.1000000000001 دیده نشه)
@@ -3693,7 +3564,7 @@ $("ldSearch").addEventListener("input", () => { clearTimeout(ldTimer); ldTimer =
     loadAllErrors();
     loadAnnouncements();
     loadPeriodList();
-    loadSeasonFromServer();
+
   }
   function showApp() {
     $("gate").hidden = true;
@@ -4142,7 +4013,7 @@ TABS.forEach(t => $(t.id).addEventListener("click", e => {
 <style id="nx-style">
 /* پالت نئونی ثابت: تم فصلی و تم روشن/تیره‌ی قدیمی دیگه ظاهر پنل مدیریت رو عوض نمی‌کنه (تم فصلی فقط برای پنل نماینده‌هاست) */
 html:root,html:root[data-season],html:root[data-theme],html:root[data-theme][data-season]{--page-base:#030712;--blob1:rgba(47,123,255,.38);--blob2:rgba(155,92,255,.26);--blob3:rgba(20,209,184,.16);--dot:rgba(120,160,255,.08);--card-bg:rgba(9,18,46,.74);--card-border:rgba(70,120,255,.22);--card-shadow:0 18px 44px rgba(0,0,0,.45);--sheen:rgba(120,170,255,.2);--text:#e8efff;--text-dim:#8a9bc9;--input-bg:rgba(4,10,30,.72);--input-border:rgba(70,120,255,.28);--row-bg:rgba(47,123,255,.07);--row-border:rgba(70,120,255,.16);--accent1:#2f7bff;--accent2:#14d1b8;--glow:rgba(47,123,255,.4);--ok:#3ddc84;--warn:#fbbf24;--error:#ff5d7a}
-.season-fx,.theme-toggle{display:none!important}
+.theme-toggle{display:none!important}
 body{font-family:Vazirmatn,Tahoma,Arial,sans-serif;padding:0}
 .gate{padding:24px 14px}
 #app{display:block;width:100%}
@@ -4163,7 +4034,6 @@ body{font-family:Vazirmatn,Tahoma,Arial,sans-serif;padding:0}
 .nx-side .tab.active .menu-item-icon{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.4);color:#fff}
 .nx-side .menu-item.danger{color:var(--error)}.nx-side .menu-item.danger .menu-item-icon{color:var(--error)}
 .nx-side .menu-divider{margin:8px 4px}
-#seasonToggle::after{content:"فقط نماینده‌ها";font-size:10px;font-weight:400;padding:2px 8px;border-radius:99px;background:rgba(20,209,184,.14);color:var(--accent2);white-space:nowrap}
 .nx-area{padding:14px 18px 40px;min-width:0}
 .nx-top{display:flex;align-items:center;gap:10px;margin-bottom:14px}
 .nx-sb{flex:1;max-width:420px;display:flex;align-items:center;gap:10px;padding:0 14px;border-radius:13px;border:1px solid var(--card-border);background:var(--card-bg);color:var(--text-dim);transition:.25s}
@@ -4307,11 +4177,7 @@ if(app&&header&&tabs&&main&&menu){
   ap();
   $("nxAcc").addEventListener("click",function(){ai=(ai+1)%AC.length;try{localStorage.setItem("admin_accent",String(ai))}catch(e){}ap()});
 
-  /* تم فصلی: منطق اصلی (ذخیره روی app_settings برای پنل نماینده‌ها) دست‌نخورده؛ فقط یه پیام تأیید نشون می‌دیم */
-  var sz=$("seasonToggle");
-  if(sz)sz.addEventListener("click",function(){
-    setTimeout(function(){var l=$("seasonLabel");if(l&&typeof window.toast==="function")window.toast("تم فصلی پنل نماینده‌ها: "+l.textContent,"ok")},80);
-  });
+
 }
 /* تبدیل همه‌ی ایموجی‌ها (حتی اونایی که بعداً با جاوااسکریپت ساخته می‌شن) به آیکون */
 walk(document.body);
@@ -4407,7 +4273,6 @@ html{color-scheme:dark}
 .nx-hero::before,.nx-hero::after{display:none}
 /* ---------- جزئیات ---------- */
 .nx-sb kbd{white-space:nowrap;line-height:1.4}
-#seasonToggle::after{display:none}                      /* برچسب بریده‌شده‌ی «فقط نماینده‌ها» */
 .nx-side .menu-item{overflow:hidden}
 .card::before{left:6%;right:6%;background:linear-gradient(90deg,transparent,var(--accent2),var(--accent1),transparent);opacity:.55}
 .card-icon{box-shadow:0 0 18px -4px var(--glow)}
@@ -8614,6 +8479,78 @@ function boot(){
   MODALS.forEach(function(x){deco(x[0],x[1])});
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
+})();
+</script>
+<script id="season-admin">
+(function(){
+  var KEY="season";
+  var ORDER=["auto","spring","summer","autumn","winter"];
+  var META={
+    auto:{e:"🔄",l:"خودکار (بر اساس ماه)"},
+    spring:{e:"🌸",l:"بهار"},
+    summer:{e:"☀️",l:"تابستان"},
+    autumn:{e:"🍂",l:"پاییز"},
+    winter:{e:"❄️",l:"زمستان"}
+  };
+  var cur="auto";
+
+  /* اگه دکمه‌ی قدیمی هنوز تو فایل مونده باشه، حذفش می‌کنیم تا دوبار نیفته */
+  var old=document.getElementById("seasonToggle");
+  if(old) old.remove();
+
+  /* ساخت دکمه تو منو، بالای خط جداکننده‌ی «پایان دوره» */
+  var btn=document.createElement("button");
+  btn.type="button";
+  btn.className="menu-item";
+  btn.id="szBtn";
+  btn.setAttribute("role","menuitem");
+  btn.innerHTML=
+    '<span class="menu-item-icon" id="szEmoji"></span>'+
+    '<span class="menu-item-text"><span id="szLabel">تم فصلی پنل نماینده‌ها</span>'+
+    '<small>فعلاً: خودکار</small></span>';
+
+  var wipe=document.getElementById("wipeOpen");
+  var divider=wipe && wipe.previousElementSibling;
+  var menu=document.getElementById("menuItems");
+  if(divider && divider.classList.contains("menu-divider")) divider.parentNode.insertBefore(btn,divider);
+  else if(menu) menu.appendChild(btn);
+
+  var SVG={
+    auto:'<path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4v5h-5"/>',
+    spring:'<circle cx="12" cy="12" r="2.5"/><circle cx="12" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="12" r="2.5"/>',
+    summer:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+    autumn:'<path d="M5 19c0-9 5-14 15-14 0 10-5 15-14 15zM5 19l8-8"/>',
+    winter:'<path d="M12 2v20M3.3 7l17.4 10M3.3 17L20.7 7"/>'
+  };
+  function show(){
+    var m=META[cur]||META.auto;
+    document.getElementById("szEmoji").innerHTML=
+      '<svg class="nx-i" viewBox="0 0 24 24" aria-hidden="true">'+(SVG[cur]||SVG.auto)+'</svg>';
+    btn.querySelector("small").textContent="فعلاً: "+m.l+" — با کلیک عوض می‌شه";
+  }
+  async function load(){
+    try{
+      var r=await supabaseClient.from("app_settings").select("value").eq("key",KEY).maybeSingle();
+      if(r.data && META[r.data.value]) cur=r.data.value;
+    }catch(e){}
+    show();
+  }
+  /* کلیک: فصل بعدی، ذخیره برای پنل نماینده‌ها */
+  btn.addEventListener("click",async function(){
+    var next=ORDER[(ORDER.indexOf(cur)+1)%ORDER.length];
+    var r=await supabaseClient.from("app_settings")
+      .upsert({key:KEY,value:next,updated_at:new Date().toISOString()},{onConflict:"key"});
+    if(r.error){ toast("ذخیره نشد: "+explainError(r.error),"error"); return; }
+    cur=next;
+    show();
+    toast("تم پنل نماینده‌ها: "+META[cur].l,"ok");
+  });
+
+  /* بعد از ورود مدیر، مقدار رو بخون */
+  var app=document.getElementById("app");
+  if(app && !app.hidden) load();
+  else if(app) new MutationObserver(function(m,o){ if(!app.hidden){ o.disconnect(); load(); } })
+    .observe(app,{attributes:true,attributeFilter:["hidden"]});
 })();
 </script>
 </body>
