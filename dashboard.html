@@ -1177,6 +1177,15 @@ button.ord-sum:active { transform: scale(0.97); }
       <input id="pfLeader" type="text" autocomplete="off" maxlength="60">
       <div class="pf-chips" id="pfChips"></div>
       <div class="pf-hint" id="pfHint"></div>
+            <div style="margin-top:12px">
+        <button type="button" class="pf-chip" id="pfAskSecond">آیا سرگروه دوم دارید؟ ➕</button>
+        <div id="pfSecondBox" hidden style="margin-top:10px">
+          <label for="pfLeader2" style="display:block;font-size:12.5px;color:var(--text-dim);margin-bottom:6px">نام سرگروه دوم</label>
+          <input id="pfLeader2" type="text" autocomplete="off" maxlength="60" style="width:100%;padding:12px 14px;border-radius:12px;font-family:inherit;font-size:14px;color:var(--text);background:var(--input-bg);border:1px solid var(--input-border);outline:none">
+          <div class="pf-chips" id="pfChips2"></div>
+          <button type="button" class="pf-chip" id="pfRemoveSecond" style="margin-top:8px">حذف سرگروه دوم ✕</button>
+        </div>
+      </div>
     </div>
 
     <button id="profSave" type="button">ذخیره</button>
@@ -2368,10 +2377,20 @@ function setProfMsg(t, c) {
   m.style.color = c === "ok" ? "var(--ok)" : c === "error" ? "var(--error)" : "var(--text-dim)";
 }
 
-function syncChips() {
-  const cur = $("pfLeader").value.trim();
-  document.querySelectorAll(".pf-chip").forEach(c => c.classList.toggle("on", c.dataset.name === cur));
+function showSecond(on) {
+  $("pfSecondBox").hidden = !on;
+  $("pfAskSecond").hidden = on;
+  if (!on) $("pfLeader2").value = "";
+  syncChips();
 }
+function syncChips() {
+  const c1 = $("pfLeader").value.trim(), c2 = $("pfLeader2").value.trim();
+  document.querySelectorAll("#pfChips .pf-chip").forEach(c => c.classList.toggle("on", c.dataset.name === c1));
+  document.querySelectorAll("#pfChips2 .pf-chip").forEach(c => c.classList.toggle("on", c.dataset.name === c2));
+}
+$("pfAskSecond").addEventListener("click", () => showSecond(true));
+$("pfRemoveSecond").addEventListener("click", () => showSecond(false));
+$("pfLeader2").addEventListener("input", syncChips);
 
 async function openProfile() {
   profModal.classList.add("show");
@@ -2397,7 +2416,11 @@ async function openProfile() {
 
   $("pfFirst").value = prof.first_name || adm.first_name || "";
   $("pfLast").value = prof.last_name || "";
-  $("pfLeader").value = prof.leader_name || (mine.length === 1 ? mine[0] : "");
+  const lead1 = prof.leader_name || (mine.length === 1 ? mine[0] : "");
+  const lead2 = prof.leader_name2 || (mine.length > 1 ? (mine.find(n => n !== lead1) || "") : "");
+  $("pfLeader").value = lead1;
+  $("pfLeader2").value = lead2;
+  showSecond(!!lead2);
 
   $("pfChips").replaceChildren();
   profLeaders.forEach(name => {
@@ -2408,7 +2431,14 @@ async function openProfile() {
     b.addEventListener("click", () => { $("pfLeader").value = name; syncChips(); });
     $("pfChips").appendChild(b);
   });
-
+  $("pfChips2").replaceChildren();
+  profLeaders.forEach(name => {
+    const b2 = el("button", "pf-chip", name);
+    b2.type = "button";
+    b2.dataset.name = name;
+    b2.addEventListener("click", () => { $("pfLeader2").value = name; syncChips(); });
+    $("pfChips2").appendChild(b2);
+  });
   $("pfHint").textContent = profLeaders.length
     ? "یکی از سرگروه‌های ثالث رو انتخاب کنید (ستاره‌دارها همونایی هستن که برای شما ثبت شده)."
     : (all && all.error ? "خواندن لیست سرگروه‌ها ناموفق بود؛ اسم رو دستی بنویسید." : "هنوز سرگروهی ثبت نشده؛ اسم رو دستی بنویسید.");
@@ -2430,18 +2460,21 @@ $("profSave").addEventListener("click", async () => {
   btn.disabled = true;
   setProfMsg("در حال ذخیره...");
   const leader = $("pfLeader").value.trim();
+  const leader2 = $("pfSecondBox").hidden ? "" : $("pfLeader2").value.trim();
+  if (leader2 && leader2 === leader) { setProfMsg("سرگروه دوم نباید با اولی یکی باشه", "error"); btn.disabled = false; return; }
 
   const { error } = await supabaseClient.from("agent_profiles").upsert({
     username: currentUsername.toLowerCase(),
     first_name: first,
     last_name: $("pfLast").value.trim() || null,
     leader_name: leader || null,
+    leader_name2: leader2 || null,
     updated_at: new Date().toISOString()
   }, { onConflict: "username" });
 
   let err2 = null;
   if (!error) {
-    const r = await supabaseClient.rpc("set_my_leader", { p_leader: leader, p_first: first });
+    const r = await supabaseClient.rpc("set_my_leader", { p_leader: leader, p_first: first, p_leader2: leader2 });
     err2 = r.error;
   }
   btn.disabled = false;
