@@ -1964,7 +1964,7 @@ const payEl = el("span", "row-pay", fmtMoney(dayPay(it.count, it.date)) + " ت" 
   async function loadRank() {
     const card = $("rankCard");
     let res;
-    try { res = await supabaseClient.rpc("get_my_rank"); } catch (e) { return; }
+    try { res = await supabaseClient.rpc("get_my_rank_nonauto"); } catch (e) { return; }
     if (!res || res.error || !res.data) { card.hidden = true; return; }
     const r = Array.isArray(res.data) ? res.data[0] : res.data;
     if (!r) { card.hidden = true; return; }
@@ -2503,8 +2503,8 @@ async function openProfile() {
 
   const [p, l, all] = await Promise.all([
     supabaseClient.from("agent_profiles").select("first_name,last_name,leader_name").ilike("username", currentUsername).maybeSingle(),
-    supabaseClient.from("agent_leaders").select("first_name,leaders").ilike("username", currentUsername).maybeSingle(),
-    supabaseClient.rpc("get_leader_names")
+    supabaseClient.from("agent_leaders_nonauto").select("first_name,leaders").ilike("username", currentUsername).maybeSingle(),
+    supabaseClient.rpc("get_leader_names_nonauto")
   ]);
   const prof = (p && p.data) || {};
   const adm = (l && l.data) || {};
@@ -2574,7 +2574,7 @@ $("profSave").addEventListener("click", async () => {
 
   let err2 = null;
   if (!error) {
-    const r = await supabaseClient.rpc("set_my_leader", { p_leader: leader, p_first: first, p_leader2: leader2 });
+    const r = await supabaseClient.rpc("set_my_leader_nonauto", { p_leader: leader, p_first: first, p_leader2: leader2 });
     err2 = r.error;
   }
   btn.disabled = false;
