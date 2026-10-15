@@ -970,6 +970,7 @@ button.ord-sum:active { transform: scale(0.97); }
 }
 #profSave:disabled { opacity: .5; cursor: not-allowed; }
 #profMsg { text-align: center; font-size: 13px; min-height: 18px; margin-top: 12px; color: var(--text-dim); }
+.pf-chips { max-height: 150px; overflow-y: auto; padding: 2px; scrollbar-width: thin; scrollbar-color: var(--row-border) transparent; }
 </style>
 
 </head>
@@ -2369,7 +2370,7 @@ function setProfMsg(t, c) {
 
 function syncChips() {
   const cur = $("pfLeader").value.trim();
-  document.querySelectorAll(".pf-chip").forEach(c => c.classList.toggle("on", c.textContent === cur));
+  document.querySelectorAll(".pf-chip").forEach(c => c.classList.toggle("on", c.dataset.name === cur));
 }
 
 async function openProfile() {
@@ -2379,31 +2380,38 @@ async function openProfile() {
   $("profAv").textContent = initials(currentUsername);
   $("pfFirst").value = $("pfLast").value = $("pfLeader").value = "";
   $("pfChips").replaceChildren();
-  $("pfHint").textContent = "";
+  $("pfHint").textContent = "در حال بارگذاری سرگروه‌ها...";
 
-  const [p, l] = await Promise.all([
+  const [p, l, all] = await Promise.all([
     supabaseClient.from("agent_profiles").select("first_name,last_name,leader_name").ilike("username", currentUsername).maybeSingle(),
-    supabaseClient.from("agent_leaders").select("first_name,leaders").ilike("username", currentUsername).maybeSingle()
+    supabaseClient.from("agent_leaders").select("first_name,leaders").ilike("username", currentUsername).maybeSingle(),
+    supabaseClient.rpc("get_leader_names")
   ]);
   const prof = (p && p.data) || {};
   const adm = (l && l.data) || {};
-  profLeaders = Array.isArray(adm.leaders) ? adm.leaders : [];
+  const mine = Array.isArray(adm.leaders) ? adm.leaders : [];
+  const names = (all && all.data) ? all.data.map(r => r.name) : [];
+
+  // اسم‌های ثبت‌شده برای خود نماینده اول بیان، بعد بقیه
+  profLeaders = [...mine, ...names.filter(n => !mine.includes(n))];
 
   $("pfFirst").value = prof.first_name || adm.first_name || "";
   $("pfLast").value = prof.last_name || "";
-  $("pfLeader").value = prof.leader_name || (profLeaders.length === 1 ? profLeaders[0] : "");
+  $("pfLeader").value = prof.leader_name || (mine.length === 1 ? mine[0] : "");
 
-  if (profLeaders.length) {
-    profLeaders.forEach(name => {
-      const b = el("button", "pf-chip", name);
-      b.type = "button";
-      b.addEventListener("click", () => { $("pfLeader").value = name; syncChips(); });
-      $("pfChips").appendChild(b);
-    });
-    $("pfHint").textContent = profLeaders.length > 1
-      ? "اسم شما تو لیست چند سرگروه ثبت شده؛ سرگروه خودتون رو انتخاب کنید یا بنویسید."
-      : "سرگروه ثبت‌شده برای شما همین‌هاست؛ می‌تونید اسمش رو تغییر بدید.";
-  }
+  $("pfChips").replaceChildren();
+  profLeaders.forEach(name => {
+    const isMine = mine.includes(name);
+    const b = el("button", "pf-chip", (isMine ? "★ " : "") + name);
+    b.type = "button";
+    b.dataset.name = name;
+    b.addEventListener("click", () => { $("pfLeader").value = name; syncChips(); });
+    $("pfChips").appendChild(b);
+  });
+
+  $("pfHint").textContent = profLeaders.length
+    ? "یکی از سرگروه‌های ثالث رو انتخاب کنید (ستاره‌دارها همونایی هستن که برای شما ثبت شده)."
+    : (all && all.error ? "خواندن لیست سرگروه‌ها ناموفق بود؛ اسم رو دستی بنویسید." : "هنوز سرگروهی ثبت نشده؛ اسم رو دستی بنویسید.");
   syncChips();
 }
 
