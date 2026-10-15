@@ -933,7 +933,45 @@ button.ord-sum:active { transform: scale(0.97); }
 .sound-trigger.off .waves { display: none; }
 .sound-trigger.off .mute-x { display: block; }
 .sound-trigger { margin-inline-start: 0; }
+.prof-trigger { color: var(--accent1); }
+.prof-box { max-width: 440px; padding: 24px 22px; }
+.prof-av {
+  width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 20px;
+  display: grid; place-items: center; font-size: 22px; font-weight: 800; color: #fff; direction: ltr;
+  background: linear-gradient(140deg, var(--accent1), var(--accent2));
+  box-shadow: 0 10px 26px color-mix(in srgb, var(--accent1) 40%, transparent);
+}
+.pf-field { margin-bottom: 14px; }
+.pf-field label { display: block; font-size: 12.5px; color: var(--text-dim); margin-bottom: 6px; }
+.pf-field label small { color: var(--text-faint); font-size: 11px; margin-inline-start: 4px; }
+.pf-field input {
+  width: 100%; padding: 12px 14px; border-radius: 12px; font-family: inherit; font-size: 14px;
+  color: var(--text); background: var(--input-bg); border: 1px solid var(--input-border); outline: none;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+.pf-field input:focus { border-color: var(--accent1); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent1) 24%, transparent); }
+.pf-field input[readonly] {
+  color: var(--text-faint); background: var(--row-bg); border-color: var(--row-border);
+  cursor: not-allowed; direction: ltr; text-align: right; opacity: .75;
+}
+.pf-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 8px; }
+.pf-chip {
+  padding: 6px 13px; border-radius: 999px; font-family: inherit; font-size: 12.5px; cursor: pointer;
+  background: var(--row-bg); border: 1px solid var(--row-border); color: var(--text);
+  transition: border-color .2s ease, background .2s ease;
+}
+.pf-chip:hover { border-color: var(--accent1); }
+.pf-chip.on { background: linear-gradient(135deg, var(--accent1), var(--accent2)); color: #fff; border-color: transparent; }
+.pf-hint { font-size: 11.5px; color: var(--text-faint); margin-top: 6px; line-height: 1.8; }
+#profSave {
+  width: 100%; padding: 13px; border: 0; border-radius: 14px; margin-top: 6px; cursor: pointer;
+  font-family: inherit; font-size: 14px; font-weight: 700; color: #fff;
+  background: linear-gradient(135deg, var(--accent1), var(--accent2));
+}
+#profSave:disabled { opacity: .5; cursor: not-allowed; }
+#profMsg { text-align: center; font-size: 13px; min-height: 18px; margin-top: 12px; color: var(--text-dim); }
 </style>
+
 </head>
 <body>
    <div class="bg" aria-hidden="true">
@@ -960,6 +998,9 @@ button.ord-sum:active { transform: scale(0.97); }
             <button class="bell payout-trigger" id="payoutBtn" type="button" aria-label="پورسانت تخمینی">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v10"/><path d="M15 9.5c0-1.4-1.3-2.5-3-2.5s-3 1.1-3 2.5c0 1.4 1.3 2 3 2.5s3 1.1 3 2.5-1.3 2.5-3 2.5-3-1.1-3-2.5"/></svg>
       </button>
+      <button class="bell prof-trigger" id="profBtn" type="button" aria-label="اطلاعات من">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+</button>
       <button class="bell" id="bellBtn" type="button" aria-label="اعلان‌ها">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
         <span class="badge" id="bellBadge" hidden>0</span>
@@ -1110,7 +1151,37 @@ button.ord-sum:active { transform: scale(0.97); }
       <div class="payout-modal-unit">تومان</div>
     </div>
   </div>
+<div class="modal" id="profModal" role="dialog" aria-modal="true" aria-labelledby="profTitle">
+  <div class="modal-box prof-box">
+    <div class="modal-head">
+      <h3 id="profTitle">اطلاعات من</h3>
+      <button class="close" id="profClose" type="button" aria-label="بستن">✕</button>
+    </div>
+    <div class="prof-av" id="profAv">—</div>
 
+    <div class="pf-field">
+      <label for="pfId">آیدی منیجر</label>
+      <input id="pfId" type="text" readonly tabindex="-1">
+    </div>
+    <div class="pf-field">
+      <label for="pfFirst">نام</label>
+      <input id="pfFirst" type="text" autocomplete="off" maxlength="40">
+    </div>
+    <div class="pf-field">
+      <label for="pfLast">نام خانوادگی <small>(اختیاری)</small></label>
+      <input id="pfLast" type="text" autocomplete="off" maxlength="40">
+    </div>
+    <div class="pf-field">
+      <label for="pfLeader">نام سرگروه من</label>
+      <input id="pfLeader" type="text" autocomplete="off" maxlength="60">
+      <div class="pf-chips" id="pfChips"></div>
+      <div class="pf-hint" id="pfHint"></div>
+    </div>
+
+    <button id="profSave" type="button">ذخیره</button>
+    <div id="profMsg" role="status" aria-live="polite"></div>
+  </div>
+</div>
 <script>
   const SUPABASE_URL = "https://jmbpskxloffcrbxiqcdy.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptYnBza3hsb2ZmY3JieGlxY2R5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MjU3MDgsImV4cCI6MjEwNTQwMTcwOH0.ZFHwX9hg7FxyjcEV4oJRpA2Rgoh0UqL2Xj7D3IO3YMU";
@@ -2286,7 +2357,82 @@ payoutBtn.disabled = false;
     try { localStorage.removeItem("remember_pref"); } catch (err) {}
     window.location.replace("index.html");
   });
+/* ===== اطلاعات من ===== */
+const profModal = $("profModal");
+let profLeaders = [];
 
+function setProfMsg(t, c) {
+  const m = $("profMsg");
+  m.textContent = t;
+  m.style.color = c === "ok" ? "var(--ok)" : c === "error" ? "var(--error)" : "var(--text-dim)";
+}
+
+function syncChips() {
+  const cur = $("pfLeader").value.trim();
+  document.querySelectorAll(".pf-chip").forEach(c => c.classList.toggle("on", c.textContent === cur));
+}
+
+async function openProfile() {
+  profModal.classList.add("show");
+  setProfMsg("");
+  $("pfId").value = currentUsername;
+  $("profAv").textContent = initials(currentUsername);
+  $("pfFirst").value = $("pfLast").value = $("pfLeader").value = "";
+  $("pfChips").replaceChildren();
+  $("pfHint").textContent = "";
+
+  const [p, l] = await Promise.all([
+    supabaseClient.from("agent_profiles").select("first_name,last_name,leader_name").ilike("username", currentUsername).maybeSingle(),
+    supabaseClient.from("agent_leaders").select("first_name,leaders").ilike("username", currentUsername).maybeSingle()
+  ]);
+  const prof = (p && p.data) || {};
+  const adm = (l && l.data) || {};
+  profLeaders = Array.isArray(adm.leaders) ? adm.leaders : [];
+
+  $("pfFirst").value = prof.first_name || adm.first_name || "";
+  $("pfLast").value = prof.last_name || "";
+  $("pfLeader").value = prof.leader_name || (profLeaders.length === 1 ? profLeaders[0] : "");
+
+  if (profLeaders.length) {
+    profLeaders.forEach(name => {
+      const b = el("button", "pf-chip", name);
+      b.type = "button";
+      b.addEventListener("click", () => { $("pfLeader").value = name; syncChips(); });
+      $("pfChips").appendChild(b);
+    });
+    $("pfHint").textContent = profLeaders.length > 1
+      ? "اسم شما تو لیست چند سرگروه ثبت شده؛ سرگروه خودتون رو انتخاب کنید یا بنویسید."
+      : "سرگروه ثبت‌شده برای شما همین‌هاست؛ می‌تونید اسمش رو تغییر بدید.";
+  }
+  syncChips();
+}
+
+function closeProfile() { profModal.classList.remove("show"); }
+
+$("profBtn").addEventListener("click", openProfile);
+$("profClose").addEventListener("click", closeProfile);
+profModal.addEventListener("click", e => { if (e.target === profModal) closeProfile(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeProfile(); });
+$("pfLeader").addEventListener("input", syncChips);
+
+$("profSave").addEventListener("click", async () => {
+  const first = $("pfFirst").value.trim();
+  if (!first) { setProfMsg("نام رو وارد کنید", "error"); return; }
+  const btn = $("profSave");
+  btn.disabled = true;
+  setProfMsg("در حال ذخیره...");
+  const { error } = await supabaseClient.from("agent_profiles").upsert({
+    username: currentUsername.toLowerCase(),
+    first_name: first,
+    last_name: $("pfLast").value.trim() || null,
+    leader_name: $("pfLeader").value.trim() || null,
+    updated_at: new Date().toISOString()
+  }, { onConflict: "username" });
+  btn.disabled = false;
+  if (error) { setProfMsg("ذخیره نشد: " + (error.message || "خطا"), "error"); return; }
+  setProfMsg("✔ اطلاعات ذخیره شد", "ok");
+  setTimeout(closeProfile, 900);
+});
   init();
 </script>
   <script>
