@@ -3461,7 +3461,7 @@ function setLdMsg(text, cls) {
 
 // جدا کردن سرگروه‌ها: "فیروز - شاهمیر" یا با ، ; , 
 function splitLeaders(s) {
-  return String(s || "").split(/\s+[-–—]\s+|[،,؛;|]/).map(x => x.trim()).filter(Boolean);
+  return String(s || "").split(/\s*[-–—]\s*|[،,؛;|]/).map(x => x.trim()).filter(Boolean);
 }
 
 $("ldText").addEventListener("input", () => {
