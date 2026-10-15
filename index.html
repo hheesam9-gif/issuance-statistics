@@ -785,13 +785,22 @@ input:focus + .icon { stroke: var(--accent2); }
       asLeader = !!ok;
     } catch (err) {}
 
+    let grp = null;
+    try {
+      const { data: g } = await supabaseClient.rpc("get_my_group");
+      grp = g;
+    } catch (err) {}
+    const target = asLeader ? "leader.html"
+                 : grp === "nonauto" ? "dashboard-nonauto.html"
+                 : "dashboard.html";
+
     localStorage.setItem("current_username", username);
     setBtn("success", "ورود موفق");
     logoEl.classList.add("unlocked");
 
     await saveCredential(username, password);
     setTimeout(() => stageEl.classList.add("leaving"), 450);
-    setTimeout(() => window.location.replace(asLeader ? "leader.html" : "dashboard.html"), 900);
+    setTimeout(() => window.location.replace(target), 900);
   });
 
   /* اگر قبلاً وارد شده، به پنل مناسب برو */
@@ -800,7 +809,9 @@ input:focus + .icon { stroke: var(--accent2); }
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (session) {
         const { data: ok } = await supabaseClient.rpc("is_leader");
-        window.location.replace(ok ? "leader.html" : "dashboard.html");
+        let grp = null;
+        try { grp = (await supabaseClient.rpc("get_my_group")).data; } catch (e) {}
+        window.location.replace(ok ? "leader.html" : grp === "nonauto" ? "dashboard-nonauto.html" : "dashboard.html");
         return;
       }
     } catch (e) { /* همین‌جا بمان و فرم را نشان بده */ }
