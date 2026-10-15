@@ -2429,18 +2429,27 @@ $("profSave").addEventListener("click", async () => {
   const btn = $("profSave");
   btn.disabled = true;
   setProfMsg("در حال ذخیره...");
+  const leader = $("pfLeader").value.trim();
+
   const { error } = await supabaseClient.from("agent_profiles").upsert({
     username: currentUsername.toLowerCase(),
     first_name: first,
     last_name: $("pfLast").value.trim() || null,
-    leader_name: $("pfLeader").value.trim() || null,
+    leader_name: leader || null,
     updated_at: new Date().toISOString()
   }, { onConflict: "username" });
+
+  let err2 = null;
+  if (!error) {
+    const r = await supabaseClient.rpc("set_my_leader", { p_leader: leader, p_first: first });
+    err2 = r.error;
+  }
   btn.disabled = false;
-  if (error) { setProfMsg("ذخیره نشد: " + (error.message || "خطا"), "error"); return; }
+  if (error || err2) { setProfMsg("ذخیره نشد: " + ((error || err2).message || "خطا"), "error"); return; }
   setProfMsg("✔ اطلاعات ذخیره شد", "ok");
   setTimeout(closeProfile, 900);
 });
+  
   init();
 </script>
   <script>
