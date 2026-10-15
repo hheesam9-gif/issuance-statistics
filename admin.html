@@ -3943,71 +3943,7 @@ $("ldSearch").addEventListener("input", () => { clearTimeout(ldTimer); ldTimer =
   }
 })();
 </script>
-<script>
-document.addEventListener("DOMContentLoaded", function(){
-const TABS = [
-  { id: "usersModal",   label: "نمایندگان",    open: () => $("usersOpen") },
-  { id: "leadersModal", label: "سرگروه‌ها",    open: () => $("ldOpen") },
-  { id: "lacModal",     label: "ثبت سرگروه",  open: () => $("lacOpen") },
-  { id: "actModal",     label: "تاریخچه",      open: () => $("actOpen") },
-  { id: "cdModal",      label: "کوردینیتورها", open: () => $("cdOpen") },
-  { id: "tkModal",      label: "تیکت‌ها",       open: () => $("tkOpen") }
-];
 
-const bar = document.createElement("div");
-bar.id = "thirdBar";
-bar.style.cssText = "position:fixed;top:14px;left:0;right:0;z-index:101;display:none;justify-content:center;padding:0 18px;pointer-events:none;";
-bar.innerHTML = '<div class="third-tabs" id="thirdTabs" style="pointer-events:auto;width:100%;max-width:470px;background:var(--card-bg);backdrop-filter:blur(20px);box-shadow:var(--card-shadow);"><span class="tab-ind"></span></div>';
-document.body.appendChild(bar);
-const tabsEl = $("thirdTabs");
-
-let current = -1;
-let switching = false;
-
-function visible(i){ return $(TABS[i].id).classList.contains("show"); }
-function closeAll(){ TABS.forEach(t => $(t.id).classList.remove("show")); }
-function hideBar(){ bar.style.display = "none"; current = -1; }
-
-function show(i){
-  switching = true;
-  current = i;
-  closeAll();
-  TABS[i].open().click();           // لود داده‌ی همون تب (پنجره رو هم باز می‌کنه)
-  $(TABS[i].id).classList.add("show");
-  bar.style.display = "flex";
-  tabsEl.querySelectorAll("button").forEach((b, k) => b.classList.toggle("active", k === i));
-  tabsEl.querySelector(".tab-ind").style.transform = "translateX(" + (-i * 100) + "%)";
-  setTimeout(() => { switching = false; }, 50);
-}
-
-TABS.forEach((t, i) => {
-  const b = document.createElement("button");
-  b.type = "button";
-  b.textContent = t.label;
-  b.addEventListener("click", () => show(i));
-  tabsEl.appendChild(b);
-});
-
-$("thirdOpen").addEventListener("click", () => show(0));
-
-// هر وقت پنجره‌ی فعلی بسته شد (دکمه‌ی بستن، کلیک بیرون، Escape) نوار هم بسته بشه
-const obs = new MutationObserver(() => {
-  if (switching || current < 0) return;
-  if (!visible(current)) hideBar();
-});
-TABS.forEach(t => obs.observe($(t.id), { attributes: true, attributeFilter: ["class"] }));
-
-// بستن با Escape (در فاز capture تا قبل از بقیه اجرا بشه)
-window.addEventListener("keydown", e => {
-  if (e.key === "Escape" && current >= 0) { closeAll(); hideBar(); }
-}, true);
-
-// کلیک روی پس‌زمینه‌ی تیره‌ی هر کدوم از پنجره‌ها هم نوار رو ببنده (بررسی دقیق‌تر بعد از بسته شدن)
-TABS.forEach(t => $(t.id).addEventListener("click", e => {
-  if (e.target === $(t.id)) setTimeout(() => { if (!visible(current)) hideBar(); }, 0);
-}));
-})();
-</script>
 <!-- ===== پنل مدیریت: اسکین نئونی. کل این فایل را درست قبل از </body> فایل پنل مدیریت (بعد از آخرین </script>) بچسبان ===== -->
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;800&display=swap" rel="stylesheet">
 <style id="nx-style">
@@ -4291,16 +4227,7 @@ button:not(.secondary):not(.chip):not(.chip-btn):not(.tab):not(.sort-btn):not(.m
 @media(prefers-reduced-motion:reduce){.nx-hero::before,.nx-dot{animation:none}}
 </style>
 
-<script id="nx-fix-script">
-(function(){
-  var d=document.querySelector(".nx-hero > div");
-  if(!d||d.querySelector(".nx-chips"))return;
-  var t="";try{t=typeof todayJalali==="function"?todayJalali():""}catch(e){}
-  var c=document.createElement("div");c.className="nx-chips";
-  c.innerHTML='<span class="nx-chip"><i class="nx-dot"></i>پنل فعاله</span>'+(t?'<span class="nx-chip" dir="ltr">'+t+'</span>':'');
-  d.appendChild(c);
-})();
-</script>
+
 <!-- ===== پنل مدیریت: نمودارها (روند صدور، سهم نمایندگان، نمایندگان برتر، روند مغایرت‌ها + مینی‌نمودار کارت‌های آمار) =====
      کل این فایل رو درست قبل از </body> بچسبون؛ بعد از فایل admin-fix (یا بعد از <script id="nx-script">).
      بدون کتابخونه‌ی خارجی؛ همه‌ی نمودارها SVG خالصن و داده رو مستقیم از Supabase می‌خونن. -->
@@ -5199,129 +5126,8 @@ $("naActClear").addEventListener("click",async()=>{
 });
 })();
 </script>
-<!-- =====================================================================
-     پنل مدیریت: دکمه‌ی باز و بسته کردن منوی کناری
-     راهنما: کل این فایل رو درست قبل از </body> بچسبون (بعد از همه‌ی بلوک‌های nx و az).
-     - حالت بسته: منو به یک ستون آیکونی باریک تبدیل می‌شه و محتوا جاش رو پر می‌کنه
-     - با رفتن موس روی آیکون‌ها، اسمشون به‌صورت تولتیپ نمایش داده می‌شه
-     - انتخاب کاربر یادش می‌مونه؛ میانبر: Ctrl + B
-     - روی موبایل (زیر ۹۰۰ پیکسل) همون دکمه‌ی «منو» قبلی کار می‌کنه
-     ===================================================================== -->
-<style id="sb-style">
-@media(min-width:901px){
-  .nx-shell{transition:grid-template-columns .38s cubic-bezier(.4,0,.2,1)}
-  .nx-shell.nx-collapsed{grid-template-columns:76px minmax(0,1fr)}
 
-  /* ---- دکمه روی لبه‌ی منو ---- */
-  #sbBtn{
-    position:fixed;top:26px;right:225px;z-index:80;
-    width:30px;height:30px;padding:0;border-radius:50%;
-    display:grid;place-items:center;cursor:pointer;
-    border:1px solid transparent;color:#fff;
-    background:
-      linear-gradient(#0a1534,#0a1534) padding-box,
-      linear-gradient(135deg,var(--accent1),var(--accent2)) border-box;
-    box-shadow:0 0 0 4px rgba(3,7,18,.85),0 0 18px var(--glow);
-    transition:right .38s cubic-bezier(.4,0,.2,1),box-shadow .25s,transform .25s;
-  }
-  #sbBtn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;transition:transform .38s cubic-bezier(.4,0,.2,1)}
-  #sbBtn:hover{filter:none;transform:scale(1.14);box-shadow:0 0 0 4px rgba(3,7,18,.85),0 0 26px var(--glow)}
-  #sbBtn:active{transform:scale(.94)}
-  #sbBtn:focus-visible{outline:2px solid var(--accent2);outline-offset:4px}
-  body.sb-collapsed #sbBtn{right:61px}
-  body.sb-collapsed #sbBtn svg{transform:rotate(180deg)}
 
-  /* ---- حالت بسته ---- */
-  .nx-collapsed .nx-side{padding-right:12px;padding-left:12px}
-  .nx-collapsed .nx-logo{justify-content:center;padding:4px 0 14px}
-  .nx-collapsed .nx-logo div{display:none}
-  .nx-collapsed .nx-t{font-size:0;padding:0;height:1px;margin:10px 10px;background:var(--row-border)}
-  .nx-collapsed .nx-side .main-tabs .tab,
-  .nx-collapsed .nx-side .menu-item{justify-content:center;gap:0;padding:7px 0;font-size:0;position:relative}
-  .nx-collapsed .nx-side .menu-item-icon{font-size:16px}
-  .nx-collapsed .nx-side .menu-item-text{display:none}
-  .nx-collapsed .nx-side .menu-item-badge:not(:empty){position:absolute;top:3px;left:5px;min-width:16px;padding:0 4px;font-size:10px;line-height:16px;background:var(--error);border:2px solid #050b20;box-sizing:content-box}
-  .nx-collapsed .nx-side .menu-divider{margin:8px 10px}
-  .nx-collapsed .nx-side .menu-item.featured{margin:2px 0}
-}
-@media(max-width:900px){#sbBtn,#sbTip{display:none!important}}
-
-/* ---- تولتیپ ---- */
-#sbTip{
-  position:fixed;z-index:300;pointer-events:none;padding:7px 13px;border-radius:11px;
-  font-size:12px;font-weight:600;white-space:nowrap;direction:rtl;
-  background:rgba(5,11,34,.96);border:1px solid var(--card-border);box-shadow:var(--card-shadow),0 0 18px var(--glow);
-  opacity:0;transform:translateX(6px);transition:opacity .15s,transform .15s;
-}
-#sbTip.show{opacity:1;transform:none}
-@media(prefers-reduced-motion:reduce){.nx-shell,#sbBtn,#sbBtn svg,#sbTip{transition:none!important}}
-</style>
-
-<script id="sb-script">
-(function(){
-"use strict";
-var shell=document.querySelector(".nx-shell"),app=document.getElementById("app"),side=shell&&shell.querySelector(".nx-side");
-if(!shell||!app||!side)return;
-var KEY="admin_side_collapsed";
-
-/* ---- دکمه ---- */
-var btn=document.createElement("button");
-btn.type="button";btn.id="sbBtn";
-btn.setAttribute("aria-controls","nxSideNav");
-btn.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
-side.id="nxSideNav";
-app.appendChild(btn);
-
-var tip=document.createElement("div");tip.id="sbTip";document.body.appendChild(tip);
-
-function set(collapsed,instant){
-  if(instant){shell.style.transition="none";btn.style.transition="none"}
-  shell.classList.toggle("nx-collapsed",collapsed);
-  document.body.classList.toggle("sb-collapsed",collapsed);
-  btn.setAttribute("aria-expanded",String(!collapsed));
-  var t=collapsed?"باز کردن منو (Ctrl+B)":"بستن منو (Ctrl+B)";
-  btn.title=t;btn.setAttribute("aria-label",t);
-  tip.classList.remove("show");
-  try{localStorage.setItem(KEY,collapsed?"1":"0")}catch(e){}
-  if(instant){void shell.offsetWidth;shell.style.transition="";btn.style.transition=""}
-}
-var start=false;try{start=localStorage.getItem(KEY)==="1"}catch(e){}
-set(start,true);
-
-btn.addEventListener("click",function(){set(!shell.classList.contains("nx-collapsed"))});
-document.addEventListener("keydown",function(e){
-  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="b"&&!app.hidden){
-    var tg=e.target,tn=tg&&tg.tagName;
-    if(tn==="INPUT"||tn==="TEXTAREA"||(tg&&tg.isContentEditable))return;
-    e.preventDefault();btn.click();
-  }
-});
-
-/* ---- تولتیپ اسم آیتم‌ها در حالت بسته ---- */
-function labelOf(el){
-  var tx=el.querySelector(".menu-item-text");
-  var src=tx?tx.cloneNode(true):el.cloneNode(true);
-  src.querySelectorAll("small,.menu-item-icon,.menu-item-badge").forEach(function(n){n.remove()});
-  return src.textContent.replace(/\s+/g," ").trim();
-}
-side.addEventListener("mouseover",function(e){
-  if(!shell.classList.contains("nx-collapsed")||innerWidth<=900)return;
-  var el=e.target.closest(".tab,.menu-item");
-  if(!el||!side.contains(el))return;
-  var t=labelOf(el);if(!t)return;
-  tip.textContent=t;
-  var r=el.getBoundingClientRect(),w=tip.offsetWidth;
-  tip.style.top=(r.top+r.height/2-tip.offsetHeight/2)+"px";
-  tip.style.left=Math.max(8,r.left-w-12)+"px";
-  tip.classList.add("show");
-});
-side.addEventListener("mouseout",function(e){
-  if(!e.relatedTarget||!e.relatedTarget.closest||!e.relatedTarget.closest(".tab,.menu-item"))tip.classList.remove("show");
-});
-side.addEventListener("scroll",function(){tip.classList.remove("show")});
-side.addEventListener("click",function(){tip.classList.remove("show")});
-})();
-</script>
 <!-- =====================================================================
      پنل مدیریت: کارت‌های پایین صفحه تبدیل می‌شن به پنجره‌ی بازشو
      راهنما: کل این فایل رو انتهای admin.html بچسبون، درست قبل از </body> (بعد از بقیه‌ی بلوک‌ها).
@@ -5705,30 +5511,7 @@ load();setInterval(load,30*60*1000);
 
 
 
-<style id="az-pro">
-/* ردیف بالا */
-.az-r1{grid-template-columns:minmax(0,1.9fr) minmax(0,1fr);align-items:stretch}
-.az-r1>.card{display:flex;flex-direction:column;min-width:0}
-.az-chart{display:block;width:100%;min-width:0;flex:1}
-.az-chart svg{display:block;width:100%;height:100%}
-.az-chart text{font-size:12px}
 
-/* کارت پوشش: حلقه بالا وسط، لیست زیرش، پر شدن کل ارتفاع */
-.az-r1>.card:nth-child(2) .az-ringw{
-  flex:1;flex-direction:column;flex-wrap:nowrap;justify-content:space-evenly;align-items:stretch;gap:14px}
-.az-r1>.card:nth-child(2) .az-ring{
-  width:160px;height:160px;margin:0 auto;flex:none;border-radius:50%;
-  background:radial-gradient(circle,rgba(20,209,184,.12),transparent 70%)}
-.az-r1>.card:nth-child(2) .az-ring svg{width:160px;height:160px}
-.az-r1>.card:nth-child(2) .az-ring b{font-size:32px;text-shadow:0 0 18px var(--glow)}
-.az-r1>.card:nth-child(2) .az-tk{width:100%;min-width:0;font-size:13px}
-.az-r1>.card:nth-child(2) .az-tk div{
-  padding:11px 12px;margin-bottom:8px;border-radius:12px;justify-content:space-between;
-  background:rgba(47,123,255,.07);border:1px solid var(--card-border)}
-.az-r1>.card:nth-child(2) .az-tk div:last-child{margin-bottom:0}
-.az-r1>.card:nth-child(2) .az-tk b{margin:0;font-size:14px;color:var(--text)}
-@media(max-width:1180px){.az-r1{grid-template-columns:1fr}}
-</style>
 
 <style id="az-final">
 .az-r1{grid-template-columns:minmax(0,1.9fr) minmax(0,1fr);align-items:stretch;
@@ -6000,7 +5783,7 @@ function fill(){
     }
   }
 }
-fill();setInterval(fill,1500);
+fill();setInterval(fill,6000);
 })();
 </script>
 <style id="az-v3-style">
