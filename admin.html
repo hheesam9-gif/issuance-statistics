@@ -3602,7 +3602,20 @@ async function loadSavedLeaders() {
   allLeaderRows = rows;
   renderSavedLeaders();
 }
-
+async function editLeaderRow(table, r, reload) {
+  const first = prompt("نام نماینده «" + r.username + "»:", r.first_name || "");
+  if (first === null) return;
+  const raw = prompt("سرگروه‌ها (چندتا رو با - یا ، جدا کنید):", (r.leaders || []).join(" - "));
+  if (raw === null) return;
+  const leaders = splitLeaders(raw);
+  if (!leaders.length) { toast("حداقل یک سرگروه وارد کنید", "error"); return; }
+  const { error } = await supabaseClient.from(table)
+    .update({ first_name: first.trim(), leaders: leaders, updated_at: new Date().toISOString() })
+    .eq("username", r.username);
+  if (error) { toast("ویرایش نشد: " + explainError(error), "error"); return; }
+  toast("سرگروه‌های «" + r.username + "» به‌روزرسانی شد", "ok");
+  reload();
+}
 function renderSavedLeaders() {
   const list = $("ldSavedList");
   const term = $("ldSearch").value.trim().toLowerCase();
@@ -3635,6 +3648,12 @@ function renderSavedLeaders() {
     const vals = mk("span", "vals");
     const lead = mk("b", null, (r.leaders || []).join(" ، "));
     lead.style.fontSize = "12px";
+    const ed = mk("button", "delete-btn", "✏️");
+    ed.type = "button";
+    ed.title = "ویرایش سرگروه";
+    ed.style.color = "var(--accent2)";
+    ed.addEventListener("click", () => editLeaderRow("agent_leaders", r, loadSavedLeaders));
+
     const del = mk("button", "delete-btn", "🗑️");
     del.type = "button";
     del.title = "حذف";
@@ -3646,6 +3665,7 @@ function renderSavedLeaders() {
       loadSavedLeaders();
     });
     vals.appendChild(lead);
+    vals.appendChild(ed);
     vals.appendChild(del);
     row.appendChild(left);
     row.appendChild(vals);
@@ -5179,6 +5199,8 @@ function renderSavedLeaders(){
   f.slice(0,300).forEach(r=>{
     const row=mk("div","row"), l=mk("span","d",r.username+(r.first_name?" — "+r.first_name:"")); l.style.direction="ltr";
     const v=mk("span","vals"), ld=mk("b",null,(r.leaders||[]).join(" ، ")); ld.style.fontSize="12px";
+    const ed=mk("button","delete-btn","✏️"); ed.type="button"; ed.title="ویرایش سرگروه"; ed.style.color="var(--accent2)";
+    ed.addEventListener("click",()=>editLeaderRow("agent_leaders_nonauto",r,loadSavedLeaders));
     const del=mk("button","delete-btn","🗑️"); del.type="button";
     del.addEventListener("click",async()=>{
       if(!confirm("سرگروه‌های «"+r.username+"» حذف بشه؟")) return;
