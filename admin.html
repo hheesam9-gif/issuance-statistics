@@ -3471,6 +3471,10 @@ async function loadSavedLeaders() {
     }
   } catch (e) { list.replaceChildren(hintEl(explainError(e))); return; }
   allLeaderRows = rows;
+  supabaseClient.from("leaders").select("leader_name").then(r => {
+    window.regT = r.error ? [] : r.data.map(x => x.leader_name).filter(Boolean);
+    renderSavedLeaders();
+  });
   renderSavedLeaders();
 }
 async function editLeaderRow(table, r, reload) {
@@ -3495,6 +3499,7 @@ function renderSavedLeaders() {
   // چیپ‌های سرگروه‌ها با تعداد نماینده
   const counts = new Map();
   allLeaderRows.forEach(r => (r.leaders || []).forEach(l => counts.set(l, (counts.get(l) || 0) + 1)));
+  (window.regT || []).forEach(n => { if (!counts.has(n)) counts.set(n, 0); });
   const chips = $("ldChips");
   chips.replaceChildren();
   [...counts.entries()].sort((a, b) => b[1] - a[1]).forEach(([name, n]) => {
@@ -4968,6 +4973,7 @@ $("naLdSave").addEventListener("click",async()=>{
 });
 async function loadSavedLeaders(){
   const list=$("naLdList"); list.replaceChildren(hintEl("در حال بارگذاری..."));
+    supabaseClient.from("leaders_nonauto").select("leader_name").then(r=>{ window.regN=r.error?[]:r.data.map(x=>x.leader_name).filter(Boolean); renderSavedLeaders(); });
   const rows=[]; let from=0;
   try{
     while(true){
@@ -4980,6 +4986,7 @@ async function loadSavedLeaders(){
 function renderSavedLeaders(){
   const list=$("naLdList"), term=$("naLdSearch").value.trim().toLowerCase(); list.replaceChildren();
   const counts=new Map(); ldAll.forEach(r=>(r.leaders||[]).forEach(l=>counts.set(l,(counts.get(l)||0)+1)));
+  (window.regN||[]).forEach(n=>{ if(!counts.has(n)) counts.set(n,0); });
   const chips=$("naLdChips"); chips.replaceChildren();
   [...counts.entries()].sort((a,b)=>b[1]-a[1]).forEach(([n,c])=>{
     const b=mk("button","chip-btn",n+" ("+c+")"); b.type="button";
@@ -6560,6 +6567,7 @@ $("bdLdSave").addEventListener("click",async()=>{
 });
 async function loadSavedLeaders(){
   const list=$("bdLdList"); list.replaceChildren(hintEl("در حال بارگذاری..."));
+    supabaseClient.from("leaders_body").select("leader_name").then(r=>{ window.regB=r.error?[]:r.data.map(x=>x.leader_name).filter(Boolean); renderSavedLeaders(); });
   const rows=[]; let from=0;
   try{
     while(true){
@@ -6572,6 +6580,7 @@ async function loadSavedLeaders(){
 function renderSavedLeaders(){
   const list=$("bdLdList"), term=$("bdLdSearch").value.trim().toLowerCase(); list.replaceChildren();
   const counts=new Map(); ldAll.forEach(r=>(r.leaders||[]).forEach(l=>counts.set(l,(counts.get(l)||0)+1)));
+    (window.regB||[]).forEach(n=>{ if(!counts.has(n)) counts.set(n,0); });
   const chips=$("bdLdChips"); chips.replaceChildren();
   [...counts.entries()].sort((a,b)=>b[1]-a[1]).forEach(([n,c])=>{
     const b=mk("button","chip-btn",n+" ("+c+")"); b.type="button";
