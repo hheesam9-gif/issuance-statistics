@@ -2539,14 +2539,25 @@ async function openProfile() {
 
   // اسم‌های ثبت‌شده برای خود نماینده اول بیان، بعد بقیه
 // فقط سرگروه‌های غیر خودرویی
-profLeaders = [...new Set(names.filter(Boolean))];
-const okName = n => (n && profLeaders.includes(n)) ? n : "";
+// نرمال‌سازی اسم: ی/ک عربی، نیم‌فاصله، فاصله‌ی اضافه
+const normName = s => String(s || "")
+  .replace(/ي/g, "ی").replace(/ك/g, "ک")
+  .replace(/[\u200c\u200f\u200e]/g, " ")
+  .replace(/\s+/g, " ").trim();
 
-$("pfFirst").value = prof.first_name || adm.first_name || "";
+const uniq = new Map();
+names.forEach(n => { const k = normName(n); if (k && !uniq.has(k)) uniq.set(k, String(n).trim()); });
+profLeaders = [...uniq.values()];
+// اسم رسمی داخل لیست رو برمی‌گردونه (یا خالی)
+const canon = n => uniq.get(normName(n)) || "";
+
+$("pfFirst").value = adm.first_name || prof.first_name || "";
 $("pfLast").value = prof.last_name || "";
-const mineOk = mine.filter(n => profLeaders.includes(n));
-const lead1 = okName(prof.leader_name) || (mineOk.length === 1 ? mineOk[0] : "");
-const lead2 = okName(prof.leader_name2) || (mineOk.length > 1 ? (mineOk.find(n => n !== lead1) || "") : "");
+
+// اول اطلاعات ثبت‌شده توسط ادمین، بعد اصلاحی که خود نماینده کرده
+const adminL = mine.map(canon).filter(Boolean);
+const lead1 = canon(prof.leader_name) || adminL[0] || "";
+const lead2 = canon(prof.leader_name2) || adminL.find(n => n !== lead1) || "";
   $("pfLeader").value = lead1;
   $("pfLeader2").value = lead2;
   profOriginal = lead1;
