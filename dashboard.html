@@ -2527,7 +2527,8 @@ async function openProfile() {
   $("pfChips").replaceChildren();
   $("pfHint").textContent = "در حال بارگذاری سرگروه‌ها...";
 
-  const [p, l, all] = await Promise.all([    supabaseClient.from("agent_profiles").select("first_name,last_name,leader_name,leader_name2").ilike("username", currentUsername).limit(1).maybeSingle(),    supabaseClient.from("agent_profiles").select("first_name,last_name,leader_name").ilike("username", currentUsername).maybeSingle(),
+  const [p, l, all] = await Promise.all([
+    supabaseClient.from("agent_profiles").select("first_name,last_name,leader_name,leader_name2").ilike("username", currentUsername).limit(1).maybeSingle(),
     supabaseClient.from("agent_leaders").select("first_name,leaders").ilike("username", currentUsername).maybeSingle(),
     supabaseClient.rpc("get_leader_names")
   ]);
@@ -2546,6 +2547,8 @@ async function openProfile() {
   $("pfLast").value = prof.last_name || "";
   const lead1 = prof.leader_name || (mine.length === 1 ? mine[0] : "");
   const lead2 = prof.leader_name2 || (mine.length > 1 ? (mine.find(n => n !== lead1) || "") : "");
+  $("pfLeader").value = lead1;
+  $("pfLeader2").value = lead2;
   profOriginal = lead1;
   profOriginal2 = lead2;
   showSecond(!!lead2);
