@@ -1047,6 +1047,16 @@ button.ord-sum:active { transform: scale(0.97); }
 @media (prefers-reduced-motion: reduce) {
   .pf-add::before, .pf-add-ic::after, .pf-second-box, .pf-second-box::after { animation: none; }
 }
+  .pf-field input.pf-pick,
+.pf-in2.pf-pick { cursor: pointer; caret-color: transparent; }
+.pf-field input.pf-pick::placeholder,
+.pf-in2.pf-pick::placeholder { color: var(--text-faint); }
+.pf-clear {
+  margin-top: 8px; padding: 5px 11px; border-radius: 9px; cursor: pointer;
+  font-family: inherit; font-size: 11.5px; color: var(--text-dim);
+  background: var(--row-bg); border: 1px solid var(--row-border);
+}
+.pf-clear:hover { border-color: var(--accent1); color: var(--text); }
 </style>
 
 </head>
@@ -1252,7 +1262,7 @@ button.ord-sum:active { transform: scale(0.97); }
     </div>
     <div class="pf-field">
       <label for="pfLeader">نام سرگروه من</label>
-      <input id="pfLeader" type="text" autocomplete="off" maxlength="60">
+      <input id="pfLeader" type="text" autocomplete="off" maxlength="60" readonly placeholder="از لیست زیر انتخاب کنید">
       <div class="pf-chips" id="pfChips"></div>
       <div class="pf-hint" id="pfHint"></div>
       <div class="pf-second" id="pfSecondWrap">
@@ -1268,7 +1278,7 @@ button.ord-sum:active { transform: scale(0.97); }
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg><span>حذف</span>
             </button>
           </div>
-          <input id="pfLeader2" class="pf-in2" type="text" autocomplete="off" maxlength="60" placeholder="اسم سرگروه دوم رو بنویسید یا انتخاب کنید">
+          <input id="pfLeader2" class="pf-in2" type="text" autocomplete="off" maxlength="60" readonly placeholder="از لیست زیر انتخاب کنید">
           <div class="pf-chips" id="pfChips2"></div>
         </div>
       </div>
@@ -2480,6 +2490,7 @@ payoutBtn.disabled = false;
 /* ===== اطلاعات من ===== */
 const profModal = $("profModal");
 let profLeaders = [];
+let profOriginal = "", profOriginal2 = "";
 
 function setProfMsg(t, c) {
   const m = $("profMsg");
@@ -2533,8 +2544,8 @@ async function openProfile() {
   $("pfLast").value = prof.last_name || "";
   const lead1 = prof.leader_name || (mine.length === 1 ? mine[0] : "");
   const lead2 = prof.leader_name2 || (mine.length > 1 ? (mine.find(n => n !== lead1) || "") : "");
-  $("pfLeader").value = lead1;
-  $("pfLeader2").value = lead2;
+  profOriginal = lead1;
+  profOriginal2 = lead2;
   showSecond(!!lead2);
 
   $("pfChips").replaceChildren();
@@ -2546,6 +2557,13 @@ async function openProfile() {
     b.addEventListener("click", () => { $("pfLeader").value = name; syncChips(); });
     $("pfChips").appendChild(b);
   });
+    if (!$("pfClear1")) {
+    const clr = el("button", "pf-clear", "پاک کردن انتخاب");
+    clr.type = "button";
+    clr.id = "pfClear1";
+    clr.addEventListener("click", () => { $("pfLeader").value = ""; syncChips(); });
+    $("pfChips").after(clr);
+  }
   $("pfChips2").replaceChildren();
   profLeaders.forEach(name => {
     const b2 = el("button", "pf-chip", name);
@@ -2555,8 +2573,10 @@ async function openProfile() {
     $("pfChips2").appendChild(b2);
   });
   $("pfHint").textContent = profLeaders.length
-    ? "یکی از سرگروه‌های ثالث رو انتخاب کنید (ستاره‌دارها همونایی هستن که برای شما ثبت شده)."
-    : (all && all.error ? "خواندن لیست سرگروه‌ها ناموفق بود؛ اسم رو دستی بنویسید." : "هنوز سرگروهی ثبت نشده؛ اسم رو دستی بنویسید.");
+    ? "فقط می‌تونید از بین سرگروه‌های ثبت‌شده انتخاب کنید (ستاره‌دارها همونایی هستن که برای شما ثبت شده)."
+    : (all && all.error
+        ? "خواندن لیست سرگروه‌ها ناموفق بود؛ دوباره امتحان کنید."
+        : "هنوز سرگروهی ثبت نشده؛ لطفاً با ادمین هماهنگ کنید.");
   syncChips();
 }
 
@@ -2567,16 +2587,31 @@ $("profClose").addEventListener("click", closeProfile);
 profModal.addEventListener("click", e => { if (e.target === profModal) closeProfile(); });
 document.addEventListener("keydown", e => { if (e.key === "Escape") closeProfile(); });
 $("pfLeader").addEventListener("input", syncChips);
-
+// فیلد سرگروه فقط‌خواندنی است؛ انتخاب فقط از طریق چیپ‌ها
+["pfLeader", "pfLeader2"].forEach(id => {
+  const inp = $(id);
+  inp.classList.add("pf-pick");
+  inp.setAttribute("readonly", "");
+});
 $("profSave").addEventListener("click", async () => {
   const first = $("pfFirst").value.trim();
   if (!first) { setProfMsg("نام رو وارد کنید", "error"); return; }
+
+  const leader = $("pfLeader").value.trim();
+  const leader2 = $("pfSecondBox").hidden ? "" : $("pfLeader2").value.trim();
+
+  // فقط اسم‌های موجود در لیست مجازند
+  if (leader && leader !== profOriginal && !profLeaders.includes(leader)) {
+    setProfMsg("سرگروه باید از لیست انتخاب بشه", "error"); return;
+  }
+  if (leader2 && leader2 !== profOriginal2 && !profLeaders.includes(leader2)) {
+    setProfMsg("سرگروه دوم باید از لیست انتخاب بشه", "error"); return;
+  }
+  if (leader2 && leader2 === leader) { setProfMsg("سرگروه دوم نباید با اولی یکی باشه", "error"); return; }
+
   const btn = $("profSave");
   btn.disabled = true;
   setProfMsg("در حال ذخیره...");
-  const leader = $("pfLeader").value.trim();
-  const leader2 = $("pfSecondBox").hidden ? "" : $("pfLeader2").value.trim();
-  if (leader2 && leader2 === leader) { setProfMsg("سرگروه دوم نباید با اولی یکی باشه", "error"); btn.disabled = false; return; }
 
   const { error } = await supabaseClient.from("agent_profiles").upsert({
     username: currentUsername.toLowerCase(),
