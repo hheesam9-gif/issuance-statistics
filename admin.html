@@ -8675,5 +8675,116 @@ var rf=$("rpRefresh");
 if(rf)rf.addEventListener("click",function(){setTimeout(loadLd,300)});
 })();
 </script>
+  <script id="gr-rank-script">
+(function(){
+"use strict";
+var list=document.getElementById("userList");
+if(!list||typeof supabaseClient==="undefined")return;
+
+var gmap=new Map(), gLoaded=false, busy=false, again=false;
+
+function low(s){return String(s||"").trim().toLowerCase()}
+function groupOf(u){
+  var g=gmap.get(low(u));
+  return g==="nonauto"?"nonauto":(g==="body"?"body":(g?"other":"third"));
+}
+function curGroup(){
+  var b=document.querySelector("#grpBar .sort-btn.active");
+  return b?b.dataset.g:"third";
+}
+function isRankMode(){
+  var b=document.querySelector("#sortBar .sort-btn.active");
+  return !!b&&b.dataset.sort==="rank";
+}
+
+async function loadGroups(){
+  var m=new Map(),from=0;
+  while(true){
+    var r=await supabaseClient.from("agent_groups").select("username,grp").range(from,from+999);
+    if(r.error)throw r.error;
+    r.data.forEach(function(x){m.set(low(x.username),x.grp)});
+    if(r.data.length<1000)break;
+    from+=1000;
+  }
+  gmap=m;gLoaded=true;
+}
+
+function chipFor(rank){
+  var c=document.createElement("span");
+  c.className="rank-chip "+(rank?(rank<=3?"r"+rank:""):"none");
+  c.textContent=rank?"#"+rank:"—";
+  return c;
+}
+
+async function rerank(){
+  if(!isRankMode())return;
+  if(busy){again=true;return}
+  busy=true;
+  try{
+    if(!gLoaded)await loadGroups();
+    var totals=await fetchAllOrderTotals();
+    var grp=curGroup();
+
+    // فقط کاربران همین گروه، با مجموع بالای صفر
+    var arr=[];
+    totals.forEach(function(t,u){
+      if(t>0&&groupOf(u)===grp)arr.push([u,t]);
+    });
+    arr.sort(function(a,b){return b[1]-a[1]});
+
+    var rankOf=new Map(),prev=null,rank=0;
+    arr.forEach(function(x,i){
+      if(x[1]!==prev){rank=i+1;prev=x[1]}
+      rankOf.set(x[0],rank);
+    });
+
+    // بازنویسی چیپ‌ها
+    var rows=[].slice.call(list.querySelectorAll(".user-row"));
+    rows.forEach(function(row){
+      var n=row.querySelector(".name");
+      var chip=row.querySelector(".rank-chip");
+      if(!n||!chip)return;
+      var r=rankOf.get(n.textContent)||null;
+      var nc=chipFor(r);
+      chip.className=nc.className;
+      chip.textContent=nc.textContent;
+      row._rk=r;
+    });
+
+    // مرتب‌سازی دوباره‌ی ردیف‌ها بر اساس رتبه‌ی گروهی
+    rows.sort(function(a,b){
+      var ra=a._rk==null?Infinity:a._rk, rb=b._rk==null?Infinity:b._rk;
+      if(ra!==rb)return ra-rb;
+      return a.querySelector(".name").textContent.localeCompare(b.querySelector(".name").textContent);
+    });
+    // اتصال بدون ایجاد حلقه‌ی Observer
+    obs.disconnect();
+    rows.forEach(function(r){list.appendChild(r)});
+    obs.observe(list,{childList:true});
+  }catch(e){
+    console.warn("group rank:",e);
+  }
+  busy=false;
+  if(again){again=false;rerank()}
+}
+
+var obs=new MutationObserver(function(){
+  clearTimeout(obs._t);
+  obs._t=setTimeout(rerank,60);
+});
+obs.observe(list,{childList:true});
+
+// تغییر گروه یا حالت مرتب‌سازی
+var gb=document.getElementById("grpBar"),sb=document.getElementById("sortBar");
+if(gb)gb.addEventListener("click",function(){setTimeout(rerank,120)});
+if(sb)sb.addEventListener("click",function(){setTimeout(rerank,250)});
+
+// بعد از ثبت‌ها که loadStats صدا زده می‌شه، گروه‌ها دوباره خونده بشن
+if(typeof window.loadStats==="function"){
+  var ol=window.loadStats;
+  window.loadStats=function(){gLoaded=false;return ol.apply(this,arguments)};
+}
+})();
+</script>
 </body>
 </html>
