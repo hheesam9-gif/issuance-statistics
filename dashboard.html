@@ -2527,8 +2527,7 @@ async function openProfile() {
   $("pfChips").replaceChildren();
   $("pfHint").textContent = "در حال بارگذاری سرگروه‌ها...";
 
-  const [p, l, all] = await Promise.all([
-    supabaseClient.from("agent_profiles").select("first_name,last_name,leader_name").ilike("username", currentUsername).maybeSingle(),
+  const [p, l, all] = await Promise.all([    supabaseClient.from("agent_profiles").select("first_name,last_name,leader_name,leader_name2").ilike("username", currentUsername).limit(1).maybeSingle(),    supabaseClient.from("agent_profiles").select("first_name,last_name,leader_name").ilike("username", currentUsername).maybeSingle(),
     supabaseClient.from("agent_leaders").select("first_name,leaders").ilike("username", currentUsername).maybeSingle(),
     supabaseClient.rpc("get_leader_names")
   ]);
@@ -2539,6 +2538,9 @@ async function openProfile() {
 
   // اسم‌های ثبت‌شده برای خود نماینده اول بیان، بعد بقیه
   profLeaders = [...mine, ...names.filter(n => !mine.includes(n))];
+  const savedL1 = prof.leader_name || "";
+  const savedL2 = prof.leader_name2 || "";
+  [savedL1, savedL2].forEach(n => { if (n && !profLeaders.includes(n)) profLeaders.push(n); });
 
   $("pfFirst").value = prof.first_name || adm.first_name || "";
   $("pfLast").value = prof.last_name || "";
