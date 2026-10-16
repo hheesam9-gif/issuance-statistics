@@ -2529,35 +2529,32 @@ async function openProfile() {
 
   const [p, l, all] = await Promise.all([
     supabaseClient.from("agent_profiles").select("first_name,last_name,leader_name,leader_name2").ilike("username", currentUsername).limit(1).maybeSingle(),
-    supabaseClient.from("agent_leaders_nonauto").select("first_name,leaders").ilike("username", currentUsername).maybeSingle(),
+    supabaseClient.rpc("get_my_admin_info_nonauto"),
     supabaseClient.rpc("get_leader_names_nonauto")
   ]);
   const prof = (p && p.data) || {};
-  const adm = (l && l.data) || {};
+  const adm = (l && Array.isArray(l.data) ? l.data[0] : l && l.data) || {};
   const mine = Array.isArray(adm.leaders) ? adm.leaders : [];
   const names = (all && all.data) ? all.data.map(r => r.name) : [];
 
-  // اسم‌های ثبت‌شده برای خود نماینده اول بیان، بعد بقیه
-// فقط سرگروه‌های غیر خودرویی
-// نرمال‌سازی اسم: ی/ک عربی، نیم‌فاصله، فاصله‌ی اضافه
-const normName = s => String(s || "")
-  .replace(/ي/g, "ی").replace(/ك/g, "ک")
-  .replace(/[\u200c\u200f\u200e]/g, " ")
-  .replace(/\s+/g, " ").trim();
+  // نرمال‌سازی اسم: ی/ک عربی، نیم‌فاصله، فاصله‌ی اضافه
+  const normName = s => String(s || "")
+    .replace(/ي/g, "ی").replace(/ك/g, "ک")
+    .replace(/[\u200c\u200f\u200e]/g, " ")
+    .replace(/\s+/g, " ").trim();
 
-const uniq = new Map();
-names.forEach(n => { const k = normName(n); if (k && !uniq.has(k)) uniq.set(k, String(n).trim()); });
-profLeaders = [...uniq.values()];
-// اسم رسمی داخل لیست رو برمی‌گردونه (یا خالی)
-const canon = n => uniq.get(normName(n)) || "";
+  const uniq = new Map();
+  names.forEach(n => { const k = normName(n); if (k && !uniq.has(k)) uniq.set(k, String(n).trim()); });
+  profLeaders = [...uniq.values()];
+  const canon = n => uniq.get(normName(n)) || "";
 
-$("pfFirst").value = adm.first_name || prof.first_name || "";
-$("pfLast").value = prof.last_name || "";
+  $("pfFirst").value = adm.first_name || prof.first_name || "";
+  $("pfLast").value = prof.last_name || "";
 
-// اول اطلاعات ثبت‌شده توسط ادمین، بعد اصلاحی که خود نماینده کرده
-const adminL = mine.map(canon).filter(Boolean);
-const lead1 = canon(prof.leader_name) || adminL[0] || "";
-const lead2 = canon(prof.leader_name2) || adminL.find(n => n !== lead1) || "";
+  const adminL = mine.map(canon).filter(Boolean);
+  const lead1 = adminL[0] || canon(prof.leader_name) || "";
+  const lead2 = adminL.find(n => n !== lead1) || canon(prof.leader_name2) || "";
+
   $("pfLeader").value = lead1;
   $("pfLeader2").value = lead2;
   profOriginal = lead1;
@@ -2566,14 +2563,14 @@ const lead2 = canon(prof.leader_name2) || adminL.find(n => n !== lead1) || "";
 
   $("pfChips").replaceChildren();
   profLeaders.forEach(name => {
-    const isMine = mine.includes(name);
+    const isMine = adminL.includes(name);
     const b = el("button", "pf-chip", (isMine ? "★ " : "") + name);
     b.type = "button";
     b.dataset.name = name;
     b.addEventListener("click", () => { $("pfLeader").value = name; syncChips(); });
     $("pfChips").appendChild(b);
   });
-    if (!$("pfClear1")) {
+  if (!$("pfClear1")) {
     const clr = el("button", "pf-clear", "پاک کردن انتخاب");
     clr.type = "button";
     clr.id = "pfClear1";
