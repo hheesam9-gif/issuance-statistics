@@ -8336,5 +8336,335 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
     .observe(app,{attributes:true,attributeFilter:["hidden"]});
 })();
 </script>
+  <!-- ===== پنل مدیریت: «نماینده‌های بدون سرگروه» + «نمودار سرگروه‌ها». درست قبل از </body> بچسبان ===== -->
+<style id="ld2-style">
+.nl-btn{border-color:rgba(251,191,36,.55)!important;color:#fbbf24!important;background:rgba(251,191,36,.1)!important;font-weight:700}
+.nl-btn:hover{box-shadow:0 0 18px -4px rgba(251,191,36,.6)}
+.nl-tag{font-size:11px;padding:3px 9px;border-radius:99px;white-space:nowrap}
+.nl-tag.l{background:rgba(255,93,122,.15);color:var(--error);border:1px solid rgba(255,93,122,.4)}
+.nl-tag.n{background:rgba(251,191,36,.15);color:var(--warn);border:1px solid rgba(251,191,36,.4)}
+.nl-u{cursor:pointer;direction:ltr;unicode-bidi:plaintext;font-weight:700;color:var(--accent2)}
+.nl-u:hover{text-decoration:underline}
+.ld-f{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px}
+.ld-f button{padding:7px 14px;border-radius:99px;font-size:12px;font-weight:600;background:var(--row-bg);border:1px solid var(--row-border);color:var(--text);box-shadow:none}
+.ld-f button:hover{filter:none;border-color:var(--accent1)}
+.ld-f button.on{background:linear-gradient(135deg,var(--accent1),var(--accent2));color:#fff;border-color:transparent}
+#ldChart{height:260px;direction:ltr;position:relative}
+#ldChart svg{display:block;width:100%;height:100%}
+#ldChart text{fill:var(--text-dim);font-size:11px;font-family:inherit}
+.ld-row{display:grid;grid-template-columns:26px 130px minmax(30px,1fr) auto;align-items:center;gap:10px;padding:8px 12px;margin-bottom:6px;border-radius:12px;background:rgba(47,123,255,.06);border:1px solid var(--card-border)}
+.ld-row u{text-decoration:none;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ld-row i.d{width:10px;height:10px;border-radius:50%;display:block;margin:auto}
+.ld-tr{height:7px;border-radius:9px;background:rgba(70,120,255,.14);overflow:hidden;direction:ltr}
+.ld-tr b{display:block;height:100%;border-radius:9px;transition:width 1s cubic-bezier(.2,.8,.2,1)}
+.ld-v{font-size:13px;font-weight:800;direction:ltr;white-space:nowrap}
+.ld-v small{color:var(--text-dim);font-weight:400;margin-right:6px}
+#ldBars{max-height:340px;overflow-y:auto;padding-left:4px;margin-top:10px}
+@media(max-width:560px){.ld-row{grid-template-columns:20px 90px minmax(20px,1fr) auto}}
+</style>
+
+<script id="ld2-script">
+(function(){
+"use strict";
+var $=function(i){return document.getElementById(i)};
+var GCOL={third:"#38b6ff",nonauto:"#ffb020",body:"#14d1b8"};
+var GNAME={third:"ثالث",nonauto:"غیر خودرویی",body:"بدنه"};
+var ADMIN="h-abbasi";
+
+async function all(table,cols){
+  var r=[],f=0;
+  for(;;){
+    var x=await supabaseClient.from(table).select(cols).range(f,f+999);
+    if(x.error)throw x.error;
+    r.push.apply(r,x.data);
+    if(x.data.length<1000)break;f+=1000;
+  }
+  return r;
+}
+async function soft(table,cols){try{return await all(table,cols)}catch(e){return null}}
+function low(s){return String(s||"").trim().toLowerCase()}
+
+/* =====================================================
+   ۱) نماینده‌های بدون سرگروه
+   ===================================================== */
+var PANELS=[
+ {chips:"ldChips",table:"agent_leaders",grp:"third",title:"گروه ثالث"},
+ {chips:"naLdChips",table:"agent_leaders_nonauto",grp:"nonauto",title:"گروه غیر خودرویی"},
+ {chips:"bdLdChips",table:"agent_leaders_body",grp:"body",title:"گروه بدنه"}
+];
+
+var nl=document.createElement("div");
+nl.className="modal";nl.id="nlModal";nl.setAttribute("role","dialog");nl.setAttribute("aria-modal","true");
+nl.innerHTML=
+ '<div class="modal-box" style="max-width:560px;text-align:right">'+
+  '<div class="card-head"><div class="card-icon"><svg viewBox="0 0 24 24"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01"/></svg></div>'+
+  '<div><h2 id="nlTitle">بدون سرگروه</h2><p>نماینده‌هایی که سرگروه یا نامشون ثبت نشده</p></div></div>'+
+  '<div class="sum-row"><span class="sum-chip">تعداد: <b id="nlCount">—</b></span><span class="sum-chip">از کل: <b id="nlAll">—</b></span></div>'+
+  '<div class="chips" id="nlFilt" style="margin-top:12px"></div>'+
+  '<div class="search-box"><input class="ltr" id="nlSearch" type="text" placeholder="جستجوی نام کاربری..." autocomplete="off" spellcheck="false"></div>'+
+  '<div class="hint" id="nlNote" style="display:none"></div>'+
+  '<div class="history" id="nlList" style="max-height:340px"></div>'+
+  '<div class="actions" style="margin-top:14px"><button type="button" class="secondary" id="nlCopy">کپی لیست</button><button type="button" class="secondary" id="nlClose">بستن</button></div>'+
+ '</div>';
+document.body.appendChild(nl);
+
+var CUR=null,DATA=[],FILT="all";
+function closeNl(){nl.classList.remove("show")}
+$("nlClose").addEventListener("click",closeNl);
+nl.addEventListener("click",function(e){if(e.target===nl)closeNl()});
+document.addEventListener("keydown",function(e){if(e.key==="Escape")closeNl()});
+
+async function compute(p){
+  var res=await Promise.all([
+    fetchAllUsernames(),all("agent_groups","username,grp"),all(p.table,"username,first_name,leaders"),
+    soft("agent_profiles","username,first_name,leader_name,leader_name2"),soft("leaders","username")
+  ]);
+  var gm=new Map(res[1].map(function(x){return[low(x.username),x.grp]}));
+  var reg=new Map(res[2].map(function(x){return[low(x.username),x]}));
+  var prof=res[3]?new Map(res[3].map(function(x){return[low(x.username),x]})):null;
+  var skip=new Set([ADMIN]);
+  (res[4]||[]).forEach(function(x){skip.add(low(x.username))});
+  var out=[],total=0;
+  res[0].forEach(function(u){
+    var k=low(u);if(skip.has(k))return;
+    var g=gm.get(k);
+    if(p.grp==="third"?!!g:g!==p.grp)return;
+    total++;
+    var r=reg.get(k),pr=prof&&prof.get(k);
+    var hasL=!!((r&&(r.leaders||[]).length)||(pr&&(String(pr.leader_name||"").trim()||String(pr.leader_name2||"").trim())));
+    var hasN=!!((r&&String(r.first_name||"").trim())||(pr&&String(pr.first_name||"").trim()));
+    if(!hasL||!hasN)out.push({u:u,noL:!hasL,noN:!hasN});
+  });
+  out.sort(function(a,b){return a.u.localeCompare(b.u)});
+  return{list:out,total:total,noProf:!prof};
+}
+
+function renderMissing(){
+  var term=low($("nlSearch").value),list=$("nlList");
+  var f=DATA.list.filter(function(x){
+    if(FILT==="l"&&!x.noL)return false;
+    if(FILT==="n"&&!x.noN)return false;
+    return !term||low(x.u).indexOf(term)>-1;
+  });
+  var cL=DATA.list.filter(function(x){return x.noL}).length,cN=DATA.list.filter(function(x){return x.noN}).length;
+  $("nlCount").textContent=f.length;$("nlAll").textContent=DATA.total;
+  var fb=$("nlFilt");fb.replaceChildren();
+  [["all","همه ("+DATA.list.length+")"],["l","بدون سرگروه ("+cL+")"],["n","بدون نام ("+cN+")"]].forEach(function(x){
+    var b=mk("button","chip-btn",x[1]);b.type="button";
+    if(FILT===x[0]){b.style.borderColor="var(--accent1)";b.style.background="linear-gradient(135deg,var(--accent1),var(--accent2))";b.style.color="#fff"}
+    b.addEventListener("click",function(){FILT=x[0];renderMissing()});fb.appendChild(b);
+  });
+  var note=$("nlNote");
+  note.style.display=DATA.noProf?"block":"none";
+  note.textContent=DATA.noProf?"دسترسی خواندن پروفایل نماینده‌ها بسته‌ست؛ فقط بر اساس لیست سرگروه‌های ثبت‌شده توسط ادمین بررسی شد.":"";
+  list.replaceChildren();
+  if(!f.length){list.appendChild(hintEl(DATA.list.length?"چیزی پیدا نشد":"همه‌ی نماینده‌ها سرگروه و نام دارن 🎉"));return}
+  f.forEach(function(x){
+    var row=mk("div","row"),u=mk("span","nl-u",x.u);u.title="رفتن به این نماینده";
+    u.addEventListener("click",function(){
+      document.querySelectorAll(".modal.show").forEach(function(m){m.classList.remove("show")});
+      openUser(x.u);
+    });
+    var v=mk("span","vals");
+    if(x.noL)v.appendChild(mk("span","nl-tag l","بدون سرگروه"));
+    if(x.noN)v.appendChild(mk("span","nl-tag n","بدون نام"));
+    row.append(u,v);list.appendChild(row);
+  });
+}
+$("nlSearch").addEventListener("input",function(){renderMissing()});
+$("nlCopy").addEventListener("click",function(){
+  var t=DATA.list.filter(function(x){return FILT==="all"||(FILT==="l"?x.noL:x.noN)}).map(function(x){return x.u}).join("\n");
+  if(!t){toast("لیستی برای کپی نیست","error");return}
+  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){toast("لیست کپی شد","ok")},function(){toast("کپی نشد","error")});
+});
+
+async function openMissing(p){
+  CUR=p;FILT="all";DATA={list:[],total:0};
+  $("nlSearch").value="";$("nlTitle").textContent="بدون سرگروه — "+p.title;
+  $("nlCount").textContent="—";$("nlAll").textContent="—";
+  nl.classList.add("show");
+  $("nlList").replaceChildren(hintEl("در حال بررسی..."));
+  try{DATA=await compute(p);renderMissing()}
+  catch(e){$("nlList").replaceChildren(hintEl("خطا: "+explainError(e)))}
+}
+
+function inject(p){
+  var box=$(p.chips);if(!box)return;
+  function add(){
+    if(box.querySelector(".nl-btn"))return;
+    var b=mk("button","chip-btn nl-btn","⚠️ بدون سرگروه");
+    b.type="button";b.title="نماینده‌هایی که سرگروه یا نامشون ثبت نشده";
+    b.addEventListener("click",function(){openMissing(p)});
+    box.prepend(b);
+  }
+  add();
+  new MutationObserver(add).observe(box,{childList:true});
+}
+PANELS.forEach(inject);
+
+/* =====================================================
+   ۲) نمودار روند سرگروه‌ها (داخل پنجره‌ی «نمودارها»)
+   ===================================================== */
+var r2=$("rpR2");
+if(!r2)return;
+
+var card=document.createElement("div");
+card.className="card rp-card";card.style.setProperty("--k",3);card.style.marginTop="16px";
+card.innerHTML=
+ '<div class="gt-head" style="margin-bottom:4px"><h3 class="az-h" style="margin:0"><svg viewBox="0 0 24 24"><circle cx="12" cy="6.5" r="3"/><circle cx="5" cy="17.5" r="2.5"/><circle cx="19" cy="17.5" r="2.5"/><path d="M12 9.5v3M12 12.5l-5 3M12 12.5l5 3"/></svg>روند سرگروه‌ها</h3>'+
+ '<select class="az-sel gt-sel" id="ldRange"><option value="7">۷ روز</option><option value="14">۱۴ روز</option><option value="30" selected>۳۰ روز</option><option value="0">کل دوره</option></select></div>'+
+ '<div class="ld-f" id="ldF"></div>'+
+ '<div id="ldChart"></div>'+
+ '<div id="ldBars"></div>';
+r2.appendChild(card);
+
+var FL=[["all","همه"],["third","ثالث"],["nonauto","غیر خودرویی"],["body","بدنه"]];
+var LF="all",RANGE=30,LD=null,busyL=false;
+var LPAL=["#38b6ff","#ffb020","#14d1b8","#b46bff","#ff5d7a","#3ddc84"];
+function pad(n){return("0"+n).slice(-2)}
+function norm(d){
+  d=normalizeDigits(String(d));
+  var m=/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/.exec(d.trim());
+  return m?m[1]+"/"+pad(m[2])+"/"+pad(m[3]):null;
+}
+function short(v){v=Number(v);return Math.abs(v)>=1000?(Math.round(v/100)/10)+"k":String(Math.round(v*10)/10)}
+function nice(v){if(v<=0)return 1;var p=Math.pow(10,Math.floor(Math.log10(v))),f=v/p;return(f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*p}
+
+function drawFilters(){
+  var b=$("ldF");b.replaceChildren();
+  FL.forEach(function(x){
+    var e=mk("button",LF===x[0]?"on":"",x[1]);e.type="button";
+    e.addEventListener("click",function(){LF=x[0];drawFilters();render()});
+    b.appendChild(e);
+  });
+}
+drawFilters();
+
+async function loadLd(){
+  if(busyL)return;busyL=true;
+  try{
+    var r=await Promise.all([
+      all("orders","username,order_date,order_count"),all("agent_groups","username,grp"),
+      all("agent_leaders","username,leaders"),all("agent_leaders_nonauto","username,leaders"),all("agent_leaders_body","username,leaders")
+    ]);
+    var gm=new Map(r[1].map(function(x){return[low(x.username),x.grp]}));
+    var map=new Map(); /* کاربر -> [{g,name}] */
+    function add(rows,g){
+      rows.forEach(function(x){
+        var k=low(x.username),grp=gm.get(k);
+        if(g==="third"?!!grp:grp!==g)return;
+        (x.leaders||[]).forEach(function(n){
+          n=String(n).trim();if(!n)return;
+          if(!map.has(k))map.set(k,[]);map.get(k).push({g:g,name:n});
+        });
+      });
+    }
+    add(r[2],"third");add(r[3],"nonauto");add(r[4],"body");
+    var leaders=new Map(),dates={};
+    map.forEach(function(arr,k){
+      arr.forEach(function(l){
+        var key=l.g+"|"+l.name;
+        if(!leaders.has(key))leaders.set(key,{g:l.g,name:l.name,by:new Map(),members:new Set()});
+        leaders.get(key).members.add(k);
+      });
+    });
+    r[0].forEach(function(o){
+      var d=norm(o.order_date);if(!d)return;
+      dates[d]=1;
+      var arr=map.get(low(o.username));if(!arr)return;
+      var v=Number(o.order_count)||0;
+      arr.forEach(function(l){var L=leaders.get(l.g+"|"+l.name);L.by.set(d,(L.by.get(d)||0)+v)});
+    });
+    LD={dates:Object.keys(dates).sort(),leaders:[...leaders.values()]};
+    render();
+  }catch(e){
+    $("ldChart").innerHTML='<div class="az-empty">خواندن آمار سرگروه‌ها ناموفق بود</div>';
+    console.warn("leaders chart:",e);
+  }
+  busyL=false;
+}
+
+function render(){
+  if(!LD)return;
+  var dates=RANGE>0?LD.dates.slice(-RANGE):LD.dates;
+  var list=LD.leaders.filter(function(l){return LF==="all"||l.g===LF}).map(function(l){
+    var t=0;dates.forEach(function(d){t+=l.by.get(d)||0});
+    return{l:l,total:Math.round(t*100)/100};
+  }).filter(function(x){return x.total>0||x.l.members.size>0}).sort(function(a,b){return b.total-a.total});
+
+  var top=list.slice(0,6);
+  top.forEach(function(x,i){x.c=LPAL[i]});
+  list.slice(6).forEach(function(x){x.c="#5b6b99"});
+  drawChart(top,dates);
+
+  var bars=$("ldBars");bars.replaceChildren();
+  if(!list.length){bars.appendChild(hintEl("سرگروهی برای این فیلتر ثبت نشده"));return}
+  var max=list[0].total||1;
+  list.forEach(function(x,i){
+    var row=mk("div","ld-row");
+    var rk=mk("i","d");rk.style.background=GCOL[x.l.g];rk.style.boxShadow="0 0 8px "+GCOL[x.l.g];rk.title=GNAME[x.l.g];
+    var nm=mk("u",null,x.l.name);nm.title=x.l.name+" — "+GNAME[x.l.g];
+    var tr=mk("div","ld-tr"),b=mk("b");b.style.background="linear-gradient(90deg,"+x.c+","+GCOL[x.l.g]+")";b.style.width="0";tr.appendChild(b);
+    var v=mk("span","ld-v",String(F(x.total)));v.appendChild(mk("small",null,x.l.members.size+" نفر"));
+    row.append(rk,nm,tr,v);bars.appendChild(row);
+    setTimeout(function(){b.style.width=Math.max(3,x.total/max*100)+"%"},60+i*30);
+  });
+}
+function F(n){return Math.round(Number(n)*100)/100}
+
+function drawChart(top,dates){
+  var host=$("ldChart"),n=dates.length;
+  if(n<2||!top.length){host.innerHTML='<div class="az-empty">برای رسم نمودار حداقل دو روز آمار لازمه</div>';return}
+  var W=Math.max(320,host.clientWidth),H=260,PL=40,PR=12,PT=12,PB=26,mx=0,s="",i,k;
+  top.forEach(function(x){dates.forEach(function(d){mx=Math.max(mx,x.l.by.get(d)||0)})});
+  var step=nice(Math.max(mx,1)/4),max=Math.ceil(Math.max(mx,1)*1.08/step)*step;
+  var iw=W-PL-PR,ih=H-PT-PB,base=PT+ih;
+  var X=function(i){return PL+i*iw/(n-1)},Y=function(v){return base-v/max*ih};
+  for(var v=0;v<=max+1e-9;v+=step){
+    s+='<line x1="'+PL+'" x2="'+(W-PR)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="rgba(70,120,255,.16)"/><text x="'+(PL-7)+'" y="'+(Y(v)+4)+'" text-anchor="end">'+short(v)+'</text>';
+  }
+  var st=Math.max(1,Math.round(n/6));
+  for(i=0;i<n;i+=st)s+='<text x="'+X(i)+'" y="'+(H-7)+'" text-anchor="middle">'+dates[i].slice(5)+'</text>';
+  top.forEach(function(x){
+    var pts=dates.map(function(d,i){return X(i)+","+Y(x.l.by.get(d)||0)}).join(" ");
+    s+='<polyline points="'+pts+'" fill="none" stroke="'+x.c+'" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" style="filter:drop-shadow(0 0 5px '+x.c+')"/>';
+  });
+  s+='<g id="ldHv" style="opacity:0;pointer-events:none"><line y1="'+PT+'" y2="'+base+'" stroke="rgba(160,200,255,.5)" stroke-dasharray="3 4"/>'+
+     top.map(function(x){return '<circle r="4.5" fill="'+x.c+'" stroke="#fff" stroke-width="1.3"/>'}).join("")+'</g>';
+  s+='<rect id="ldHit" x="'+PL+'" y="'+PT+'" width="'+iw+'" height="'+ih+'" fill="transparent"/>';
+  host.innerHTML='<svg viewBox="0 0 '+W+' '+H+'">'+s+'</svg>';
+  var svg=host.querySelector("svg"),hv=svg.querySelector("#ldHv"),hit=svg.querySelector("#ldHit"),vl=hv.querySelector("line"),cs=hv.querySelectorAll("circle");
+  var tip=document.querySelector(".az-tip");
+  hit.addEventListener("pointermove",function(e){
+    var r=svg.getBoundingClientRect();
+    k=Math.max(0,Math.min(n-1,Math.round(((e.clientX-r.left)/r.width*W-PL)/iw*(n-1))));
+    vl.setAttribute("x1",X(k));vl.setAttribute("x2",X(k));
+    cs.forEach(function(c,j){c.setAttribute("cx",X(k));c.setAttribute("cy",Y(top[j].l.by.get(dates[k])||0))});
+    hv.style.opacity=1;
+    if(tip){
+      tip.innerHTML='<div><b>'+dates[k]+'</b></div>'+top.map(function(x){return '<div><span style="color:'+x.c+'">●</span> '+x.l.name+': <b>'+F(x.l.by.get(dates[k])||0)+'</b></div>'}).join("");
+      tip.classList.add("show");
+      var w=tip.offsetWidth,h=tip.offsetHeight,tx=e.clientX+14,ty=e.clientY-h-12;
+      if(tx+w>innerWidth-8)tx=e.clientX-w-14;if(ty<8)ty=e.clientY+16;
+      tip.style.left=tx+"px";tip.style.top=ty+"px";
+    }
+  });
+  hit.addEventListener("pointerleave",function(){hv.style.opacity=0;if(tip)tip.classList.remove("show")});
+}
+
+$("ldRange").addEventListener("change",function(e){RANGE=+e.target.value;render()});
+var rz;window.addEventListener("resize",function(){clearTimeout(rz);rz=setTimeout(render,150)});
+
+/* با باز شدن پنجره‌ی نمودارها داده‌ها خونده می‌شه؛ دکمه‌ی به‌روزرسانی هم دوباره می‌خونه */
+var rp=$("rpModal"),loaded=false;
+function maybeLoad(){if(rp.classList.contains("show")&&!loaded){loaded=true;loadLd()}}
+if(rp){
+  new MutationObserver(maybeLoad).observe(rp,{attributes:true,attributeFilter:["class"]});
+  maybeLoad();
+}
+var rf=$("rpRefresh");
+if(rf)rf.addEventListener("click",function(){setTimeout(loadLd,300)});
+})();
+</script>
 </body>
 </html>
