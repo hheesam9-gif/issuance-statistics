@@ -2538,14 +2538,15 @@ async function openProfile() {
   const names = (all && all.data) ? all.data.map(r => r.name) : [];
 
   // اسم‌های ثبت‌شده برای خود نماینده اول بیان، بعد بقیه
-  const savedL1 = prof.leader_name || "";
-  const savedL2 = prof.leader_name2 || "";
-  [savedL1, savedL2].forEach(n => { if (n && !profLeaders.includes(n)) profLeaders.push(n); });
+// فقط سرگروه‌های غیر خودرویی
+profLeaders = [...new Set(names.filter(Boolean))];
+const okName = n => (n && profLeaders.includes(n)) ? n : "";
 
-  $("pfFirst").value = prof.first_name || adm.first_name || "";
-  $("pfLast").value = prof.last_name || "";
-  const lead1 = prof.leader_name || (mine.length === 1 ? mine[0] : "");
-  const lead2 = prof.leader_name2 || (mine.length > 1 ? (mine.find(n => n !== lead1) || "") : "");
+$("pfFirst").value = prof.first_name || adm.first_name || "";
+$("pfLast").value = prof.last_name || "";
+const mineOk = mine.filter(n => profLeaders.includes(n));
+const lead1 = okName(prof.leader_name) || (mineOk.length === 1 ? mineOk[0] : "");
+const lead2 = okName(prof.leader_name2) || (mineOk.length > 1 ? (mineOk.find(n => n !== lead1) || "") : "");
   $("pfLeader").value = lead1;
   $("pfLeader2").value = lead2;
   profOriginal = lead1;
