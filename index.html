@@ -981,13 +981,6 @@ if (typeof gsap === "undefined") {
     });
   }
 }
-    addEventListener("pointermove", (e) => {
-      if (!on) return;
-      const nx = e.clientX / innerWidth - 0.5, ny = e.clientY / innerHeight - 0.5;
-      layers.forEach((l) => { l.x(nx * l.d); l.y(ny * l.d); });
-    });
-  }
-}
 </script>
 </body>
 </html>
