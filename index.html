@@ -14,6 +14,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <style>
   * { box-sizing: border-box; }
 
@@ -400,6 +401,14 @@ input:focus + .icon { stroke: var(--accent2); }
   .box > :not(form), #loginForm > * { animation: none; }
   #loginBtn::before { transition: none; }
 }
+/* ===== GSAP overrides ===== */
+.toolbar, .stage { visibility: hidden; }              /* GSAP نشانشان می‌دهد */
+.toolbar, .box, .box > :not(form), #loginForm > * {
+  animation: none !important; opacity: 1; transform: none;
+}
+.box > h1 { animation: titleShine 6s linear infinite !important; }
+.blob { animation: none !important; }                 /* حرکت بلاب‌ها با GSAP */
+.dots { animation: none; }
 </style>
 </head>
 <body>
@@ -741,9 +750,7 @@ input:focus + .icon { stroke: var(--accent2); }
     msg.textContent = text;
     msg.className = "error";
     setBtn("idle", "ورود");
-    stageEl.classList.remove("shake");
-    void stageEl.offsetWidth;
-    stageEl.classList.add("shake");
+    gsapShake();
     submitting = false;
   }
 
@@ -799,8 +806,7 @@ input:focus + .icon { stroke: var(--accent2); }
     logoEl.classList.add("unlocked");
 
     await saveCredential(username, password);
-    setTimeout(() => stageEl.classList.add("leaving"), 450);
-    setTimeout(() => window.location.replace(target), 900);
+    gsapExit(() => window.location.replace(target));
   });
 
   /* اگر قبلاً وارد شده، به پنل مناسب برو */
@@ -817,6 +823,91 @@ input:focus + .icon { stroke: var(--accent2); }
     } catch (e) { /* همین‌جا بمان و فرم را نشان بده */ }
     trySilentFill();
   })();
+  /* =========================================================
+   GSAP: ورود سینمایی، پارالکس، دکمه مغناطیسی، شیک، خروج
+   ========================================================= */
+function gsapShake() {
+  if (REDUCE_MOTION) return;
+  gsap.fromTo("#loginBox", { x: 0 }, { keyframes: { x: [-14, 12, -9, 6, -3, 0] }, duration: 0.55, ease: "power2.out" });
+  gsap.from("#loginForm input", { borderColor: "#ff6b7d", duration: 1.2, stagger: 0.12, clearProps: "borderColor" });
+  gsap.from("#msg", { y: -8, autoAlpha: 0, duration: 0.4 });
+}
+
+function gsapExit(done) {
+  if (REDUCE_MOTION) { setTimeout(done, 300); return; }
+  gsap.timeline({ onComplete: done })
+    .to("#logo", { rotation: 360, scale: 1.25, duration: 0.6, ease: "back.inOut(2)" })
+    .to("#loginForm > *, .greet-chip, .subtitle, .secure, .footer",
+        { y: -16, autoAlpha: 0, duration: 0.35, stagger: { each: 0.03, from: "end" } }, 0.1)
+    .to("#loginBox", { scale: 0.9, y: -40, rotationX: 10, autoAlpha: 0, filter: "blur(10px)", duration: 0.6, ease: "power3.in" }, 0.45)
+    .to(".toolbar", { autoAlpha: 0, y: -20, duration: 0.4 }, 0.45);
+}
+
+(function () {
+  if (REDUCE_MOTION) { gsap.set([".toolbar", ".stage"], { visibility: "visible" }); return; }
+  const box = document.getElementById("loginBox");
+
+  /* --- ۱) ورود سینمایی --- */
+  const tl = gsap.timeline({ defaults: { ease: "expo.out" } });
+  tl.fromTo(".toolbar", { y: -24, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.8 })
+    .set(".stage", { autoAlpha: 1 }, 0)
+    .fromTo(box,
+      { y: 80, scale: 0.9, rotationX: -14, autoAlpha: 0, transformOrigin: "50% 100%" },
+      { y: 0, scale: 1, rotationX: 0, autoAlpha: 1, duration: 1.4 }, 0.1)
+    .from("#logo", { scale: 0, rotation: -200, duration: 1.1, ease: "back.out(1.8)" }, 0.45)
+    .from(".greet-chip", { y: 14, autoAlpha: 0, duration: 0.6 }, 0.65)
+    .fromTo("h1",
+      { clipPath: "inset(0 0 0 100%)", autoAlpha: 0 },
+      { clipPath: "inset(0 0 0 0%)", autoAlpha: 1, duration: 1, clearProps: "clipPath" }, 0.7)
+    .from(".subtitle", { y: 14, autoAlpha: 0, duration: 0.6 }, 0.9)
+    .from("#loginForm > *", {
+      y: 30, autoAlpha: 0, duration: 0.9,
+      x: (i) => (i % 2 ? 24 : -24),            // ← index: زوج از چپ، فرد از راست
+      stagger: 0.07
+    }, 0.95)
+    .from(".secure, .footer", { y: 10, autoAlpha: 0, duration: 0.6, stagger: 0.1 }, 1.4)
+    .add(() => gsap.set(box, { clearProps: "transform" }));
+
+  /* --- ۲) حرکت دائمی بلاب‌ها + پارالکس موس (با index) --- */
+  const blobs = gsap.utils.toArray(".blob");
+  blobs.forEach((b, i) => {
+    gsap.to(b, {
+      x: (i % 2 ? 1 : -1) * (80 + i * 40),
+      y: (i % 2 ? -1 : 1) * (60 + i * 50),
+      scale: 1 + i * 0.04,
+      duration: 14 + i * 6, ease: "sine.inOut", repeat: -1, yoyo: true
+    });
+  });
+  if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+    const par = blobs.map((b, i) => ({
+      x: gsap.quickTo(b, "xPercent", { duration: 1.6, ease: "power3.out" }),
+      y: gsap.quickTo(b, "yPercent", { duration: 1.6, ease: "power3.out" }),
+      depth: (i + 1) * 4                          // ← هر بلاب عمق متفاوت
+    }));
+    window.addEventListener("pointermove", (e) => {
+      const nx = e.clientX / innerWidth - 0.5, ny = e.clientY / innerHeight - 0.5;
+      par.forEach((p) => { p.x(-nx * p.depth); p.y(-ny * p.depth); });
+    });
+
+    /* --- ۳) دکمهٔ مغناطیسی --- */
+    const btn = document.getElementById("loginBtn");
+    const bx = gsap.quickTo(btn, "x", { duration: 0.5, ease: "power3.out" });
+    const by = gsap.quickTo(btn, "y", { duration: 0.5, ease: "power3.out" });
+    btn.addEventListener("pointermove", (e) => {
+      const r = btn.getBoundingClientRect();
+      bx((e.clientX - r.left - r.width / 2) * 0.12);
+      by((e.clientY - r.top - r.height / 2) * 0.25);
+    });
+    btn.addEventListener("pointerleave", () => { bx(0); by(0); });
+  }
+
+  /* --- ۴) فوکوس فیلدها --- */
+  document.querySelectorAll(".input-wrap").forEach((w) => {
+    const inp = w.querySelector("input");
+    inp.addEventListener("focus", () => gsap.to(w, { scale: 1.025, duration: 0.35, ease: "back.out(2)" }));
+    inp.addEventListener("blur",  () => gsap.to(w, { scale: 1, duration: 0.3 }));
+  });
+})();
 </script>
 </body>
 </html>
