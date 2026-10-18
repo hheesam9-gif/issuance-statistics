@@ -409,6 +409,22 @@ input:focus + .icon { stroke: var(--accent2); }
 .box > h1 { animation: titleShine 6s linear infinite !important; }
 .blob { animation: none !important; }                 /* حرکت بلاب‌ها با GSAP */
 .dots { animation: none; }
+/* ===== خفن‌تر ===== */
+#net { position: absolute; inset: 0; width: 100%; height: 100%; }
+.cursor {
+  position: fixed; top: 0; left: 0; width: 34px; height: 34px; margin: -17px 0 0 -17px;
+  border: 1.5px solid var(--accent2); border-radius: 50%; pointer-events: none; z-index: 50; opacity: 0;
+  background: color-mix(in srgb, var(--accent1) 14%, transparent);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--accent1) 45%, transparent);
+}
+@media (hover: none) { .cursor { display: none; } }
+.wipe {
+  position: fixed; left: 50%; top: 50%; width: 20px; height: 20px; margin: -10px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent1), var(--accent2));
+  z-index: 100; pointer-events: none; transform: scale(0);
+}
+.ripple { position: absolute; border-radius: 50%; background: rgba(255,255,255,.5); pointer-events: none; }
+#loginBtn { transform: none !important; }
 </style>
 </head>
 <body>
@@ -416,6 +432,7 @@ input:focus + .icon { stroke: var(--accent2); }
     <div class="blob b1"></div>
     <div class="blob b2"></div>
     <div class="blob b3"></div>
+    <canvas id="net"></canvas>
     <div class="dots"></div>
     <div class="grain"></div>
     <div class="season-fx" id="seasonFx"></div>
@@ -479,7 +496,8 @@ input:focus + .icon { stroke: var(--accent2); }
       <div class="footer">azki sword</div>
     </main>
   </div>
-
+<div class="cursor" id="cursor"></div>
+<div class="wipe" id="wipe"></div>
 <script>
   const SUPABASE_URL = "https://jmbpskxloffcrbxiqcdy.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptYnBza3hsb2ZmY3JieGlxY2R5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MjU3MDgsImV4cCI6MjEwNTQwMTcwOH0.ZFHwX9hg7FxyjcEV4oJRpA2Rgoh0UqL2Xj7D3IO3YMU";
@@ -801,7 +819,7 @@ input:focus + .icon { stroke: var(--accent2); }
                  : grp === "nonauto" ? "dashboard-nonauto.html"
                  : "dashboard.html";
 
-    localStorage.setItem("current_username", username);
+    try { localStorage.setItem("current_username", username); } catch (e) {}
     setBtn("success", "ورود موفق");
     logoEl.classList.add("unlocked");
 
@@ -823,91 +841,153 @@ input:focus + .icon { stroke: var(--accent2); }
     } catch (e) { /* همین‌جا بمان و فرم را نشان بده */ }
     trySilentFill();
   })();
-  /* =========================================================
-   GSAP: ورود سینمایی، پارالکس، دکمه مغناطیسی، شیک، خروج
-   ========================================================= */
-function gsapShake() {
-  if (REDUCE_MOTION) return;
-  gsap.fromTo("#loginBox", { x: 0 }, { keyframes: { x: [-14, 12, -9, 6, -3, 0] }, duration: 0.55, ease: "power2.out" });
-  gsap.from("#loginForm input", { borderColor: "#ff6b7d", duration: 1.2, stagger: 0.12, clearProps: "borderColor" });
-  gsap.from("#msg", { y: -8, autoAlpha: 0, duration: 0.4 });
-}
+/* ===== GSAP + افکت‌های خفن ===== */
+window.gsapShake = () => {};
+window.gsapExit = (done) => setTimeout(done, 300);
 
-function gsapExit(done) {
-  if (REDUCE_MOTION) { setTimeout(done, 300); return; }
-  gsap.timeline({ onComplete: done })
-    .to("#logo", { rotation: 360, scale: 1.25, duration: 0.6, ease: "back.inOut(2)" })
-    .to("#loginForm > *, .greet-chip, .subtitle, .secure, .footer",
-        { y: -16, autoAlpha: 0, duration: 0.35, stagger: { each: 0.03, from: "end" } }, 0.1)
-    .to("#loginBox", { scale: 0.9, y: -40, rotationX: 10, autoAlpha: 0, filter: "blur(10px)", duration: 0.6, ease: "power3.in" }, 0.45)
-    .to(".toolbar", { autoAlpha: 0, y: -20, duration: 0.4 }, 0.45);
-}
-
+/* --- شبکهٔ ذرات (بدون نیاز به GSAP) --- */
 (function () {
-  if (REDUCE_MOTION) { gsap.set([".toolbar", ".stage"], { visibility: "visible" }); return; }
-  const box = document.getElementById("loginBox");
+  if (REDUCE_MOTION) return;
+  const c = byId("net"), ctx = c.getContext("2d");
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  let W, H, pts = [], color = "#6d5bff", frame = 0;
+  const m = { x: -999, y: -999 };
+  function size() {
+    W = innerWidth; H = innerHeight;
+    c.width = W * dpr; c.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const n = Math.min(90, Math.floor(W * H / 16000));
+    pts = Array.from({ length: n }, () => ({
+      x: Math.random() * W, y: Math.random() * H,
+      vx: (Math.random() - .5) * .35, vy: (Math.random() - .5) * .35, r: 1 + Math.random() * 1.6
+    }));
+  }
+  size(); addEventListener("resize", size);
+  addEventListener("pointermove", (e) => { m.x = e.clientX; m.y = e.clientY; });
+  function tick() {
+    if (!document.hidden) {
+      if (frame++ % 60 === 0) color = getComputedStyle(root).getPropertyValue("--accent1").trim() || color;
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = ctx.strokeStyle = color;
+      for (let i = 0; i < pts.length; i++) {
+        const p = pts[i];
+        const dx = p.x - m.x, dy = p.y - m.y, d2 = dx * dx + dy * dy;
+        if (d2 < 22500) { const f = (1 - Math.sqrt(d2) / 150) * .6; p.vx += dx / 150 * f * .08; p.vy += dy / 150 * f * .08; }
+        p.vx *= .995; p.vy *= .995;
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0 || p.x > W) p.vx *= -1;
+        if (p.y < 0 || p.y > H) p.vy *= -1;
+        ctx.globalAlpha = .7; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.283); ctx.fill();
+        for (let j = i + 1; j < pts.length; j++) {
+          const q = pts[j], ex = p.x - q.x, ey = p.y - q.y, d = Math.hypot(ex, ey);
+          if (d < 130) { ctx.globalAlpha = (1 - d / 130) * .45; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke(); }
+        }
+        const md = Math.sqrt(d2);
+        if (md < 190) { ctx.globalAlpha = (1 - md / 190) * .8; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(m.x, m.y); ctx.stroke(); }
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+  tick();
+})();
 
-  /* --- ۱) ورود سینمایی --- */
+/* --- بقیه نیاز به GSAP دارد --- */
+if (typeof gsap === "undefined") {
+  document.querySelectorAll(".toolbar, .stage").forEach((el) => (el.style.visibility = "visible"));
+} else if (REDUCE_MOTION) {
+  gsap.set([".toolbar", ".stage"], { visibility: "visible" });
+} else {
+  const box = byId("loginBox");
+
+  window.gsapShake = function () {
+    gsap.fromTo(box, { x: 0 }, { keyframes: { x: [-14, 12, -9, 6, -3, 0] }, duration: 0.55, ease: "power2.out" });
+    gsap.from("#loginForm input", { borderColor: "#ff6b7d", duration: 1.2, stagger: 0.12, clearProps: "borderColor" });
+    gsap.from("#msg", { y: -8, autoAlpha: 0, duration: 0.4 });
+  };
+
+  /* خروج: دایره از لوگو منفجر می‌شود و صفحه را می‌پوشاند */
+  window.gsapExit = function (done) {
+    const w = byId("wipe"), r = logoEl.getBoundingClientRect();
+    gsap.set(w, { left: r.left + r.width / 2, top: r.top + r.height / 2 });
+    gsap.timeline({ onComplete: done })
+      .to("#logo", { rotation: 360, scale: 1.2, duration: 0.5, ease: "back.inOut(2)" })
+      .to("#loginBox > *:not(.logo)", { y: -20, autoAlpha: 0, duration: 0.3, stagger: { each: 0.03, from: "end" } }, 0.1)
+      .to(".toolbar", { autoAlpha: 0, y: -20, duration: 0.3 }, 0.1)
+      .to(w, { scale: Math.hypot(innerWidth, innerHeight) / 10, duration: 0.75, ease: "power3.in" }, 0.4);
+  };
+
+  /* ورود سینمایی */
   const tl = gsap.timeline({ defaults: { ease: "expo.out" } });
   tl.fromTo(".toolbar", { y: -24, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.8 })
     .set(".stage", { autoAlpha: 1 }, 0)
-    .fromTo(box,
-      { y: 80, scale: 0.9, rotationX: -14, autoAlpha: 0, transformOrigin: "50% 100%" },
-      { y: 0, scale: 1, rotationX: 0, autoAlpha: 1, duration: 1.4 }, 0.1)
+    .fromTo(box, { y: 80, scale: 0.9, rotationX: -14, autoAlpha: 0, transformOrigin: "50% 100%" },
+                 { y: 0, scale: 1, rotationX: 0, autoAlpha: 1, duration: 1.4 }, 0.1)
     .from("#logo", { scale: 0, rotation: -200, duration: 1.1, ease: "back.out(1.8)" }, 0.45)
     .from(".greet-chip", { y: 14, autoAlpha: 0, duration: 0.6 }, 0.65)
-    .fromTo("h1",
-      { clipPath: "inset(0 0 0 100%)", autoAlpha: 0 },
-      { clipPath: "inset(0 0 0 0%)", autoAlpha: 1, duration: 1, clearProps: "clipPath" }, 0.7)
+    .fromTo("h1", { clipPath: "inset(0 0 0 100%)", autoAlpha: 0 },
+                  { clipPath: "inset(0 0 0 0%)", autoAlpha: 1, duration: 1, clearProps: "clipPath" }, 0.7)
     .from(".subtitle", { y: 14, autoAlpha: 0, duration: 0.6 }, 0.9)
-    .from("#loginForm > *", {
-      y: 30, autoAlpha: 0, duration: 0.9,
-      x: (i) => (i % 2 ? 24 : -24),            // ← index: زوج از چپ، فرد از راست
-      stagger: 0.07
-    }, 0.95)
+    .from("#loginForm > *", { y: 30, autoAlpha: 0, duration: 0.9, x: (i) => (i % 2 ? 24 : -24), stagger: 0.07 }, 0.95)
     .from(".secure, .footer", { y: 10, autoAlpha: 0, duration: 0.6, stagger: 0.1 }, 1.4)
     .add(() => gsap.set(box, { clearProps: "transform" }));
 
-  /* --- ۲) حرکت دائمی بلاب‌ها + پارالکس موس (با index) --- */
-  const blobs = gsap.utils.toArray(".blob");
-  blobs.forEach((b, i) => {
+  /* بلاب‌ها: حرکت دائمی */
+  gsap.utils.toArray(".blob").forEach((b, i) => {
     gsap.to(b, {
-      x: (i % 2 ? 1 : -1) * (80 + i * 40),
-      y: (i % 2 ? -1 : 1) * (60 + i * 50),
-      scale: 1 + i * 0.04,
-      duration: 14 + i * 6, ease: "sine.inOut", repeat: -1, yoyo: true
+      x: (i % 2 ? 1 : -1) * (80 + i * 40), y: (i % 2 ? -1 : 1) * (60 + i * 50),
+      scale: 1 + i * 0.04, duration: 14 + i * 6, ease: "sine.inOut", repeat: -1, yoyo: true
     });
   });
+
+  /* فوکوس فیلدها */
+  document.querySelectorAll(".input-wrap").forEach((wrap) => {
+    const inp = wrap.querySelector("input");
+    inp.addEventListener("focus", () => gsap.to(wrap, { scale: 1.025, duration: 0.35, ease: "back.out(2)" }));
+    inp.addEventListener("blur",  () => gsap.to(wrap, { scale: 1, duration: 0.3 }));
+  });
+
+  /* ریپل روی دکمه (دکمه جابه‌جا نمی‌شود) */
+  loginBtn.addEventListener("pointerdown", (e) => {
+    const r = loginBtn.getBoundingClientRect(), s = Math.max(r.width, r.height) * 2;
+    const d = document.createElement("span");
+    d.className = "ripple";
+    Object.assign(d.style, { width: s + "px", height: s + "px", left: e.clientX - r.left - s / 2 + "px", top: e.clientY - r.top - s / 2 + "px" });
+    loginBtn.appendChild(d);
+    gsap.fromTo(d, { scale: 0, opacity: 0.6 }, { scale: 1, opacity: 0, duration: 0.8, ease: "power2.out", onComplete: () => d.remove() });
+  });
+
+  /* فقط دسکتاپ با ماوس */
   if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
-    const par = blobs.map((b, i) => ({
-      x: gsap.quickTo(b, "xPercent", { duration: 1.6, ease: "power3.out" }),
-      y: gsap.quickTo(b, "yPercent", { duration: 1.6, ease: "power3.out" }),
-      depth: (i + 1) * 4                          // ← هر بلاب عمق متفاوت
+    /* نشانگر نورانی */
+    const cur = byId("cursor");
+    const cx = gsap.quickTo(cur, "x", { duration: 0.25, ease: "power3" });
+    const cy = gsap.quickTo(cur, "y", { duration: 0.25, ease: "power3" });
+    addEventListener("pointermove", (e) => { gsap.to(cur, { opacity: 1, duration: 0.3, overwrite: "auto" }); cx(e.clientX); cy(e.clientY); });
+    document.querySelectorAll("input, button, .theme-toggle, .remember").forEach((el) => {
+      el.addEventListener("pointerenter", () => gsap.to(cur, { scale: 1.8, duration: 0.3 }));
+      el.addEventListener("pointerleave", () => gsap.to(cur, { scale: 1, duration: 0.3 }));
+    });
+
+    /* پارالکس لایه‌ای: هر المان بر اساس index عمق متفاوت دارد */
+    let on = false; setTimeout(() => (on = true), 2300);
+    const layers = gsap.utils.toArray("#logo, .greet-chip, h1, .subtitle").map((el, i) => ({
+      x: gsap.quickTo(el, "x", { duration: 0.9, ease: "power3" }),
+      y: gsap.quickTo(el, "y", { duration: 0.9, ease: "power3" }),
+      d: (i + 1) * 3
     }));
-    window.addEventListener("pointermove", (e) => {
+    addEventListener("pointermove", (e) => {
+      if (!on) return;
       const nx = e.clientX / innerWidth - 0.5, ny = e.clientY / innerHeight - 0.5;
-      par.forEach((p) => { p.x(-nx * p.depth); p.y(-ny * p.depth); });
+      layers.forEach((l) => { l.x(nx * l.d); l.y(ny * l.d); });
     });
-
-    /* --- ۳) دکمهٔ مغناطیسی --- */
-    const btn = document.getElementById("loginBtn");
-    const bx = gsap.quickTo(btn, "x", { duration: 0.5, ease: "power3.out" });
-    const by = gsap.quickTo(btn, "y", { duration: 0.5, ease: "power3.out" });
-    btn.addEventListener("pointermove", (e) => {
-      const r = btn.getBoundingClientRect();
-      bx((e.clientX - r.left - r.width / 2) * 0.12);
-      by((e.clientY - r.top - r.height / 2) * 0.25);
-    });
-    btn.addEventListener("pointerleave", () => { bx(0); by(0); });
   }
-
-  /* --- ۴) فوکوس فیلدها --- */
-  document.querySelectorAll(".input-wrap").forEach((w) => {
-    const inp = w.querySelector("input");
-    inp.addEventListener("focus", () => gsap.to(w, { scale: 1.025, duration: 0.35, ease: "back.out(2)" }));
-    inp.addEventListener("blur",  () => gsap.to(w, { scale: 1, duration: 0.3 }));
-  });
-})();
+}
+    addEventListener("pointermove", (e) => {
+      if (!on) return;
+      const nx = e.clientX / innerWidth - 0.5, ny = e.clientY / innerHeight - 0.5;
+      layers.forEach((l) => { l.x(nx * l.d); l.y(ny * l.d); });
+    });
+  }
+}
 </script>
 </body>
 </html>
