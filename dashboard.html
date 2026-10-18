@@ -14,6 +14,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.min.js"></script>
 <style>
     .site-credit {
     width: 100%; margin-top: 18px; padding: 6px 0 2px;
@@ -1057,6 +1059,62 @@ button.ord-sum:active { transform: scale(0.97); }
   background: var(--row-bg); border: 1px solid var(--row-border);
 }
 .pf-clear:hover { border-color: var(--accent1); color: var(--text); }
+/* ===== GSAP dashboard ===== */
+#net { position: absolute; inset: 0; width: 100%; height: 100%; }
+.cursor {
+  position: fixed; top: 0; left: 0; width: 34px; height: 34px; margin: -17px 0 0 -17px;
+  border: 1.5px solid var(--accent2); border-radius: 50%; pointer-events: none; z-index: 150; opacity: 0;
+  background: color-mix(in srgb, var(--accent1) 14%, transparent);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--accent1) 45%, transparent);
+}
+.reveal {
+  position: fixed; inset: 0; z-index: 200; pointer-events: none;
+  background: linear-gradient(135deg, var(--accent1), var(--accent2));
+}
+/* وقتی GSAP لود شد، انیمیشن‌های CSS ورود خاموش می‌شوند */
+html.gx .toolbar, html.gx .box { animation: none !important; opacity: 1; transform: none; visibility: hidden; }
+html.gx .mascot { animation: none !important; opacity: 0; transform: none; }
+html.gx .blob { animation: none !important; }
+html.gx .modal-box, html.gx .notice,
+html.gx .ord-card, html.gx .list > .e-row, html.gx .list > .p-row { animation: none !important; }
+/* ===== GSAP v2: نمودار، آمار، پورسانت ===== */
+.spark .line { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--accent1) 70%, transparent)); }
+.spark-wrap .gpt { position: absolute; width: 7px; height: 7px; border-radius: 50%; pointer-events: none; z-index: 1;
+  background: var(--card-bg); border: 2px solid var(--accent2); }
+.spark-wrap .gpt.peak { width: 12px; height: 12px; border-color: var(--mint); box-shadow: 0 0 14px var(--mint); }
+.spark-wrap .gring { position: absolute; width: 12px; height: 12px; border-radius: 50%; pointer-events: none; border: 1.5px solid var(--mint); }
+.spark-wrap .gdot { position: absolute; width: 9px; height: 9px; border-radius: 50%; background: #fff; pointer-events: none; z-index: 2;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent2) 40%, transparent), 0 0 18px var(--accent2); }
+
+.sbar { height: 4px; border-radius: 4px; margin: 10px 8px 0; overflow: hidden;
+  background: color-mix(in srgb, var(--text) 10%, transparent); }
+.sbar i { display: block; height: 100%; width: 100%; border-radius: inherit; transform: scaleX(0); transform-origin: right center;
+  background: linear-gradient(270deg, var(--mint), var(--accent2), var(--accent1)); box-shadow: 0 0 10px var(--accent2); }
+.ssheen { position: absolute; top: 0; bottom: 0; width: 35%; left: -50%; pointer-events: none; opacity: 0;
+  background: linear-gradient(105deg, transparent, rgba(255,255,255,.3), transparent); transform: skewX(-20deg); }
+
+html.gx2 .payout-modal-num:not(.pgx-num) { display: none; }
+html.gx2 .payout-modal.show .payout-coin,
+html.gx2 .payout-modal.show .payout-modal-label,
+html.gx2 .payout-modal.show .payout-modal-unit { animation: none; }
+html.gx2 .payout-modal-box { z-index: 2; }
+.pgx-num { position: relative; z-index: 1; margin-top: 10px; font-size: 46px; font-weight: 900; letter-spacing: -1.5px;
+  direction: ltr; font-variant-numeric: tabular-nums; line-height: 1.2;
+  background: linear-gradient(135deg, var(--accent1), var(--mint)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.pgx-fx { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 1; }
+.pgx-fx span { position: absolute; line-height: 1; }
+/* ===== رفع جابه‌جایی آمار ===== */
+.stats .stat { padding-bottom: 20px; transform: none !important; }
+.stats .stat b { transform: none !important; }
+.stats .sbar { position: absolute; left: 12px; right: 12px; bottom: 8px; margin: 0; }
+.stats .ssheen { display: none; }
+
+/* ===== تب‌ها ===== */
+.list { transform-style: preserve-3d; }
+/* ===== Lenis ===== */
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-stopped { overflow: hidden; }
+.lenis.lenis-scrolling { pointer-events: auto; }
 </style>
 
 </head>
@@ -2894,6 +2952,507 @@ $("profSave").addEventListener("click", async () => {
       return _lc.apply(this, arguments);
     };
   }
+})();
+</script>
+<script>
+(function () {
+  if (typeof gsap === "undefined" || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const $ = (id) => document.getElementById(id);
+  const root = document.documentElement;
+  const fine = matchMedia("(hover: hover) and (pointer: fine)").matches;
+  root.classList.add("gx");
+
+  /* شبکه‌ی ایمنی: اگر چیزی خراب شد، صفحه پنهان نماند */
+  setTimeout(() => {
+    gsap.set([".toolbar", ".box"], { visibility: "visible" });
+    const r = $("reveal"); if (r) r.remove();
+  }, 5000);
+
+  /* ---------- پرده‌ی ورود (دایره‌ای که جمع می‌شود) ---------- */
+  const rv = document.createElement("div");
+  rv.className = "reveal"; rv.id = "reveal";
+  document.body.appendChild(rv);
+  gsap.set(rv, { clipPath: "circle(150% at 50% 38%)" });
+
+  const tl = gsap.timeline({ defaults: { ease: "expo.out" } });
+  tl.to(rv, { clipPath: "circle(0% at 50% 38%)", duration: 1.1, ease: "power3.inOut", onComplete: () => rv.remove() }, 0)
+    .set([".toolbar", ".box"], { visibility: "visible" }, 0.35)
+
+    /* نوار ابزار: هر دکمه با index وارد می‌شود */
+    .fromTo(".toolbar > *",
+      { y: -28, autoAlpha: 0, scale: 0.6, rotation: (i) => (i % 2 ? 12 : -12) },
+      { y: 0, autoAlpha: 1, scale: 1, rotation: 0, duration: 0.9, ease: "back.out(2)", stagger: 0.07 }, 0.45)
+
+    /* کارت اصلی */
+    .fromTo(".box",
+      { y: 90, autoAlpha: 0, scale: 0.92, rotationX: -10, transformOrigin: "50% 100%" },
+      { y: 0, autoAlpha: 1, scale: 1, rotationX: 0, duration: 1.4, clearProps: "transform" }, 0.5)
+
+    .from(".pane-main .head > .avatar", { scale: 0, rotation: -180, duration: 1, ease: "back.out(1.8)" }, 0.9)
+    .from(".pane-main .head > .head-txt", { x: 30, autoAlpha: 0, duration: 0.8 }, 1.0)
+    .from(".total", { y: 36, autoAlpha: 0, scale: 0.94, duration: 1 }, 1.05)
+    .from(".rank", { y: 30, autoAlpha: 0, duration: 0.9 }, 1.2)
+
+    /* آمار: زوج از چپ، فرد از راست (index) */
+    .from(".stats .stat", {
+      y: 30, autoAlpha: 0, duration: 0.9,
+      x: (i) => (i % 2 ? 26 : -26),
+      stagger: 0.1
+    }, 1.25)
+    .from(".pane-side .list-tabs", { y: 24, autoAlpha: 0, scaleX: 0.9, duration: 0.9 }, 1.15)
+    .from(".logout", { y: 18, autoAlpha: 0, duration: 0.7 }, 1.6)
+    .from(".site-credit", { autoAlpha: 0, duration: 0.9 }, 1.7);
+
+  /* ---------- شبکه‌ی ذرات (موتور: gsap.ticker) ---------- */
+  (function () {
+    const c = document.createElement("canvas");
+    c.id = "net";
+    const bg = document.querySelector(".bg");
+    bg.insertBefore(c, bg.querySelector(".dots"));
+    const ctx = c.getContext("2d");
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    let W, H, pts = [], color = "#6d5bff", frame = 0;
+    const m = { x: -999, y: -999 };
+    function size() {
+      W = innerWidth; H = innerHeight;
+      c.width = W * dpr; c.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const n = Math.min(80, Math.floor(W * H / 18000));
+      pts = Array.from({ length: n }, () => ({
+        x: gsap.utils.random(0, W), y: gsap.utils.random(0, H),
+        vx: gsap.utils.random(-0.15, 0.15), vy: gsap.utils.random(-0.15, 0.15), r: gsap.utils.random(1, 2.4)
+      }));
+    }
+    size(); addEventListener("resize", size);
+    addEventListener("pointermove", (e) => { m.x = e.clientX; m.y = e.clientY; });
+    gsap.ticker.add(() => {
+      if (document.hidden) return;
+      if (frame++ % 60 === 0) color = getComputedStyle(root).getPropertyValue("--accent1").trim() || color;
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = ctx.strokeStyle = color;
+      for (let i = 0; i < pts.length; i++) {
+        const p = pts[i];
+        const dx = p.x - m.x, dy = p.y - m.y, d2 = dx * dx + dy * dy;
+        if (d2 < 22500) { const f = (1 - Math.sqrt(d2) / 150) * 0.6; p.vx += dx / 150 * f * 0.08; p.vy += dy / 150 * f * 0.08; }
+        p.vx *= 0.995; p.vy *= 0.995;
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0 || p.x > W) p.vx *= -1;
+        if (p.y < 0 || p.y > H) p.vy *= -1;
+        ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.283); ctx.fill();
+        for (let j = i + 1; j < pts.length; j++) {
+          const q = pts[j], d = Math.hypot(p.x - q.x, p.y - q.y);
+          if (d < 120) { ctx.globalAlpha = (1 - d / 120) * 0.35; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke(); }
+        }
+        const md = Math.sqrt(d2);
+        if (md < 180) { ctx.globalAlpha = (1 - md / 180) * 0.7; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(m.x, m.y); ctx.stroke(); }
+      }
+    });
+  })();
+
+  /* ---------- بلاب‌ها: حرکت دائمی + پارالکس موس با index ---------- */
+  const blobs = gsap.utils.toArray(".blob");
+  blobs.forEach((b, i) => {
+    gsap.to(b, {
+      x: (i % 2 ? 1 : -1) * (70 + i * 35), y: (i % 2 ? -1 : 1) * (50 + i * 40),
+      scale: 1 + i * 0.04, duration: 14 + i * 6, ease: "sine.inOut", repeat: -1, yoyo: true
+    });
+  });
+  if (fine) {
+    const par = blobs.map((b, i) => ({
+      x: gsap.quickTo(b, "xPercent", { duration: 1.6, ease: "power3.out" }),
+      y: gsap.quickTo(b, "yPercent", { duration: 1.6, ease: "power3.out" }),
+      d: (i + 1) * 4
+    }));
+    addEventListener("pointermove", (e) => {
+      const nx = e.clientX / innerWidth - 0.5, ny = e.clientY / innerHeight - 0.5;
+      par.forEach((p) => { p.x(-nx * p.d); p.y(-ny * p.d); });
+    });
+  }
+
+  /* ---------- پالس نرم روی عدد مجموع ---------- */
+  const num = $("totalCount");
+  if (num) gsap.to(num, { scale: 1.045, duration: 1.7, ease: "sine.inOut", repeat: -1, yoyo: true, transformOrigin: "50% 50%" });
+
+  /* ---------- مسکات: ورود، شناور شدن و دنبال کردن موس ---------- */
+  const mascot = $("mascot");
+  if (mascot) {
+    tl.fromTo(mascot, { y: 120, autoAlpha: 0, rotation: -6 },
+      { y: 0, autoAlpha: 1, rotation: 0, duration: 1.3, ease: "back.out(1.5)" }, 1.1)
+      .add(() => gsap.to(mascot, { y: -12, rotation: 1.2, duration: 2.3, ease: "sine.inOut", repeat: -1, yoyo: true }));
+    if (fine) {
+      const mx = gsap.quickTo(mascot, "x", { duration: 1.2, ease: "power3.out" });
+      addEventListener("pointermove", (e) => mx((e.clientX / innerWidth - 0.5) * 24));
+    }
+  }
+
+  /* ---------- پنجره‌ها: باز شدن سینمایی ---------- */
+  document.querySelectorAll(".modal").forEach((modal) => {
+    const box = modal.querySelector(".modal-box");
+    new MutationObserver(() => {
+      if (!modal.classList.contains("show")) return;
+      gsap.fromTo(modal, { backgroundColor: "rgba(4,6,16,0)" }, { backgroundColor: "rgba(4,6,16,0.66)", duration: 0.4 });
+      gsap.fromTo(box,
+        { y: 60, scale: 0.88, autoAlpha: 0, filter: "blur(10px)" },
+        { y: 0, scale: 1, autoAlpha: 1, filter: "blur(0px)", duration: 0.7, ease: "expo.out", clearProps: "transform,filter,opacity,visibility" });
+    }).observe(modal, { attributes: true, attributeFilter: ["class"] });
+  });
+
+  /* ---------- اعلان‌ها و کارت‌ها: ورود با index هر بار که ساخته می‌شوند ---------- */
+  function animateNew(parent, sel, fromProps) {
+    const els = parent.querySelectorAll(sel + ":not([data-g])");
+    if (!els.length) return;
+    els.forEach((e) => e.setAttribute("data-g", "1"));
+    gsap.from(els, Object.assign({ autoAlpha: 0, duration: 0.7, stagger: 0.06, ease: "power3.out", clearProps: "transform,opacity,visibility" }, fromProps));
+  }
+  const watch = (id, sel, props) => {
+    const p = $(id);
+    if (p) new MutationObserver(() => animateNew(p, sel, props)).observe(p, { childList: true });
+  };
+  watch("notices", ".notice", { x: 70 });
+  watch("ordRefBody", ".ord-card", { y: 24, x: (i) => (i % 2 ? 22 : -22) });
+  watch("list", ".e-row, .p-row", { y: 20, x: (i) => (i % 2 ? 22 : -22) });
+
+  /* ---------- نشانگر نورانی (دسکتاپ) ---------- */
+  if (fine) {
+    const cur = document.createElement("div");
+    cur.className = "cursor";
+    document.body.appendChild(cur);
+    const cx = gsap.quickTo(cur, "x", { duration: 0.25, ease: "power3" });
+    const cy = gsap.quickTo(cur, "y", { duration: 0.25, ease: "power3" });
+    addEventListener("pointermove", (e) => {
+      gsap.to(cur, { opacity: 1, duration: 0.3, overwrite: "auto" });
+      cx(e.clientX); cy(e.clientY);
+    });
+    document.addEventListener("pointerover", (e) => {
+      const hot = e.target.closest && e.target.closest("button, .theme-toggle, input, .stat, .row, .ord-card");
+      gsap.to(cur, { scale: hot ? 1.8 : 1, duration: 0.3 });
+    });
+  }
+
+  /* ---------- خروج سینمایی: دایره از دکمه‌ی خروج منفجر می‌شود ---------- */
+  const lo = $("logoutBtn");
+  if (lo) lo.addEventListener("click", () => {
+    const b = lo.getBoundingClientRect();
+    const at = (b.left + b.width / 2) + "px " + (b.top + b.height / 2) + "px";
+    const w = document.createElement("div");
+    w.className = "reveal";
+    document.body.appendChild(w);
+    gsap.fromTo(w,
+      { clipPath: "circle(0px at " + at.replace(" ", " ") + ")" },
+      { clipPath: "circle(" + Math.hypot(innerWidth, innerHeight) + "px at " + at + ")", duration: 0.8, ease: "power3.in" });
+    gsap.to(".box", { scale: 0.95, autoAlpha: 0.4, duration: 0.6, ease: "power2.in" });
+  });
+})();
+
+</script>
+<script>
+(function () {
+  if (typeof gsap === "undefined" || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const $ = (id) => document.getElementById(id);
+  document.documentElement.classList.add("gx2");
+
+  /* =====================  شمارنده‌ها با GSAP  ===================== */
+  window.animateNumber = function (node, target, duration) {
+    node.dataset.target = target;
+    const o = { v: 0 }, isInt = Number.isInteger(target);
+    const show = (v) => { node.textContent = isInt ? String(Math.round(v)) : fmt(v); };
+    gsap.to(o, {
+      v: target, duration: Math.max(1.2, (duration || 800) / 1000 + 0.6), ease: "power3.out",
+      onUpdate: () => show(o.v),
+      onComplete: () => {
+        show(target);
+        if (node.closest(".stat")) gsap.fromTo(node, { textShadow: "0 0 22px var(--accent2)" }, { textShadow: "0 0 0px transparent", duration: 1.2, ease: "power2.out" });
+      }
+    });
+  };
+
+  /* =====================  آمار  ===================== */
+  const stats = $("stats");
+  if (stats) {
+    stats.querySelectorAll(".stat").forEach((s) =>
+      s.insertAdjacentHTML("beforeend", '<div class="sbar"><i></i></div><i class="ssheen"></i>'));
+    new MutationObserver(() => {
+      if (stats.hidden) return;
+      const v = [...stats.querySelectorAll(".stat b")].map((b) => Number(b.dataset.target) || 0);
+      const ratios = [Math.min(v[0] / 30, 1), v[2] ? Math.min(v[1] / v[2], 1) : 0, Math.min(v[2] / 30, 1)];
+      stats.querySelectorAll(".sbar i").forEach((bar, i) =>
+        gsap.to(bar, { scaleX: Math.max(0.06, ratios[i]), duration: 1.8, delay: 0.5 + i * 0.15, ease: "expo.out" }));
+
+    }).observe(stats, { attributes: true, attributeFilter: ["hidden"] });
+  }
+
+  /* =====================  نمودار  ===================== */
+  const line = $("sparkLine"), svg = $("spark"), wrap = $("sparkWrap");
+  if (line && svg && wrap) {
+    const NS = "http://www.w3.org/2000/svg", W = 320, H = 90;
+    const grid = [22, 45, 68].map((y) => {
+      const l = document.createElementNS(NS, "line");
+      l.setAttribute("x1", 0); l.setAttribute("x2", W); l.setAttribute("y1", y); l.setAttribute("y2", y);
+      l.setAttribute("vector-effect", "non-scaling-stroke");
+      l.style.stroke = "var(--divider)"; l.style.strokeDasharray = "3 5";
+      svg.insertBefore(l, $("sparkArea"));
+      return l;
+    });
+    let made = [], loopTl = null, drawTw = null;
+
+    function build() {
+      const d = line.getAttribute("d");
+      if (!d) return;
+      made.forEach((e) => e.remove()); made = [];
+      if (loopTl) loopTl.kill(); if (drawTw) drawTw.kill();
+
+      const n = d.match(/-?\d*\.?\d+(?:e[-+]?\d+)?/gi).map(Number);
+      const pts = [[n[0], n[1]]];
+      for (let k = 2; k + 5 < n.length; k += 6) pts.push([n[k + 4], n[k + 5]]);
+      const last = pts.length - 1;
+      let peak = 0; pts.forEach((p, i) => { if (p[1] < pts[peak][1]) peak = i; });
+      const x0 = pts[0][0], span = (pts[last][0] - x0) || 1;
+      const len = line.getTotalLength();
+
+      const mk = (cls, p) => {
+        const e = document.createElement("div");
+        e.className = cls;
+        e.style.left = (p[0] / W * 100) + "%"; e.style.top = (p[1] / H * 100) + "%";
+        wrap.appendChild(e); made.push(e);
+        gsap.set(e, { xPercent: -50, yPercent: -50, autoAlpha: 0 });
+        return e;
+      };
+
+      const step = Math.ceil(pts.length / 28), dots = [];
+      pts.forEach((p, i) => {
+        if (i % step === 0 || i === last || i === peak)
+          dots.push({ e: mk("gpt" + (i === peak ? " peak" : ""), p), f: (p[0] - x0) / span, shown: false });
+      });
+
+      gsap.fromTo(grid, { opacity: 0 }, { opacity: 1, duration: 0.8, stagger: 0.12 });
+
+      line.style.transition = "none";
+      drawTw = gsap.fromTo(line, { strokeDasharray: len, strokeDashoffset: len }, {
+        strokeDashoffset: 0, duration: 2, delay: 0.3, ease: "power2.inOut",
+        onUpdate() {
+          dots.forEach((o) => {
+            if (!o.shown && this.ratio >= o.f) {
+              o.shown = true;
+              gsap.fromTo(o.e, { scale: 0, autoAlpha: 1 }, { scale: 1, autoAlpha: 1, duration: 0.55, ease: "back.out(3)" });
+            }
+          });
+        },
+        onComplete() {
+          /* موج روی بیشترین مقدار */
+          const ring = mk("gring", pts[peak]);
+          gsap.fromTo(ring, { scale: 1, autoAlpha: 0.9 }, { scale: 3.2, autoAlpha: 0, duration: 1.7, repeat: -1, ease: "power1.out" });
+          /* نقطه‌ی نورانی که روی مسیر می‌دود */
+          const gd = mk("gdot", pts[0]), o = { p: 0 };
+          loopTl = gsap.timeline({ repeat: -1, repeatDelay: 2.2 })
+            .to(gd, { autoAlpha: 1, duration: 0.3 }, 0)
+            .to(o, { p: 1, duration: 3, ease: "power1.inOut", onUpdate() {
+              const pt = line.getPointAtLength(o.p * len);
+              gd.style.left = (pt.x / W * 100) + "%"; gd.style.top = (pt.y / H * 100) + "%";
+            } }, 0)
+            .to(gd, { autoAlpha: 0, duration: 0.4 }, 2.6);
+        }
+      });
+    }
+    new MutationObserver(build).observe(line, { attributes: true, attributeFilter: ["d"] });
+  }
+
+  /* =====================  پنجره‌ی پورسانت  ===================== */
+  const modal = $("payoutModal");
+  if (modal) {
+    const coin = modal.querySelector(".payout-coin"), label = modal.querySelector(".payout-modal-label"),
+          unit = modal.querySelector(".payout-modal-unit"), orig = $("payoutModalNum");
+    const num = document.createElement("div");
+    num.className = "pgx-num"; num.textContent = "0";
+    orig.after(num);
+    let tl = null, fx = null;
+
+    function cleanup() { if (tl) tl.kill(); if (fx) fx.remove(); tl = fx = null; gsap.killTweensOf([coin, label, unit, num]); }
+
+    function burst() {
+      const r = num.getBoundingClientRect(), f = fx.getBoundingClientRect();
+      const cx = r.left + r.width / 2 - f.left, cy = r.top + r.height / 2 - f.top;
+      const cols = ["#2fd3a7", "#f5c542", "#6d5bff", "#ff8fc0"];
+      for (let i = 0; i < 32; i++) {
+        const p = document.createElement("span");
+        p.style.cssText = `left:${cx}px;top:${cy}px;width:8px;height:8px;border-radius:${i % 2 ? "50%" : "2px"};background:${cols[i % 4]}`;
+        fx.appendChild(p);
+        const a = (i / 32) * Math.PI * 2, dist = gsap.utils.random(90, 220);
+        gsap.fromTo(p, { x: 0, y: 0, scale: 1, autoAlpha: 1 },
+          { x: Math.cos(a) * dist, y: Math.sin(a) * dist + 30, scale: 0, autoAlpha: 0, rotation: gsap.utils.random(-360, 360),
+            duration: gsap.utils.random(0.9, 1.5), ease: "power3.out", onComplete: () => p.remove() });
+      }
+    }
+
+    function run() {
+      cleanup();
+      fx = document.createElement("div"); fx.className = "pgx-fx"; modal.appendChild(fx);
+      const total = Number(totalPayoutValue) || 0;
+      num.textContent = "0";
+
+      /* بارش سکه */
+      for (let i = 0; i < 26; i++) {
+        const c = document.createElement("span");
+        c.textContent = i % 3 ? "🪙" : "💰";
+        c.style.cssText = `left:${gsap.utils.random(0, innerWidth)}px;top:-50px;font-size:${gsap.utils.random(18, 34)}px`;
+        fx.appendChild(c);
+        gsap.to(c, { y: innerHeight + 90, x: gsap.utils.random(-60, 60), rotation: gsap.utils.random(-720, 720),
+          duration: gsap.utils.random(2.2, 4), delay: gsap.utils.random(0, 1.3), ease: "power1.in" });
+      }
+
+      /* حلقه‌های موجی از سکه */
+      const cr = coin.getBoundingClientRect(), fr = fx.getBoundingClientRect();
+      for (let i = 0; i < 3; i++) {
+        const ring = document.createElement("span");
+        ring.style.cssText = `left:${cr.left + cr.width / 2 - fr.left - 30}px;top:${cr.top + cr.height / 2 - fr.top - 30}px;width:60px;height:60px;border-radius:50%;border:2px solid #2fd3a7`;
+        fx.appendChild(ring);
+        gsap.fromTo(ring, { scale: 0.6, autoAlpha: 0.8 }, { scale: 5, autoAlpha: 0, duration: 1.6, delay: 0.5 + i * 0.35, ease: "power2.out" });
+      }
+
+      const o = { v: 0 };
+      tl = gsap.timeline()
+        .fromTo(coin, { scale: 0, rotationY: -720, y: -60, autoAlpha: 0, transformPerspective: 600 },
+          { scale: 1, rotationY: 0, y: 0, autoAlpha: 1, duration: 1.1, ease: "back.out(1.7)" }, 0.05)
+        .fromTo(label, { y: 14, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.6 }, 0.4)
+        .fromTo(num, { y: 20, autoAlpha: 0, scale: 0.8 }, { y: 0, autoAlpha: 1, scale: 1, duration: 0.6, ease: "back.out(1.6)" }, 0.55)
+        .fromTo(unit, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.5 }, 0.8)
+        .to(o, { v: total, duration: 2, ease: "power4.out",
+          onUpdate: () => { num.textContent = fmtMoney(Math.round(o.v)); },
+          onComplete: () => {
+            num.textContent = fmtMoney(total);
+            gsap.fromTo(num, { scale: 1.2 }, { scale: 1, duration: 0.9, ease: "elastic.out(1,.35)" });
+            burst();
+          } }, 0.6)
+        .to(coin, { y: -6, duration: 1.2, ease: "sine.inOut", repeat: -1, yoyo: true }, 1.2);
+    }
+
+    new MutationObserver(() => {
+      if (modal.classList.contains("show")) run(); else cleanup();
+    }).observe(modal, { attributes: true, attributeFilter: ["class"] });
+  }
+})();
+</script>
+<script>
+(function () {
+  if (typeof gsap === "undefined" || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const $ = (id) => document.getElementById(id);
+  const list = $("list"), tabs = $("listTabs");
+  if (!list || !tabs) return;
+
+  const ORDER = ["orders", "errors", "periods"];
+  const ind = tabs.querySelector(".ltab-ind");
+  let prev = "orders", busy = null;
+
+  /* نشانگر تب: کشسان و با کشش */
+  if (ind) ind.style.transition = "none";
+  function moveIndicator(i) {
+    if (!ind) return;
+    const dist = (tabs.clientWidth - 10) / 3;
+    gsap.to(ind, { x: -dist * i, duration: 0.9, ease: "elastic.out(1, 0.55)", overwrite: "auto" });
+    gsap.fromTo(ind, { scaleY: 1 }, { keyframes: { scaleY: [0.78, 1.12, 1] }, duration: 0.6, ease: "power2.out" });
+  }
+  gsap.set(ind, { x: 0 });
+
+  /* آیکون و نوشتهٔ تب فعال: پاپ */
+  function popTab(name) {
+    const btn = { orders: $("tabOrders"), errors: $("tabErrors"), periods: $("tabPeriods") }[name];
+    gsap.fromTo(btn.querySelector("svg"), { rotation: -50, scale: 0.4 }, { rotation: 0, scale: 1.1, duration: 0.8, ease: "back.out(3)" });
+  }
+
+  /* جابه‌جایی لیست: خروج 3D، ورود پله‌ای */
+  function transition(name) {
+    const dir = ORDER.indexOf(name) > ORDER.indexOf(prev) ? 1 : -1;
+    const i = ORDER.indexOf(name);
+    prev = name;
+    moveIndicator(i); popTab(name);
+
+    if (busy) busy.kill();
+    list.classList.remove("swap-out", "swap-in");
+
+    const items = list.children;
+    busy = gsap.timeline();
+    busy.to(items, {
+      x: -dir * 90, rotationY: -dir * 55, z: -120, autoAlpha: 0, scale: 0.85,
+      duration: 0.32, ease: "power2.in", stagger: { each: 0.035, from: dir > 0 ? "start" : "end" },
+      transformOrigin: dir > 0 ? "0% 50%" : "100% 50%"
+    });
+  }
+
+  /* وقتی محتوای جدید ساخته شد، ورود */
+  function enter() {
+    const dir = ORDER.indexOf(prev) >= 0 ? 1 : 1;
+    const items = [...list.children].filter((e) => !e.classList.contains("skel"));
+    if (!items.length) return;
+    if (busy) busy.kill();
+    gsap.killTweensOf(items);
+    gsap.fromTo(items,
+      { x: (i) => (i % 2 ? 110 : -110), y: 40, rotationX: -35, rotationZ: (i) => (i % 2 ? 4 : -4), scale: 0.8, autoAlpha: 0, transformPerspective: 800 },
+      { x: 0, y: 0, rotationX: 0, rotationZ: 0, scale: 1, autoAlpha: 1, duration: 0.95, ease: "back.out(1.6)",
+        stagger: { each: 0.07, from: "start" }, clearProps: "transform,opacity,visibility" });
+  }
+
+  /* غیرفعال کردن افکت CSS قدیمی و کنترل تغییر تب */
+  const style = document.createElement("style");
+  style.textContent = ".list.swap-out,.list.swap-in{opacity:1!important;filter:none!important;transform:none!important;animation:none!important;transition:none!important}" +
+    ".ltab-ind{transition:none!important;transform:none}.list>.e-row,.list>.p-row,.list>.empty{animation:none!important}";
+  document.head.appendChild(style);
+
+  let current = "orders";
+  const tabIds = { tabOrders: "orders", tabErrors: "errors", tabPeriods: "periods" };
+  Object.keys(tabIds).forEach((id) => {
+    $(id).addEventListener("click", () => {
+      const name = tabIds[id];
+      if (name === current) return;
+      current = name;
+      transition(name);
+    }, true);
+  });
+
+  /* ورود وقتی لیست بعد از رندر پر شد */
+  let t = null;
+  new MutationObserver(() => {
+    clearTimeout(t);
+    t = setTimeout(() => { if (current !== "orders") enter(); }, 190);
+  }).observe(list, { childList: true });
+})();
+</script>
+<script>
+(function () {
+  if (typeof Lenis === "undefined" || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const $ = (id) => document.getElementById(id);
+  const list = $("list"), ordBody = $("ordRefBody");
+
+  const make = (el) => el && new Lenis({
+    wrapper: el,
+    content: el,
+    lerp: 0.085,            // کمتر = نرم‌تر و سنگین‌تر
+    wheelMultiplier: 0.95,
+    smoothWheel: true,
+    syncTouch: false        // روی موبایل اسکرول لمسی خودِ مرورگر می‌ماند
+  });
+
+  const lists = [make(list), make(ordBody)].filter(Boolean);
+  if (!lists.length) return;
+
+  /* اتصال به موتور GSAP (اگر نبود، requestAnimationFrame) */
+  if (typeof gsap !== "undefined") {
+    gsap.ticker.add((t) => lists.forEach((l) => l.raf(t * 1000)));
+    gsap.ticker.lagSmoothing(0);
+  } else {
+    (function loop(t) { lists.forEach((l) => l.raf(t)); requestAnimationFrame(loop); })(0);
+  }
+
+  /* با عوض شدن تب یا فیلتر، اسکرول به بالا برگردد (بدون جهش) */
+  const top = (l) => l && l.scrollTo(0, { immediate: true, force: true });
+  ["tabOrders", "tabErrors", "tabPeriods"].forEach((id) =>
+    $(id).addEventListener("click", () => setTimeout(() => top(lists[0]), 180)));
+
+  /* لیست‌ها بعد از ساخته شدن دوباره اندازه‌گیری شوند */
+  const resize = () => lists.forEach((l) => l.resize());
+  [list, ordBody].forEach((el) => el && new MutationObserver(resize).observe(el, { childList: true }));
+
+  /* پنجرهٔ سفارش‌ها هر بار باز شد از بالا شروع شود */
+  const m = $("ordRefModal");
+  if (m) new MutationObserver(() => { if (m.classList.contains("show")) { resize(); top(lists[1]); } })
+    .observe(m, { attributes: true, attributeFilter: ["class"] });
 })();
 </script>
 </body>
