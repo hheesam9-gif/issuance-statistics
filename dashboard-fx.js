@@ -10,19 +10,6 @@
   /* ---------- CSS ---------- */
   const st = document.createElement("style");
   st.textContent = `
-    /* کارت پلهٔ بعدی */
-    .tier-card { display:flex; align-items:center; gap:13px; margin-bottom:12px; padding:13px 15px;
-      background:var(--row-bg); border:1px solid var(--row-border); border-radius:18px; }
-    .tc-ring { width:52px; height:52px; flex:none; transform:rotate(-90deg); }
-    .tc-ring circle { fill:none; stroke-width:4.5; stroke-linecap:round; }
-    .tc-ring .bgc { stroke:color-mix(in srgb, var(--text) 12%, transparent); }
-    .tc-ring .fgc { stroke:var(--tc, var(--accent2)); filter:drop-shadow(0 0 5px var(--tc, var(--accent2))); }
-    .tc-txt { min-width:0; }
-    .tc-txt b { display:block; font-size:13.5px; font-weight:700; margin-bottom:3px; }
-    .tc-txt span { display:block; font-size:11.5px; color:var(--text-dim); line-height:1.8; }
-    .tc-chip { margin-inline-start:auto; font-size:12px; font-weight:700; padding:5px 11px; border-radius:999px;
-      color:var(--tc); background:color-mix(in srgb, var(--tc) 14%, transparent); border:1px solid var(--tc);
-      direction:ltr; font-variant-numeric:tabular-nums; }
     /* فویل هولوگرافیک */
     .total::before, .rank::before { content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
       opacity:0; transition:opacity .35s ease; mix-blend-mode:overlay;
@@ -50,41 +37,6 @@
     .cmdk-foot { padding:9px; text-align:center; border-top:1px solid var(--divider); font-size:11px; color:var(--text-faint); }
   `;
   document.head.appendChild(st);
-
-  /* ---------- ۱) حلقهٔ «تا پلهٔ بعدی» (از داده‌های واقعی خودت) ---------- */
-  function buildTier() {
-    const it = ORDER_ITEMS[0], c = Number(it.count) || 0;
-    const tiers = TARGET_TIERS.slice().sort((a, b) => a.min - b.min);
-    const cur = getTier(c), next = tiers.find((t) => t.min > c);
-    let card = $("tierCard");
-    if (!card) {
-      card = document.createElement("div");
-      card.id = "tierCard"; card.className = "tier-card";
-      card.innerHTML = '<svg class="tc-ring" viewBox="0 0 48 48" aria-hidden="true"><circle class="bgc" cx="24" cy="24" r="20"/><circle class="fgc" id="tcFg" cx="24" cy="24" r="20"/></svg>' +
-        '<div class="tc-txt"><b id="tcT"></b><span id="tcS"></span></div><div class="tc-chip" id="tcC"></div>';
-      const stats = $("stats");
-      stats.parentNode.insertBefore(card, stats);
-    }
-    const pct = next ? Math.max(0, Math.min(1, (c - cur.min) / (next.min - cur.min))) : 1;
-    card.style.setProperty("--tc", (next || cur).color);
-    $("tcT").textContent = next ? fmt(next.min - c) + " صدور تا پلهٔ «" + next.label + "»" : "به بالاترین پله رسیدید 🏆";
-    $("tcS").textContent = (next
-      ? "پاداش هر سفارش از " + fmtMoney(cur.bonus) + " به " + fmtMoney(next.bonus) + " تومان می‌رسه"
-      : "پاداش هر سفارش: " + fmtMoney(cur.bonus) + " تومان") + " · آخرین روز (" + it.date + "): " + fmt(c);
-    $("tcC").textContent = Math.round(pct * 100) + "%";
-    const fg = $("tcFg"), L = 125.66;
-    fg.style.strokeDasharray = L;
-    if (G) {
-      gsap.fromTo(fg, { strokeDashoffset: L }, { strokeDashoffset: L * (1 - pct), duration: 1.6, ease: "expo.out", delay: 0.3 });
-      gsap.from(card, { y: 24, autoAlpha: 0, duration: 0.9, ease: "power3.out", clearProps: "transform,opacity,visibility" });
-    } else fg.style.strokeDashoffset = L * (1 - pct);
-  }
-  let tries = 0;
-  const iv = setInterval(() => {
-    tries++;
-    try { if (ORDER_ITEMS.length) { clearInterval(iv); buildTier(); } } catch (e) {}
-    if (tries > 60) clearInterval(iv);
-  }, 500);
 
   /* ---------- ۲) Decrypted Text روی نام کاربری (React Bits) ---------- */
   const un = $("usernameDisplay");
