@@ -863,5 +863,317 @@ input:hover,select:hover,textarea:hover{border-color:rgba(122,92,255,.45)}
   $("xls").onclick=window.exportXls;
 })();
 </script>
+<!-- =====================================================================
+     پنل سرگروه: لایه‌ی حرکت (Lenis + GSAP + ScrollTrigger + افکت‌های React Bits)
+     راهنما: کل این فایل رو درست قبل از </body> فایل leader.html بچسبون، بعد از آخرین پچ.
+     هیچ شناسه یا منطق قبلی عوض نمی‌شه؛ فقط اضافه می‌شه.
+     ===================================================================== -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.20/dist/lenis.min.js"></script>
+
+<style id="lp-style">
+html.lenis,html.lenis body{height:auto}
+.lenis.lenis-smooth{scroll-behavior:auto!important}
+.lenis.lenis-stopped{overflow:hidden}
+
+/* انیمیشن‌های CSS قبلی که حالا GSAP جاشون رو می‌گیره */
+.card,.kpis .kpi{animation:none!important}
+#chart rect,#chart polyline{animation:none!important}
+
+/* پرده‌ی ورود (ادامه‌ی دایره‌ی صفحه‌ی ورود) */
+#lpCurtain{position:fixed;inset:0;z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  background:linear-gradient(135deg,var(--a1),var(--a2));color:#fff}
+.lp-ci{width:78px;height:78px;border-radius:24px;display:grid;place-items:center;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.45);box-shadow:0 0 50px rgba(255,255,255,.35)}
+.lp-ci svg{width:38px;height:38px;fill:none;stroke:#fff;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+#lpCurtain b{font-size:46px;font-weight:700;font-variant-numeric:tabular-nums;direction:ltr}
+#lpCurtain small{font-size:13px;opacity:.85}
+
+/* نوار پیشرفت اسکرول، نور موس، جرقه */
+#lpBar{position:fixed;top:0;left:0;right:0;height:3px;z-index:300;pointer-events:none;transform-origin:right;transform:scaleX(0);
+  background:linear-gradient(90deg,var(--ok),var(--a2),var(--a1));box-shadow:0 0 14px var(--a1)}
+#lpGlow{position:fixed;left:0;top:0;width:460px;height:460px;margin:-230px 0 0 -230px;border-radius:50%;z-index:-1;pointer-events:none;opacity:0;
+  background:radial-gradient(circle,rgba(122,92,255,.2),transparent 68%);will-change:transform}
+#lpSpark{position:fixed;inset:0;width:100%;height:100%;z-index:500;pointer-events:none}
+
+/* نوار بالا هنگام اسکرول جمع‌وجورتر می‌شه */
+.top{transition:padding .35s,background .35s}
+.top.lp-s{padding-top:calc(6px + env(safe-area-inset-top,0px));padding-bottom:6px;background:rgba(10,12,32,.72)}
+
+/* BlurText */
+.lp-w{display:inline-block}
+
+/* آیکون‌های منو: بزرگ‌نمایی نزدیک موس (مثل Dock) */
+#nav i.ic{transition:scale .2s ease-out}
+
+/* تولتیپ شیشه‌ای نمودار */
+.lp-tip{position:fixed;z-index:400;pointer-events:none;padding:10px 14px;border-radius:14px;font-size:12px;line-height:2;white-space:nowrap;
+  background:var(--bg);color:var(--text);border:1px solid rgba(122,92,255,.55);box-shadow:0 18px 44px rgba(0,0,0,.5),0 0 26px rgba(122,92,255,.3);
+  opacity:0;transform:translateY(6px) scale(.96);transition:opacity .15s,transform .2s}
+.lp-tip.on{opacity:1;transform:none}
+.lp-tip b{display:block;margin-bottom:2px;font-size:13px}
+.lp-tip i{font-style:normal;color:var(--dim)}
+#chart g{cursor:crosshair}
+
+/* توست با فنر و برجهش نشان‌ها (از خاصیت scale مستقل استفاده می‌شه) */
+.toast.show{animation:lpT .5s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes lpT{from{scale:.86}60%{scale:1.04}to{scale:1}}
+.lp-bump{animation:lpB .6s cubic-bezier(.3,1.6,.5,1)!important}
+@keyframes lpB{0%{scale:1}35%{scale:1.6}100%{scale:1}}
+.sg-i,.row,.mrow{will-change:auto}
+@media(prefers-reduced-motion:reduce){#lpGlow,#lpSpark,#lpBar,#lpCurtain{display:none}}
+</style>
+
+<script id="lp-script">
+(function(){
+"use strict";
+if(!window.gsap||!window.ScrollTrigger||matchMedia("(prefers-reduced-motion:reduce)").matches)return;
+gsap.registerPlugin(ScrollTrigger);
+var FINE=matchMedia("(hover:hover) and (pointer:fine)").matches;
+var $=function(s,r){return(r||document).querySelector(s)};
+var $$=function(s,r){return[].slice.call((r||document).querySelectorAll(s))};
+var app=document.getElementById("app");
+var ready=false,played=false,kpiDone=false,kpiPending=false;
+/* ترنزیشن CSS با انیمیشن GSAP تداخل می‌کنه؛ موقع انیمیشن خاموشش می‌کنیم */
+function nt(t){gsap.utils.toArray(t).forEach(function(e){e.style.transition="none"})}
+var CLR="transform,opacity,visibility,transition";
+
+/* ---------- ۱) پرده‌ی ورود ---------- */
+var cur=document.createElement("div");cur.id="lpCurtain";
+cur.innerHTML='<div class="lp-ci"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div><b id="lpPct">0</b><small>در حال آماده‌سازی پنل سرگروه</small>';
+document.body.appendChild(cur);
+var pct=$("#lpPct");
+
+/* ---------- ۲) Lenis: اسکرول نرم هماهنگ با GSAP ---------- */
+var lenis=null;
+if(window.Lenis){
+  lenis=new Lenis({lerp:.085,wheelMultiplier:.95,touchMultiplier:1.35,
+    prevent:function(n){return !!(n.closest&&n.closest(".scroll,.sc2,.sugg,#mlist,textarea,select"))}});
+  lenis.on("scroll",ScrollTrigger.update);
+  gsap.ticker.add(function(t){lenis.raf(t*1000)});
+  gsap.ticker.lagSmoothing(0);
+  lenis.stop();
+  window.lenis=lenis;
+  /* goTab و جاهای دیگه از scrollTo/scrollIntoView بومی استفاده می‌کنن؛ به Lenis وصلشون می‌کنیم */
+  var nst=window.scrollTo.bind(window);
+  window.scrollTo=function(a,b){
+    if(a&&typeof a==="object"&&a.behavior==="smooth")lenis.scrollTo(a.top||0,{duration:1.1});
+    else nst.apply(null,arguments);
+  };
+  var nsi=Element.prototype.scrollIntoView;
+  Element.prototype.scrollIntoView=function(o){
+    if(this.closest&&this.closest(".sugg,.scroll,.sc2,#mlist"))return nsi.apply(this,arguments);
+    lenis.scrollTo(this,{offset:-120,duration:1.1});
+  };
+}
+
+/* ---------- ۳) نوار پیشرفت اسکرول + جمع شدن هدر ---------- */
+var bar=document.createElement("div");bar.id="lpBar";document.body.appendChild(bar);
+var setBar=gsap.quickSetter(bar,"scaleX"),top_=$(".top");
+addEventListener("scroll",function(){
+  var h=document.documentElement.scrollHeight-innerHeight;setBar(h>0?scrollY/h:0);
+  if(top_)top_.classList.toggle("lp-s",scrollY>24);
+},{passive:true});
+
+/* ---------- ۴) نور دنبال‌کننده‌ی موس + Magnet + Dock ---------- */
+if(FINE){
+  var glow=document.createElement("div");glow.id="lpGlow";document.body.appendChild(glow);
+  var gx=gsap.quickTo(glow,"x",{duration:.7,ease:"power3"}),gy=gsap.quickTo(glow,"y",{duration:.7,ease:"power3"});
+  addEventListener("pointermove",function(e){gx(e.clientX);gy(e.clientY);glow.style.opacity=1},{passive:true});
+  document.addEventListener("mouseleave",function(){glow.style.opacity=0});
+
+  /* Magnet (React Bits) روی آواتار و لوگو */
+  $$(".av2,.brand .logo").forEach(function(el){
+    var qx=gsap.quickTo(el,"x",{duration:.5,ease:"elastic.out(1,.6)"}),qy=gsap.quickTo(el,"y",{duration:.5,ease:"elastic.out(1,.6)"});
+    el.addEventListener("pointermove",function(e){var r=el.getBoundingClientRect();qx((e.clientX-r.left-r.width/2)*.3);qy((e.clientY-r.top-r.height/2)*.4)});
+    el.addEventListener("pointerleave",function(){qx(0);qy(0)});
+  });
+
+  /* Dock (React Bits): آیکون‌های منو نزدیک موس بزرگ می‌شن */
+  var nav=$("#nav");
+  if(nav){
+    nav.addEventListener("pointermove",function(e){
+      $$("button i.ic",nav).forEach(function(ic){
+        var r=ic.getBoundingClientRect(),d=Math.abs(e.clientY-(r.top+r.height/2));
+        ic.style.scale=(1+.32*Math.max(0,1-d/95)).toFixed(3);
+      });
+    });
+    nav.addEventListener("pointerleave",function(){$$("button i.ic",nav).forEach(function(ic){ic.style.scale=""})});
+  }
+}
+
+/* ---------- ۵) ClickSpark (React Bits) ---------- */
+var cv=document.createElement("canvas");cv.id="lpSpark";document.body.appendChild(cv);
+var cx=cv.getContext("2d"),sparks=[],dpr=Math.min(2,devicePixelRatio||1);
+function fit(){cv.width=innerWidth*dpr;cv.height=innerHeight*dpr}fit();addEventListener("resize",fit);
+addEventListener("pointerdown",function(e){
+  var s={x:e.clientX,y:e.clientY,p:0,c:getComputedStyle(document.documentElement).getPropertyValue("--a2").trim()||"#3d8bff"};
+  sparks.push(s);
+  gsap.to(s,{p:1,duration:.6,ease:"power2.out",onComplete:function(){sparks.splice(sparks.indexOf(s),1)}});
+},{passive:true});
+gsap.ticker.add(function(){
+  if(!sparks.length&&!cv._d)return;
+  cx.clearRect(0,0,cv.width,cv.height);cv._d=sparks.length>0;
+  sparks.forEach(function(s){
+    cx.strokeStyle=s.c;cx.lineCap="round";cx.globalAlpha=1-s.p;cx.lineWidth=2*dpr;
+    for(var i=0;i<8;i++){
+      var a=i*Math.PI/4,r1=(6+s.p*26)*dpr,r2=(14+s.p*34)*dpr;
+      cx.beginPath();cx.moveTo(s.x*dpr+Math.cos(a)*r1,s.y*dpr+Math.sin(a)*r1);cx.lineTo(s.x*dpr+Math.cos(a)*r2,s.y*dpr+Math.sin(a)*r2);cx.stroke();
+    }
+  });
+});
+
+/* ---------- ۶) BlurText (React Bits) روی زیرعنوان ---------- */
+var sm=$(".brand small");
+if(sm){
+  var ws=sm.textContent.trim().split(/\s+/);sm.textContent="";
+  ws.forEach(function(w,i){var s=document.createElement("span");s.className="lp-w";s.textContent=w+(i<ws.length-1?"\u00a0":"");sm.appendChild(s)});
+}
+
+/* ---------- ۷) سکانس ورود به پنل ---------- */
+function reveal(){
+  if(played)return;played=true;
+  var o={v:0},tl=gsap.timeline();
+  nt("#nav > *");
+  tl.to(o,{v:100,duration:1,ease:"power2.inOut",onUpdate:function(){pct.textContent=Math.round(o.v)}})
+    .to(".lp-ci",{rotation:360,scale:1.15,duration:1,ease:"back.inOut(2)"},0)
+    .to(cur,{clipPath:"inset(0% 0% 100% 0%)",duration:.95,ease:"expo.inOut"},1.1)
+    .add(function(){cur.remove();if(lenis)lenis.start();ready=true;scrollReveals();if(kpiPending)kpiIn();ScrollTrigger.refresh()},2.1)
+    .from(".top",{yPercent:-100,duration:.8,ease:"expo.out",clearProps:"transform"},1.4)
+    .from("#nav > *",{x:70,autoAlpha:0,duration:.7,stagger:.05,ease:"power3.out",clearProps:CLR},1.5)
+    .from("main > .chips button",{y:18,autoAlpha:0,duration:.6,stagger:.04,ease:"power3.out",clearProps:CLR},1.7)
+    .from(".lp-w",{opacity:0,y:-14,filter:"blur(10px)",duration:.8,stagger:.08,clearProps:"filter,opacity,transform"},1.6);
+}
+if(app&&!app.hidden)reveal();
+else if(app)new MutationObserver(function(m,ob){if(!app.hidden){ob.disconnect();reveal()}}).observe(app,{attributes:true,attributeFilter:["hidden"]});
+/* اگر به هر دلیلی ورود کند شد، پرده برای همیشه نمونه */
+setTimeout(function(){if(cur.parentNode){cur.remove();if(lenis)lenis.start();ready=true}},9000);
+
+/* ---------- ۸) کارت‌ها با اسکرول ظاهر می‌شن (ScrollTrigger) ---------- */
+function scrollReveals(){
+  var els=$$("[data-p=dash] .card").filter(function(e){return !e._r});
+  els.forEach(function(e){e._r=1});
+  if(els.length){
+    nt(els);gsap.set(els,{autoAlpha:0,y:42});
+    ScrollTrigger.batch(els,{start:"top 94%",once:true,
+      onEnter:function(b){gsap.to(b,{autoAlpha:1,y:0,duration:.9,ease:"power3.out",stagger:.1,overwrite:true,clearProps:CLR})}});
+  }
+  if($(".bg .dots"))gsap.to(".bg .dots",{yPercent:-8,ease:"none",scrollTrigger:{trigger:document.body,start:"top top",end:"bottom bottom",scrub:.6}});
+}
+
+/* ---------- ۹) کارت‌های KPI ---------- */
+function kpiIn(){
+  var k=$$("#kpis .kpi");if(!k.length)return;
+  nt(k);gsap.from(k,{y:54,scale:.88,autoAlpha:0,duration:.95,stagger:.1,ease:"back.out(1.6)",clearProps:CLR});
+}
+var kp=$("#kpis");
+if(kp)new MutationObserver(function(){
+  if(kpiDone)return;
+  if(!ready){kpiPending=true;return}
+  kpiDone=true;kpiIn();
+}).observe(kp,{childList:true});
+
+/* ---------- ۱۰) تعویض تب‌ها ---------- */
+$$("section[data-p]").forEach(function(s){
+  new MutationObserver(function(){
+    if(s.hidden||!ready)return;
+    var t=s.dataset.p==="dash"?$$(".hero,.kpi",s):$$(":scope > *",s);
+    if(!t.length)return;
+    nt(t);gsap.from(t,{y:26,autoAlpha:0,duration:.6,stagger:.06,ease:"power3.out",clearProps:CLR});
+    setTimeout(function(){ScrollTrigger.refresh()},700);
+  }).observe(s,{attributes:true,attributeFilter:["hidden"]});
+});
+
+/* ---------- ۱۱) نمودار: میله‌ها، خط روند، اعداد و تولتیپ ---------- */
+var tip=document.createElement("div");tip.className="lp-tip";document.body.appendChild(tip);
+function ce(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
+
+function enhanceChart(){
+  var svg=$("#chart svg");if(!svg||svg._lp)return;svg._lp=1;
+  var NS="http://www.w3.org/2000/svg";
+
+  /* میله‌ها: رشد فنری از پایین (شعاع/ارتفاع انیمیت می‌شه، نه scale، تا مبدأ جابه‌جا نشه) */
+  $$("rect",svg).forEach(function(r,i){
+    var y=+r.getAttribute("y"),h=+r.getAttribute("height");
+    gsap.from(r,{attr:{height:0,y:y+h},duration:1.1,ease:"elastic.out(1,.75)",delay:.08+Math.floor(i/2)*.07+(i%2)*.06});
+  });
+
+  /* اعداد بالای میله‌ها: شمارش */
+  $$("text",svg).forEach(function(t,i){
+    if(t.getAttribute("font-size")!=="11"||t.getAttribute("font-weight")!=="700")return;
+    var n=parseFloat(t.textContent.replace(/,/g,""));if(isNaN(n))return;
+    var o={v:0};
+    gsap.from(t,{opacity:0,duration:.5,delay:.4+i*.03});
+    gsap.to(o,{v:n,duration:1.1,delay:.3+i*.03,ease:"power2.out",onUpdate:function(){t.textContent=Math.round(o.v).toLocaleString("en-US")}});
+  });
+
+  /* خط روند: کشیده شدن + نقطه‌ی نبض‌دار آخر */
+  var pl=$("polyline",svg);
+  if(pl&&pl.getTotalLength){
+    var len=pl.getTotalLength();
+    pl.style.strokeDasharray=len;pl.style.strokeDashoffset=len;
+    gsap.to(pl,{strokeDashoffset:0,duration:1.5,delay:.5,ease:"power2.inOut",
+      onComplete:function(){
+        pl.style.strokeDasharray="";pl.style.strokeDashoffset="";
+        try{
+          var pt=pl.getPointAtLength(len),g=document.createElementNS(NS,"g"),ring=document.createElementNS(NS,"circle"),dot=document.createElementNS(NS,"circle");
+          g.style.pointerEvents="none";
+          [ring,dot].forEach(function(c){c.setAttribute("cx",pt.x);c.setAttribute("cy",pt.y)});
+          ring.setAttribute("r",5);ring.setAttribute("fill","#4f7bff");ring.setAttribute("opacity",".5");
+          dot.setAttribute("r",3.5);dot.setAttribute("fill","#fff");dot.setAttribute("stroke","#4f7bff");dot.setAttribute("stroke-width","1.8");
+          g.append(ring,dot);svg.appendChild(g);
+          gsap.fromTo(ring,{attr:{r:5},opacity:.55},{attr:{r:16},opacity:0,duration:1.6,repeat:-1,ease:"power1.out",
+            onRepeat:function(){if(!ring.isConnected)this.kill()}});
+        }catch(e){}
+      }});
+  }
+
+  /* تولتیپ شیشه‌ای به‌جای title بومی */
+  $$("g",svg).forEach(function(g){
+    var t=$("title",g);if(!t)return;
+    var parts=t.textContent.split(" | ");t.remove();
+    g.addEventListener("pointermove",function(e){
+      tip.replaceChildren();
+      tip.appendChild(ce("b",null,parts[0]||""));
+      parts.slice(1).forEach(function(p){
+        var k=p.split(": "),d=ce("div");
+        d.append(ce("i",null,(k[0]||"")+": "),document.createTextNode(k[1]||""));tip.appendChild(d);
+      });
+      tip.classList.add("on");
+      var w=tip.offsetWidth,h=tip.offsetHeight,x=e.clientX+16,y=e.clientY-h-14;
+      if(x+w>innerWidth-8)x=e.clientX-w-16;if(y<8)y=e.clientY+18;
+      tip.style.left=x+"px";tip.style.top=y+"px";
+    });
+    g.addEventListener("pointerleave",function(){tip.classList.remove("on")});
+  });
+}
+var ch=$("#chart");
+if(ch){var ct=null;new MutationObserver(function(){clearTimeout(ct);ct=setTimeout(enhanceChart,30)}).observe(ch,{childList:true});enhanceChart()}
+
+/* دونات: شمارش درصد وسط حلقه */
+var dn=$("#donut");
+if(dn)new MutationObserver(function(){
+  var t=$$("text",dn).filter(function(x){return x.getAttribute("font-size")==="26"})[0];if(!t||t._lp)return;t._lp=1;
+  var n=parseInt(t.textContent,10);if(isNaN(n))return;var o={v:0};
+  gsap.to(o,{v:n,duration:1.3,delay:.2,ease:"power2.out",onUpdate:function(){t.textContent=Math.round(o.v)+"%"}});
+}).observe(dn,{childList:true});
+
+/* ---------- ۱۲) برجهش نشان‌ها و میانبر Ctrl+K ---------- */
+["navN","bellN","ue"].forEach(function(id){
+  var el=document.getElementById(id);if(!el)return;var last=el.textContent;
+  new MutationObserver(function(){
+    if(el.textContent===last)return;last=el.textContent;
+    el.classList.remove("lp-bump");void el.offsetWidth;el.classList.add("lp-bump");
+  }).observe(el,{childList:true,characterData:true,subtree:true});
+});
+addEventListener("keydown",function(e){
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="k"&&app&&!app.hidden){
+    e.preventDefault();
+    try{goTab("user")}catch(x){}
+    setTimeout(function(){var i=document.getElementById("eu");if(i)i.focus()},350);
+  }
+});
+})();
+</script>
 </body>
 </html>
