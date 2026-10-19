@@ -8977,5 +8977,87 @@ if(app&&!app.hidden)setTimeout(intro,250);
 else if(app)new MutationObserver(function(m,o){if(!app.hidden){o.disconnect();setTimeout(intro,250)}}).observe(app,{attributes:true,attributeFilter:["hidden"]});
 })();
 </script>
+<!-- =====================================================================
+     پنل مدیریت: حرکت نمودارها (GSAP). بعد از admin-motion.html و درست قبل از </body> بچسبون.
+     روی نمودار روند صدور، روند به تفکیک گروه، روند سرگروه‌ها و مینی‌نمودار کارت‌های آمار اعمال می‌شه.
+     ===================================================================== -->
+<style id="cm-style">
+.az-chart svg *,#gtChart svg *,#ldChart svg *{transform-box:fill-box}
+.az-tip{backdrop-filter:blur(14px) saturate(150%);-webkit-backdrop-filter:blur(14px) saturate(150%);
+  background:rgba(5,11,34,.82)!important;border-color:color-mix(in srgb,var(--accent1) 45%,var(--card-border))!important;
+  box-shadow:0 18px 40px -10px rgba(0,0,0,.6),0 0 26px -6px var(--glow)!important;border-radius:14px!important}
+.cm-end{pointer-events:none}
+</style>
+
+<script id="cm-script">
+(function(){
+"use strict";
+if(!window.gsap||matchMedia("(prefers-reduced-motion:reduce)").matches)return;
+var NS="http://www.w3.org/2000/svg";
+var hosts=["azChart","gtChart","ldChart"];
+
+function animate(svg,spark){
+  if(!svg||svg._cm)return;svg._cm=1;
+  var lines=[],areas=[];
+  [].slice.call(svg.querySelectorAll("path,polyline")).forEach(function(p){
+    if(p.closest("#hv,#gtHv,#ldHv"))return;
+    var fill=p.getAttribute("fill")||"";
+    if(fill==="none"&&p.getTotalLength)lines.push(p);
+    else if(/^url\(/.test(fill))areas.push(p);
+  });
+  var dots=[].slice.call(svg.querySelectorAll("circle")).filter(function(c){return !c.closest("#hv,#gtHv,#ldHv")&&!c.closest("g")});
+  var texts=[].slice.call(svg.querySelectorAll("text"));
+  var grid=[].slice.call(svg.querySelectorAll("line")).filter(function(l){return !l.closest("g")});
+
+  var tl=gsap.timeline({defaults:{ease:"power2.out"}});
+  if(grid.length)tl.from(grid,{opacity:0,duration:.5,stagger:.03},0);
+  if(texts.length)tl.from(texts,{opacity:0,y:4,duration:.5,stagger:.015},.1);
+  var d=spark?.9:1.5;
+  lines.forEach(function(p,i){
+    var len=p.getTotalLength();
+    p.style.strokeDasharray=len;p.style.strokeDashoffset=len;
+    tl.to(p,{strokeDashoffset:0,duration:d,ease:"power2.inOut",
+      onComplete:function(){p.style.strokeDasharray="";p.style.strokeDashoffset=""}},.15+i*.18);
+  });
+  if(areas.length)tl.from(areas,{opacity:0,duration:1,stagger:.12},.7);
+  if(dots.length)tl.from(dots,{scale:0,opacity:0,duration:.45,ease:"back.out(2.5)",stagger:{each:.015,from:"start"}},.9);
+
+  /* نقطه‌ی نبض‌دار روی آخرین مقدار هر خط */
+  tl.add(function(){
+    lines.slice(0,3).forEach(function(p){
+      try{
+        var pt=p.getPointAtLength(p.getTotalLength()),col=p.getAttribute("stroke")||"#38b6ff";
+        var g=document.createElementNS(NS,"g");g.setAttribute("class","cm-end");
+        var ring=document.createElementNS(NS,"circle"),dot=document.createElementNS(NS,"circle");
+        [ring,dot].forEach(function(c){c.setAttribute("cx",pt.x);c.setAttribute("cy",pt.y)});
+        ring.setAttribute("r",spark?3:5);ring.setAttribute("fill",col);ring.setAttribute("opacity",".5");
+        dot.setAttribute("r",spark?2:3.2);dot.setAttribute("fill","#fff");dot.setAttribute("stroke",col);dot.setAttribute("stroke-width","1.6");
+        g.append(ring,dot);svg.appendChild(g);
+        gsap.fromTo(ring,{scale:1,opacity:.55},{scale:3.2,opacity:0,duration:1.6,repeat:-1,ease:"power1.out",transformOrigin:"50% 50%"});
+        gsap.from(g,{opacity:0,duration:.4});
+      }catch(e){}
+    });
+  },d+.2);
+}
+
+function watch(el,spark){
+  if(!el||el._cmw)return;el._cmw=1;
+  var t=null;
+  new MutationObserver(function(){
+    clearTimeout(t);
+    t=setTimeout(function(){animate(el.querySelector("svg"),spark)},40);
+  }).observe(el,{childList:true});
+  animate(el.querySelector("svg"),spark);
+}
+
+function boot(){
+  hosts.forEach(function(id){watch(document.getElementById(id),false)});
+  [].slice.call(document.querySelectorAll(".az-spark")).forEach(function(s){watch(s,true)});
+}
+boot();
+/* نمودارهایی که بعد از ورود یا باز شدن پنجره ساخته می‌شن */
+new MutationObserver(boot).observe(document.body,{childList:true,subtree:true});
+})();
+</script>
 </body>
 </html>
