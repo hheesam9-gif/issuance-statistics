@@ -8786,5 +8786,196 @@ if(typeof window.loadStats==="function"){
 }
 })();
 </script>
+<!-- =====================================================================
+     پنل مدیریت: لایه‌ی حرکت (Lenis + GSAP + ScrollTrigger + افکت‌های React Bits)
+     راهنما: کل این فایل رو درست قبل از </body> بچسبون، بعد از آخرین <script>.
+     هیچ شناسه یا منطق قبلی عوض نمی‌شه؛ فقط اضافه می‌شه.
+     ===================================================================== -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.20/dist/lenis.min.js"></script>
+
+<style id="mo-style">
+/* Lenis */
+html.lenis,html.lenis body{height:auto}
+.lenis.lenis-smooth{scroll-behavior:auto!important}
+.lenis.lenis-smooth [data-lenis-prevent]{overscroll-behavior:contain}
+.lenis.lenis-stopped{overflow:hidden}
+
+/* نوار پیشرفت اسکرول */
+#moBar{position:fixed;top:0;left:0;right:0;height:3px;z-index:400;pointer-events:none;transform-origin:right;transform:scaleX(0);
+  background:linear-gradient(90deg,var(--accent2),var(--accent1),#b46bff);box-shadow:0 0 14px var(--glow)}
+
+/* نور دنبال‌کننده‌ی موس */
+#moGlow{position:fixed;left:0;top:0;width:420px;height:420px;margin:-210px 0 0 -210px;border-radius:50%;z-index:-1;pointer-events:none;opacity:0;
+  background:radial-gradient(circle,color-mix(in srgb,var(--accent1) 20%,transparent),transparent 68%);will-change:transform}
+#moSpark{position:fixed;inset:0;width:100%;height:100%;z-index:500;pointer-events:none}
+
+/* SpotlightCard (React Bits) روی کارت‌های داشبورد */
+.az-dash .card:not(.rp-card){--sx:50%;--sy:50%}
+.az-dash .card:not(.rp-card)::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .35s;
+  background:radial-gradient(320px circle at var(--sx) var(--sy),color-mix(in srgb,var(--accent2) 18%,transparent),transparent 70%)}
+.az-dash .card:not(.rp-card):hover::after{opacity:1}
+
+/* BlurText (React Bits) */
+.mo-w{display:inline-block;will-change:transform,filter,opacity}
+
+/* نوار کناری و خود صفحه */
+.nx-side{overscroll-behavior:contain}
+@media(prefers-reduced-motion:reduce){#moGlow,#moSpark,#moBar{display:none}}
+</style>
+
+<script id="mo-script">
+(function(){
+"use strict";
+if(!window.gsap||!window.ScrollTrigger)return;
+var REDUCE=matchMedia("(prefers-reduced-motion:reduce)").matches;
+var FINE=matchMedia("(hover:hover) and (pointer:fine)").matches;
+var $=function(s,r){return(r||document).querySelector(s)};
+var $$=function(s,r){return[].slice.call((r||document).querySelectorAll(s))};
+gsap.registerPlugin(ScrollTrigger);
+if(REDUCE)return;
+
+/* ---------- ۱) Lenis: اسکرول نرم، هماهنگ با تیکر GSAP ---------- */
+var lenis=null;
+if(window.Lenis){
+  lenis=new Lenis({
+    lerp:.085,wheelMultiplier:.95,touchMultiplier:1.35,smoothWheel:true,
+    /* پنجره‌ها، لیست‌ها و منوی کناری اسکرول داخلی خودشون رو دارن */
+    prevent:function(n){return !!(n.closest&&n.closest(".modal,.history,.err-list,.ann-list,.bulk-list,#userList,.nx-side,textarea,select"))}
+  });
+  lenis.on("scroll",ScrollTrigger.update);
+  gsap.ticker.add(function(t){lenis.raf(t*1000)});
+  gsap.ticker.lagSmoothing(0);
+  window.lenis=lenis;
+
+  /* وقتی پنجره‌ای بازه، اسکرول صفحه‌ی پشتش متوقف بشه */
+  var chk=null;
+  new MutationObserver(function(){
+    clearTimeout(chk);
+    chk=setTimeout(function(){
+      var open=!!$(".modal.show");
+      open?lenis.stop():lenis.start();
+    },30);
+  }).observe(document.body,{attributes:true,subtree:true,attributeFilter:["class"]});
+
+  /* scrollIntoView بومی با Lenis تداخل می‌کنه؛ به‌جاش نرم و هماهنگ می‌ره */
+  var native=Element.prototype.scrollIntoView;
+  Element.prototype.scrollIntoView=function(o){
+    if(this.closest&&this.closest(".modal,.history,.err-list"))return native.apply(this,arguments);
+    var r=this.getBoundingClientRect(),mid=o&&o.block==="center";
+    lenis.scrollTo(window.scrollY+r.top-(mid?innerHeight/2-r.height/2:80),{duration:1.1});
+  };
+}
+
+/* ---------- ۲) نوار پیشرفت اسکرول ---------- */
+var bar=document.createElement("div");bar.id="moBar";document.body.appendChild(bar);
+var setBar=gsap.quickSetter(bar,"scaleX");
+function prog(){var h=document.documentElement.scrollHeight-innerHeight;setBar(h>0?scrollY/h:0)}
+addEventListener("scroll",prog,{passive:true});
+
+/* ---------- ۳) نور دنبال‌کننده‌ی موس + SpotlightCard ---------- */
+if(FINE){
+  var glow=document.createElement("div");glow.id="moGlow";document.body.appendChild(glow);
+  var gx=gsap.quickTo(glow,"x",{duration:.7,ease:"power3"}),gy=gsap.quickTo(glow,"y",{duration:.7,ease:"power3"});
+  addEventListener("pointermove",function(e){
+    gx(e.clientX);gy(e.clientY);glow.style.opacity=1;
+    var c=e.target.closest&&e.target.closest(".az-dash .card");
+    if(c){var r=c.getBoundingClientRect();c.style.setProperty("--sx",(e.clientX-r.left)+"px");c.style.setProperty("--sy",(e.clientY-r.top)+"px")}
+  },{passive:true});
+  document.addEventListener("mouseleave",function(){glow.style.opacity=0});
+}
+
+/* ---------- ۴) Magnet (React Bits): دکمه‌های بالای صفحه به موس می‌چسبن ---------- */
+function magnet(el){
+  if(el._mg)return;el._mg=1;
+  var qx=gsap.quickTo(el,"x",{duration:.5,ease:"elastic.out(1,.6)"}),qy=gsap.quickTo(el,"y",{duration:.5,ease:"elastic.out(1,.6)"});
+  el.addEventListener("pointermove",function(e){
+    var r=el.getBoundingClientRect();
+    qx((e.clientX-r.left-r.width/2)*.28);qy((e.clientY-r.top-r.height/2)*.4);
+  });
+  el.addEventListener("pointerleave",function(){qx(0);qy(0)});
+}
+if(FINE)$$(".nx-top .pill-btn,.nx-ib").forEach(magnet);
+
+/* ---------- ۵) ClickSpark (React Bits) ---------- */
+var cv=document.createElement("canvas");cv.id="moSpark";document.body.appendChild(cv);
+var cx=cv.getContext("2d"),sparks=[],dpr=Math.min(2,devicePixelRatio||1);
+function fit(){cv.width=innerWidth*dpr;cv.height=innerHeight*dpr}fit();addEventListener("resize",fit);
+addEventListener("pointerdown",function(e){
+  var col=getComputedStyle(document.documentElement).getPropertyValue("--accent2").trim()||"#14d1b8";
+  var s={x:e.clientX,y:e.clientY,p:0,c:col};sparks.push(s);
+  gsap.to(s,{p:1,duration:.6,ease:"power2.out",onComplete:function(){sparks.splice(sparks.indexOf(s),1)}});
+},{passive:true});
+gsap.ticker.add(function(){
+  if(!sparks.length&&!cv._d)return;
+  cx.clearRect(0,0,cv.width,cv.height);cv._d=sparks.length>0;
+  sparks.forEach(function(s){
+    cx.strokeStyle=s.c;cx.lineCap="round";cx.globalAlpha=1-s.p;cx.lineWidth=2*dpr;
+    for(var i=0;i<8;i++){
+      var a=i*Math.PI/4,r1=(6+s.p*26)*dpr,r2=(14+s.p*34)*dpr;
+      cx.beginPath();cx.moveTo((s.x*dpr)+Math.cos(a)*r1,(s.y*dpr)+Math.sin(a)*r1);
+      cx.lineTo((s.x*dpr)+Math.cos(a)*r2,(s.y*dpr)+Math.sin(a)*r2);cx.stroke();
+    }
+  });
+});
+
+/* ---------- ۶) ورود به پنل: یک سکانس هماهنگ ---------- */
+var app=document.getElementById("app"),played=false;
+function intro(){
+  if(played)return;played=true;
+  var tl=gsap.timeline({defaults:{ease:"power3.out"}});
+
+  /* BlurText روی تیتر هیرو */
+  var h=$(".nx-hero h2");
+  if(h&&!h._s){
+    h._s=1;var words=h.textContent.trim().split(/\s+/);h.textContent="";
+    words.forEach(function(w,i){var s=document.createElement("span");s.className="mo-w";s.textContent=w+(i<words.length-1?"\u00a0":"");h.appendChild(s)});
+    tl.from(".mo-w",{opacity:0,y:-22,filter:"blur(12px)",duration:.9,stagger:.12,clearProps:"filter,opacity,transform"},.1);
+  }
+  tl.from(".nx-hero",{opacity:0,scale:.985,duration:.9,clearProps:"opacity,transform"},0)
+    .from(".nx-top > *",{opacity:0,y:-14,duration:.6,stagger:.06,clearProps:"opacity,transform"},.05)
+    .from(".nx-area .stat",{opacity:0,y:34,scale:.95,duration:.85,stagger:.1,clearProps:"opacity,transform"},.25);
+
+  setTimeout(scrollReveals,700);
+}
+
+/* ---------- ۷) ScrollTrigger: کارت‌های داشبورد با اسکرول ظاهر می‌شن ---------- */
+function scrollReveals(){
+  var els=$$(".az-dash .card,.qx-head").filter(function(e){return !e.closest(".modal")&&!e._r});
+  els.forEach(function(e){e._r=1});
+  if(els.length){
+    gsap.set(els,{opacity:0,y:42});
+    ScrollTrigger.batch(els,{
+      start:"top 92%",once:true,
+      onEnter:function(b){gsap.to(b,{opacity:1,y:0,duration:.9,ease:"power3.out",stagger:.12,overwrite:true,clearProps:"opacity,transform"})}
+    });
+  }
+  /* پارالکس نرم شبکه‌ی نقطه‌ای پس‌زمینه و هیرو */
+  if($(".bg .dots"))gsap.to(".bg .dots",{yPercent:-8,ease:"none",scrollTrigger:{trigger:document.body,start:"top top",end:"bottom bottom",scrub:.6}});
+  if($(".nx-hero"))gsap.to(".nx-hero",{backgroundPositionY:"70%",ease:"none",scrollTrigger:{trigger:".nx-hero",start:"top top",end:"bottom top",scrub:true}});
+  ScrollTrigger.refresh();
+}
+
+/* ---------- ۸) باز شدن پنجره‌ها: ورود پله‌ای محتوا ---------- */
+new MutationObserver(function(ms){
+  ms.forEach(function(m){
+    var t=m.target;
+    if(!(t.classList&&t.classList.contains("modal")&&t.classList.contains("show"))||t._mo)return;
+    t._mo=1;setTimeout(function(){t._mo=0},600);
+    var items=$$(".card-head,.sub-title,.tiles,.search-box,.sum-row,.chips,.actions",t).slice(0,10);
+    gsap.from(items,{opacity:0,y:18,duration:.55,stagger:.045,ease:"power3.out",delay:.12,clearProps:"opacity,transform"});
+  });
+}).observe(document.body,{attributes:true,subtree:true,attributeFilter:["class"]});
+
+/* دکمه‌هایی که بعداً ساخته می‌شن (فعالیت‌ها، نمودارها، برترین‌ها) */
+new MutationObserver(function(){if(FINE)$$(".nx-top .pill-btn,.nx-ib").forEach(magnet)})
+  .observe($(".nx-top")||document.body,{childList:true,subtree:!$(".nx-top")});
+
+/* شروع: وقتی مدیر وارد شد */
+if(app&&!app.hidden)setTimeout(intro,250);
+else if(app)new MutationObserver(function(m,o){if(!app.hidden){o.disconnect();setTimeout(intro,250)}}).observe(app,{attributes:true,attributeFilter:["hidden"]});
+})();
+</script>
 </body>
 </html>
