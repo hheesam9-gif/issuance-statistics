@@ -8982,7 +8982,7 @@ else if(app)new MutationObserver(function(m,o){if(!app.hidden){o.disconnect();se
      روی نمودار روند صدور، روند به تفکیک گروه، روند سرگروه‌ها و مینی‌نمودار کارت‌های آمار اعمال می‌شه.
      ===================================================================== -->
 <style id="cm-style">
-.az-chart svg *,#gtChart svg *,#ldChart svg *{transform-box:fill-box}
+
 .az-tip{backdrop-filter:blur(14px) saturate(150%);-webkit-backdrop-filter:blur(14px) saturate(150%);
   background:rgba(5,11,34,.82)!important;border-color:color-mix(in srgb,var(--accent1) 45%,var(--card-border))!important;
   box-shadow:0 18px 40px -10px rgba(0,0,0,.6),0 0 26px -6px var(--glow)!important;border-radius:14px!important}
@@ -9020,10 +9020,11 @@ function animate(svg,spark){
       onComplete:function(){p.style.strokeDasharray="";p.style.strokeDashoffset=""}},.15+i*.18);
   });
   if(areas.length)tl.from(areas,{opacity:0,duration:1,stagger:.12},.7);
-  if(dots.length)tl.from(dots,{scale:0,opacity:0,duration:.45,ease:"back.out(2.5)",stagger:{each:.015,from:"start"}},.9);
+  if(dots.length)tl.from(dots,{attr:{r:0},opacity:0,duration:.45,ease:"back.out(2.5)",stagger:{each:.015,from:"start"}},.9);
 
   /* نقطه‌ی نبض‌دار روی آخرین مقدار هر خط */
   tl.add(function(){
+  if(spark)return;
     lines.slice(0,3).forEach(function(p){
       try{
         var pt=p.getPointAtLength(p.getTotalLength()),col=p.getAttribute("stroke")||"#38b6ff";
@@ -9033,7 +9034,9 @@ function animate(svg,spark){
         ring.setAttribute("r",spark?3:5);ring.setAttribute("fill",col);ring.setAttribute("opacity",".5");
         dot.setAttribute("r",spark?2:3.2);dot.setAttribute("fill","#fff");dot.setAttribute("stroke",col);dot.setAttribute("stroke-width","1.6");
         g.append(ring,dot);svg.appendChild(g);
-        gsap.fromTo(ring,{scale:1,opacity:.55},{scale:3.2,opacity:0,duration:1.6,repeat:-1,ease:"power1.out",transformOrigin:"50% 50%"});
+        var r0=5;
+        gsap.fromTo(ring,{attr:{r:r0},opacity:.55},{attr:{r:r0*3.2},opacity:0,duration:1.6,repeat:-1,ease:"power1.out",
+          onRepeat:function(){if(!ring.isConnected)this.kill()}});
         gsap.from(g,{opacity:0,duration:.4});
       }catch(e){}
     });
