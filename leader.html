@@ -884,7 +884,7 @@ html.lenis,html.lenis body{height:auto}
 /* پرده‌ی ورود (ادامه‌ی دایره‌ی صفحه‌ی ورود) */
 #lpCurtain{position:fixed;inset:0;z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
   background:linear-gradient(135deg,var(--a1),var(--a2));color:#fff}
-.lp-ci{width:min(50vw,220px)}
+.lp-ci{width:78px;height:78px;border-radius:24px;display:grid;place-items:center;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.45);box-shadow:0 0 50px rgba(255,255,255,.35)}
 .lp-ci video{display:block;width:100%;height:auto}
 .lp-ci svg{width:38px;height:38px;fill:none;stroke:#fff;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 #lpCurtain b{font-size:46px;font-weight:700;font-variant-numeric:tabular-nums;direction:ltr}
@@ -941,7 +941,7 @@ var CLR="transform,opacity,visibility,transition";
 
 /* ---------- ۱) پرده‌ی ورود ---------- */
 var cur=document.createElement("div");cur.id="lpCurtain";
-cur.innerHTML='<div class="lp-ci"><video src="intro.webm" autoplay muted playsinline loop></video></div><b id="lpPct">0</b><small>در حال آماده‌سازی پنل سرگروه</small>';
+cur.innerHTML='<div class="lp-ci"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div><b id="lpPct">0</b><small>در حال آماده‌سازی پنل سرگروه</small>';
 document.body.appendChild(cur);
 var pct=$("#lpPct");
 
@@ -1036,10 +1036,31 @@ function reveal(){
   if(played)return;played=true;
   var o={v:0},tl=gsap.timeline();
   nt("#nav > *");
-  tl.to(o,{v:100,duration:1,ease:"power2.inOut",onUpdate:function(){pct.textContent=Math.round(o.v)}})
-    .to(".lp-ci",{scale:1.05,duration:1,ease:"power2.inOut"},0)
-    .to(cur,{clipPath:"inset(0% 0% 100% 0%)",duration:.95,ease:"expo.inOut"},1.1)
-    .add(function(){cur.remove();if(lenis)lenis.start();ready=true;scrollReveals();if(kpiPending)kpiIn();ScrollTrigger.refresh()},2.1)
+  var hole={r:0};
+  function burst(){
+    var ic=$(".lp-ci"),b=ic.getBoundingClientRect(),cx=b.left+b.width/2,cy=b.top+b.height/2;
+    var ring=document.createElement("div");
+    ring.style.cssText="position:fixed;left:"+(cx-30)+"px;top:"+(cy-30)+"px;width:60px;height:60px;border-radius:50%;border:3px solid #fff;pointer-events:none;z-index:1001";
+    cur.appendChild(ring);
+    gsap.fromTo(ring,{scale:.3,opacity:1},{scale:16,opacity:0,duration:.9,ease:"power2.out",onComplete:function(){ring.remove()}});
+    for(var i=0;i<36;i++){
+      var p=document.createElement("div"),s=4+Math.random()*9;
+      p.style.cssText="position:fixed;left:"+(cx-s/2)+"px;top:"+(cy-s/2)+"px;width:"+s+"px;height:"+s+"px;border-radius:"+(Math.random()>.5?"50%":"2px")+";background:"+(i%3?"#fff":"#2fd3a7")+";pointer-events:none;z-index:1001;box-shadow:0 0 12px rgba(255,255,255,.8)";
+      cur.appendChild(p);
+      var a=Math.random()*Math.PI*2,d=140+Math.random()*320;
+      gsap.to(p,{x:Math.cos(a)*d,y:Math.sin(a)*d,rotation:Math.random()*540-270,scale:0,opacity:0,duration:.7+Math.random()*.5,ease:"power3.out",onComplete:function(){this.targets()[0].remove()}});
+    }
+  }
+  tl.to(o,{v:100,duration:1.2,ease:"power2.inOut",onUpdate:function(){pct.textContent=Math.round(o.v)}})
+    .to(".lp-ci",{rotation:360,scale:1.15,duration:1.2,ease:"back.inOut(2)"},0)
+    .add(burst,1.2)
+    .to(".lp-ci",{scale:2.4,autoAlpha:0,duration:.3,ease:"power3.in"},1.2)
+    .to("#lpPct,#lpCurtain small",{scale:1.5,autoAlpha:0,duration:.3,ease:"power2.in"},1.2)
+    .to(hole,{r:Math.hypot(innerWidth,innerHeight)/2+80,duration:.85,ease:"power2.in",onUpdate:function(){
+      var m="radial-gradient(circle at 50% 50%,transparent "+hole.r+"px,#000 "+(hole.r+2)+"px)";
+      cur.style.webkitMaskImage=m;cur.style.maskImage=m;
+    }},1.35)
+    .add(function(){cur.remove();if(lenis)lenis.start();ready=true;scrollReveals();if(kpiPending)kpiIn();ScrollTrigger.refresh()},2.25)
     .from(".top",{yPercent:-100,duration:.8,ease:"expo.out",clearProps:"transform"},1.4)
     .from("#nav > *",{x:70,autoAlpha:0,duration:.7,stagger:.05,ease:"power3.out",clearProps:CLR},1.5)
     .from("main > .chips button",{y:18,autoAlpha:0,duration:.6,stagger:.04,ease:"power3.out",clearProps:CLR},1.7)
