@@ -942,6 +942,7 @@ var CLR="transform,opacity,visibility,transition";
 /* ---------- ۱) پرده‌ی ورود ---------- */
 var cur=document.createElement("div");cur.id="lpCurtain";
 cur.innerHTML='<div class="lp-ci"><video src="intro.mp4" autoplay muted playsinline loop></video></div><b id="lpPct">0</b><small>در حال آماده‌سازی پنل سرگروه</small>';
+document.body.appendChild(cur);
 var pct=$("#lpPct");
 
 /* ---------- ۲) Lenis: اسکرول نرم هماهنگ با GSAP ---------- */
