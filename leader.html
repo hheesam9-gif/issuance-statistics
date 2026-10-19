@@ -884,7 +884,8 @@ html.lenis,html.lenis body{height:auto}
 /* پرده‌ی ورود (ادامه‌ی دایره‌ی صفحه‌ی ورود) */
 #lpCurtain{position:fixed;inset:0;z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
   background:linear-gradient(135deg,var(--a1),var(--a2));color:#fff}
-.lp-ci{width:78px;height:78px;border-radius:24px;display:grid;place-items:center;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.45);box-shadow:0 0 50px rgba(255,255,255,.35)}
+.lp-ci{width:min(78vw,380px);border-radius:24px;overflow:hidden;border:1px solid rgba(255,255,255,.45);box-shadow:0 0 50px rgba(255,255,255,.35)}
+.lp-ci video{display:block;width:100%;height:auto}
 .lp-ci svg{width:38px;height:38px;fill:none;stroke:#fff;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 #lpCurtain b{font-size:46px;font-weight:700;font-variant-numeric:tabular-nums;direction:ltr}
 #lpCurtain small{font-size:13px;opacity:.85}
@@ -940,8 +941,7 @@ var CLR="transform,opacity,visibility,transition";
 
 /* ---------- ۱) پرده‌ی ورود ---------- */
 var cur=document.createElement("div");cur.id="lpCurtain";
-cur.innerHTML='<div class="lp-ci"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div><b id="lpPct">0</b><small>در حال آماده‌سازی پنل سرگروه</small>';
-document.body.appendChild(cur);
+cur.innerHTML='<div class="lp-ci"><video src="intro.mp4" autoplay muted playsinline loop></video></div><b id="lpPct">0</b><small>در حال آماده‌سازی پنل سرگروه</small>';
 var pct=$("#lpPct");
 
 /* ---------- ۲) Lenis: اسکرول نرم هماهنگ با GSAP ---------- */
@@ -1036,7 +1036,7 @@ function reveal(){
   var o={v:0},tl=gsap.timeline();
   nt("#nav > *");
   tl.to(o,{v:100,duration:1,ease:"power2.inOut",onUpdate:function(){pct.textContent=Math.round(o.v)}})
-    .to(".lp-ci",{rotation:360,scale:1.15,duration:1,ease:"back.inOut(2)"},0)
+    .to(".lp-ci",{scale:1.05,duration:1,ease:"power2.inOut"},0)
     .to(cur,{clipPath:"inset(0% 0% 100% 0%)",duration:.95,ease:"expo.inOut"},1.1)
     .add(function(){cur.remove();if(lenis)lenis.start();ready=true;scrollReveals();if(kpiPending)kpiIn();ScrollTrigger.refresh()},2.1)
     .from(".top",{yPercent:-100,duration:.8,ease:"expo.out",clearProps:"transform"},1.4)
