@@ -9059,5 +9059,157 @@ boot();
 new MutationObserver(boot).observe(document.body,{childList:true,subtree:true});
 })();
 </script>
+<!-- =====================================================================
+     پنل مدیریت: لایه‌ی جزئیات ریز (GSAP). بعد از admin-motion و admin-charts-motion، درست قبل از </body>.
+     ===================================================================== -->
+<style id="dt-style">
+::selection{background:color-mix(in srgb,var(--accent1) 55%,transparent);color:#fff}
+input,textarea{caret-color:var(--accent2)}
+:where(button,input,textarea,select,[role=button]):focus-visible{outline:2px solid var(--accent2);outline-offset:3px}
+
+/* حرکت فنری نشانگر تب‌ها و سکمنت‌ها */
+.main-tabs .tab-ind,.third-tabs .tab-ind,.tp-seg .tp-ind{transition-timing-function:cubic-bezier(.34,1.45,.5,1)!important;transition-duration:.55s!important}
+
+/* ریپل کلیک */
+.dt-rp{position:absolute;border-radius:50%;pointer-events:none;width:14px;height:14px;margin:-7px 0 0 -7px;z-index:0;
+  background:rgba(255,255,255,.38);animation:dtRp .6s ease-out forwards}
+@keyframes dtRp{to{transform:scale(18);opacity:0}}
+
+/* توست با فنر (از خاصیت scale مستقل استفاده می‌کنه تا با translate قبلی تداخل نکنه) */
+.toast.show{animation:dtToast .55s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes dtToast{from{scale:.86}60%{scale:1.035}to{scale:1}}
+.toast.show.ok{border-color:color-mix(in srgb,var(--ok) 55%,var(--card-border))}
+.toast.show.error{border-color:color-mix(in srgb,var(--error) 55%,var(--card-border))}
+
+/* برجهش نشان‌ها وقتی عدد عوض می‌شه */
+.dt-bump{animation:dtBump .6s cubic-bezier(.3,1.6,.5,1)}
+@keyframes dtBump{0%{scale:1}35%{scale:1.55}100%{scale:1}}
+
+/* جزئیات کوچک */
+.tile{transition:transform .3s cubic-bezier(.2,.9,.3,1.3),border-color .25s,box-shadow .25s}
+.tile:hover{transform:translateY(-3px);border-color:var(--accent1);box-shadow:0 12px 26px -12px var(--glow)}
+.nx-shell:not(.nx-collapsed) .nx-side .menu-item .menu-item-text,
+.nx-shell:not(.nx-collapsed) .nx-side .tab .sb-lb{transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+.nx-shell:not(.nx-collapsed) .nx-side .menu-item:hover .menu-item-text,
+.nx-shell:not(.nx-collapsed) .nx-side .tab:hover .sb-lb{transform:translateX(-4px)}
+.user-row .name,.err-user,.nl-u{transition:color .2s,letter-spacing .25s}
+.user-row:hover .name{color:var(--accent2);letter-spacing:.3px}
+.delete-btn,.resolve-btn,.del-btn{transition:transform .25s cubic-bezier(.3,1.6,.5,1),background .2s}
+.delete-btn:hover{transform:scale(1.2) rotate(-6deg)}
+.delete-btn:active{transform:scale(.88)}
+input[type=checkbox]{transition:transform .25s cubic-bezier(.3,1.6,.5,1)}
+input[type=checkbox]:active{transform:scale(.8)}
+.hint,#msg,#bulkMsg,#periodMsg{transition:color .3s}
+@media(prefers-reduced-motion:reduce){.toast.show,.dt-bump,.dt-rp{animation:none!important}}
+</style>
+
+<script id="dt-script">
+(function(){
+"use strict";
+if(!window.gsap||matchMedia("(prefers-reduced-motion:reduce)").matches)return;
+var $=function(s,r){return(r||document).querySelector(s)};
+var $$=function(s,r){return[].slice.call((r||document).querySelectorAll(s))};
+
+/* ---------- ۱) ریپل روی دکمه‌ها ---------- */
+var RIP=".actions button,button.full,button.chip,.chip-btn,.sort-btn,.tab,.menu-item,.resolve-btn,.del-btn,.third-tabs button,.tp-seg button,.ld-f button";
+document.addEventListener("pointerdown",function(e){
+  var b=e.target.closest&&e.target.closest(RIP);
+  if(!b||b.disabled)return;
+  var cs=getComputedStyle(b);
+  if(cs.position==="static")b.style.position="relative";
+  if(cs.overflow!=="hidden")b.style.overflow="hidden";
+  var r=b.getBoundingClientRect(),s=document.createElement("span");
+  s.className="dt-rp";s.style.left=(e.clientX-r.left)+"px";s.style.top=(e.clientY-r.top)+"px";
+  b.appendChild(s);setTimeout(function(){s.remove()},650);
+},{passive:true});
+
+/* ---------- ۲) ردیف‌های لیست: ورود پله‌ای هر بار که لیست دوباره ساخته می‌شه ---------- */
+var LISTS="#userList,#history,#userErrList,#allErrList,#annAdminList,#periodList,#ordSavedList,#usersMgmtList,#bulkUserList,#ordList,#zeroList";
+function rows(list){
+  if(list.closest(".gp-scroll"))return; /* پنجره‌های گروه‌ها انیمیشن خودشون رو دارن */
+  var items=$$(".user-row,.row,.err-item,.ann-item",list).filter(function(r){return !r._d}).slice(0,14);
+  if(!items.length)return;
+  items.forEach(function(r){r._d=1});
+  gsap.from(items,{opacity:0,x:22,duration:.5,stagger:.032,ease:"power3.out",clearProps:"opacity,transform"});
+}
+function attachLists(){
+  $$(LISTS).forEach(function(l){
+    if(l._dl)return;l._dl=1;var t=null;
+    new MutationObserver(function(){clearTimeout(t);t=setTimeout(function(){rows(l)},20)}).observe(l,{childList:true});
+    rows(l);
+  });
+}
+attachLists();
+new MutationObserver(attachLists).observe(document.body,{childList:true,subtree:true});
+
+/* ---------- ۳) پنل کاربر (#panel) و جابه‌جایی تب‌های آمار/مغایرت ---------- */
+var panel=$("#panel");
+if(panel)new MutationObserver(function(){
+  if(!panel.classList.contains("show")||panel._o)return;
+  panel._o=1;setTimeout(function(){panel._o=0},400);
+  gsap.from(panel,{opacity:0,y:20,duration:.5,ease:"power3.out",clearProps:"opacity,transform"});
+  gsap.from($$(".panel-head,.tabs,.hint,.form-row",panel),{opacity:0,y:12,duration:.45,stagger:.06,delay:.1,ease:"power3.out",clearProps:"opacity,transform"});
+}).observe(panel,{attributes:true,attributeFilter:["class"]});
+
+["paneStats","paneErrors"].forEach(function(id){
+  var p=document.getElementById(id);if(!p)return;
+  new MutationObserver(function(){
+    if(p.hidden)return;
+    gsap.from(p,{opacity:0,x:-18,duration:.4,ease:"power3.out",clearProps:"opacity,transform"});
+  }).observe(p,{attributes:true,attributeFilter:["hidden"]});
+});
+
+/* پیش‌نمایش‌ها (تایل‌ها) وقتی باز می‌شن */
+["bulkPreview","periodPreview","ordPreview","ldPreview","pwPreview","bulkUserPreview"].forEach(function(id){
+  var el=document.getElementById(id);if(!el)return;
+  new MutationObserver(function(){
+    var on=el.classList.contains("show")||el.style.display==="block";
+    if(!on||el._p)return;el._p=1;setTimeout(function(){el._p=0},500);
+    gsap.from($$(".tile",el),{opacity:0,y:18,scale:.88,duration:.55,stagger:.08,ease:"back.out(2)",clearProps:"opacity,transform"});
+    gsap.from($$(".preview-head,details.fold,.note,.actions",el),{opacity:0,y:10,duration:.4,stagger:.05,delay:.2,clearProps:"opacity,transform"});
+  }).observe(el,{attributes:true,attributeFilter:["class","style"]});
+});
+
+/* ---------- ۴) برجهش نشان‌ها ---------- */
+["errBadge","annBadge","menuBadge","azQe"].forEach(function(id){
+  var el=document.getElementById(id);if(!el)return;
+  var last=el.textContent;
+  new MutationObserver(function(){
+    if(el.textContent===last)return;last=el.textContent;
+    el.classList.remove("dt-bump");void el.offsetWidth;el.classList.add("dt-bump");
+  }).observe(el,{childList:true,characterData:true,subtree:true});
+});
+
+/* ---------- ۵) اسکرول نرم داخل پنجره‌ها و لیست‌ها (چرخ ماوس) ---------- */
+function scroller(n){
+  for(;n&&n!==document.body;n=n.parentElement){
+    var oy=getComputedStyle(n).overflowY;
+    if((oy==="auto"||oy==="scroll")&&n.scrollHeight>n.clientHeight+1)return n;
+  }
+  return null;
+}
+addEventListener("wheel",function(e){
+  if(e.ctrlKey||Math.abs(e.deltaX)>Math.abs(e.deltaY))return;
+  var s=scroller(e.target);
+  if(!s||s===document.documentElement)return;
+  var max=s.scrollHeight-s.clientHeight,cur=s._t!=null?s._t:s.scrollTop;
+  var dy=e.deltaMode===1?e.deltaY*32:e.deltaY;
+  var next=Math.max(0,Math.min(max,cur+dy*.9));
+  if(next===cur&&(cur<=0||cur>=max))return;   /* به لبه رسید: بذار صفحه ادامه بده */
+  e.preventDefault();
+  s._t=next;
+  gsap.to(s,{scrollTop:next,duration:.7,ease:"power3.out",overwrite:true,onComplete:function(){s._t=null}});
+},{passive:false});
+
+/* ---------- ۶) ورود به صفحه‌ی لاگین: ظاهر شدن ورودی‌ها با فنر ---------- */
+var gate=document.getElementById("gate");
+function gateIn(){
+  if(!gate||gate.hidden)return;
+  gsap.from(".gate-input-wrap",{opacity:0,y:14,duration:.55,stagger:.09,delay:.45,ease:"back.out(1.6)",clearProps:"opacity,transform"});
+}
+if(gate)new MutationObserver(gateIn).observe(gate,{attributes:true,attributeFilter:["hidden"]});
+gateIn();
+})();
+</script>
 </body>
 </html>
