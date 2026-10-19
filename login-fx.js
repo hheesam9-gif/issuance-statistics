@@ -92,7 +92,6 @@
       el.style.translate = Math.abs(x) + Math.abs(y) < 0.05 ? "none" : x.toFixed(2) + "px " + y.toFixed(2) + "px";
     });
   }
-  magnet(btn, 0.22, 60);
   magnet($("#themeToggle"), 0.3, 50);
   magnet($(".season-pill"), 0.3, 50);
 
