@@ -884,7 +884,7 @@ html.lenis,html.lenis body{height:auto}
 /* پرده‌ی ورود (ادامه‌ی دایره‌ی صفحه‌ی ورود) */
 #lpCurtain{position:fixed;inset:0;z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
   background:linear-gradient(135deg,var(--a1),var(--a2));color:#fff}
-.lp-ci{width:min(78vw,380px);border-radius:24px;overflow:hidden;border:1px solid rgba(255,255,255,.45);box-shadow:0 0 50px rgba(255,255,255,.35)}
+.lp-ci{width:min(78vw,380px)}
 .lp-ci video{display:block;width:100%;height:auto}
 .lp-ci svg{width:38px;height:38px;fill:none;stroke:#fff;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 #lpCurtain b{font-size:46px;font-weight:700;font-variant-numeric:tabular-nums;direction:ltr}
@@ -941,7 +941,7 @@ var CLR="transform,opacity,visibility,transition";
 
 /* ---------- ۱) پرده‌ی ورود ---------- */
 var cur=document.createElement("div");cur.id="lpCurtain";
-cur.innerHTML='<div class="lp-ci"><video src="intro.mp4" autoplay muted playsinline loop></video></div><b id="lpPct">0</b><small>در حال آماده‌سازی پنل سرگروه</small>';
+cur.innerHTML='<div class="lp-ci"><video src="intro.webm" autoplay muted playsinline loop></video></div><b id="lpPct">0</b><small>در حال آماده‌سازی پنل سرگروه</small>';
 document.body.appendChild(cur);
 var pct=$("#lpPct");
 
