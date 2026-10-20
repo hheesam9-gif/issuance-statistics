@@ -2695,7 +2695,33 @@ $("profSave").addEventListener("click", async () => {
   setProfMsg("✔ اطلاعات ذخیره شد", "ok");
   setTimeout(closeProfile, 900);
 });
-  
+  /* ===== سفارش‌های لحظه‌ای ===== */
+function showLiveToast(o) {
+  const t = document.createElement("div");
+  t.className = "notice banner";
+  t.style.cssText = "position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:300;max-width:360px";
+  t.innerHTML = '<div class="n-body"><div class="n-title"><span>✅ ارسال به مالی</span></div><div class="n-text"></div></div>';
+  t.querySelector(".n-text").textContent = "سفارش " + o.order_number + (o.weight ? " (" + o.weight + ")" : "") + " ارسال شد";
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 5000);
+}
+
+async function startLive() {
+  if (!currentUsername) return;
+  supabaseClient
+    .channel("live-orders-" + currentUsername)
+    .on("postgres_changes",
+      { event: "*", schema: "public", table: "live_orders" },
+      (payload) => {
+        const o = payload.new;
+        if (!o || String(o.username).toLowerCase() !== currentUsername.toLowerCase()) return;
+        showLiveToast(o);
+        loadRank();                 // رتبه به‌روز بشه
+        // اگه پنجره‌ی «سفارش‌های من» بازه، دوباره بارگذاری کن:
+        if (ordRefModal.classList.contains("show")) openOrdRefs();
+      })
+    .subscribe();
+}
   init();
 </script>
   <script>
