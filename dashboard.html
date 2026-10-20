@@ -2982,8 +2982,7 @@ $("profSave").addEventListener("click", async () => {
     .intro { position: fixed; inset: 0; z-index: 200; pointer-events: none; overflow: hidden; }
     .intro-bg { position: absolute; inset: 0; background: linear-gradient(135deg, var(--accent1), var(--accent2)); }
     .intro-fx { position: absolute; inset: 0; pointer-events: none; }
-    .intro-center { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-      display: flex; flex-direction: column; align-items: center; gap: 22px; }
+
     .intro-icon { position: relative; width: 92px; height: 92px; border-radius: 29px; display: grid; place-items: center;
       background: var(--page-base); border: 1px solid color-mix(in srgb, var(--accent1) 55%, transparent);
       box-shadow: 0 20px 50px rgba(0,0,0,.35); }
@@ -2994,7 +2993,9 @@ $("profSave").addEventListener("click", async () => {
       background: linear-gradient(140deg, var(--accent1), var(--accent2)); clip-path: circle(0% at 50% 50%); }
     .intro-ini { position: relative; z-index: 1; font-size: 30px; font-weight: 800; letter-spacing: .5px;
       color: var(--text); direction: ltr; }
-    .intro-id { min-height: 22px; font-size: 15px; font-weight: 700; letter-spacing: 2px; direction: ltr;
+    .intro-center { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+    .intro-id { position: absolute; top: 100%; left: 50%; margin-top: 22px; width: max-content;
+      min-height: 22px; font-size: 15px; font-weight: 700; letter-spacing: 2px; direction: ltr;
       unicode-bidi: isolate; color: var(--text); text-shadow: 0 2px 14px rgba(0,0,0,.35); white-space: nowrap; }
     .intro-flash { position: absolute; width: 240px; height: 240px; margin: -120px 0 0 -120px; border-radius: 50%;
       background: radial-gradient(circle, #fff 0%, rgba(255,255,255,0) 70%); }
@@ -3032,7 +3033,7 @@ $("profSave").addEventListener("click", async () => {
   const circ = (r) => "circle(" + r + "px at " + cx + "px " + cy + "px)";
   gsap.set(ibg, { clipPath: circ(BIG) });
   gsap.set(icon, { autoAlpha: 0, scale: 0.3 });
-  gsap.set(idEl, { autoAlpha: 0, y: 12 });
+  gsap.set(idEl, { autoAlpha: 0, y: 12, xPercent: -50 });
 
   function scramble(node, fin, dur) {
     const ch = "abcdefghijklmnopqrstuvwxyz0123456789_-", o = { p: 0 };
@@ -3083,8 +3084,8 @@ $("profSave").addEventListener("click", async () => {
     .to(ibg, { clipPath: circ(70), duration: 1, ease: "power4.inOut" }, 0)
     /* ۲) نقطه می‌شه آیکون، زیرش آیدی */
     .to(icon, { autoAlpha: 1, scale: 1, duration: 0.7, ease: "back.out(2)" }, 0.65)
-    .to(idEl, { autoAlpha: 1, y: 0, duration: 0.5, ease: "power3.out" }, 0.85)
-    .add(() => scramble(idEl, uname, 0.7), 0.85)
+    .fromTo(idEl, { autoAlpha: 0, y: 12, letterSpacing: "9px" },
+                  { autoAlpha: 1, y: 0, letterSpacing: "2px", duration: 0.8, ease: "power3.out" }, 0.85)
     /* ۳) نارنجی می‌ره تو آیکون و آیکون پر می‌شه */
     .to(ibg, { clipPath: circ(0), duration: 0.45, ease: "power2.in" }, 1.1)
     .to(ifill, { clipPath: "circle(75% at 50% 50%)", duration: 0.5, ease: "power2.out" }, 1.2)
