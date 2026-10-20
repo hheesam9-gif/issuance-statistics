@@ -2966,6 +2966,7 @@ $("profSave").addEventListener("click", async () => {
   setTimeout(() => {
     gsap.set([".toolbar", ".box"], { visibility: "visible" });
     const i = document.querySelector(".intro"); if (i) i.remove();
+    if (tl.paused()) tl.play(0.3);
   }, 6000);
 
   /* =====================  اینترو: نقطه ← آیکون ← انفجار  ===================== */
