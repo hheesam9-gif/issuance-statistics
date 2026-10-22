@@ -1115,6 +1115,33 @@ html.gx2 .payout-modal-box { z-index: 2; }
 .lenis.lenis-smooth { scroll-behavior: auto !important; }
 .lenis.lenis-stopped { overflow: hidden; }
 .lenis.lenis-scrolling { pointer-events: auto; }
+  /* ردیف‌ها: گرید ثابت، بدون شکستن خط */
+.row {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+.row .date { white-space: nowrap; }
+.row .count { align-items: flex-end; min-width: 44px; }
+.row-pay { white-space: nowrap; min-width: 78px; text-align: left; }
+
+/* نشانگر گزارش اتومات: نقطه‌ی کوچیک کنار تاریخ */
+.row.auto .date::after {
+  content: "AUTO";
+  margin-inline-start: 8px;
+  font-size: 9px; font-weight: 700; letter-spacing: .5px;
+  padding: 2px 6px; border-radius: 6px;
+  color: var(--accent2);
+  border: 1px solid color-mix(in srgb, var(--accent2) 60%, transparent);
+  vertical-align: middle;
+}
+
+@media (max-width: 420px) {
+  .row { grid-template-columns: 1fr auto auto; }
+  .row-pay { grid-column: 1 / -1; text-align: right; }
+}
 </style>
 
 </head>
@@ -1840,9 +1867,8 @@ function dayPay(count, dateStr) {
       const fill = el("span", "fill");
       const dateEl = el("span", "date", it.date);
       if (it.auto) {
-        const au = el("span", null, "گزارش اتومات");
-        au.style.cssText = "font-size:10px;margin-inline-start:8px;padding:2px 7px;border-radius:6px;color:var(--accent2);border:1px solid var(--accent2);direction:rtl;display:inline-block";
-        dateEl.appendChild(au);
+        div.classList.add("auto");
+        div.title = "گزارش اتومات (از شیت)";
       }
       const tier = getTier(it.count);
       const tierEl = el("span", "tier-badge", tier.label);
