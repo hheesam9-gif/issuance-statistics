@@ -1839,6 +1839,11 @@ function dayPay(count, dateStr) {
 
       const fill = el("span", "fill");
       const dateEl = el("span", "date", it.date);
+      if (it.auto) {
+        const au = el("span", null, "گزارش اتومات");
+        au.style.cssText = "font-size:10px;margin-inline-start:8px;padding:2px 7px;border-radius:6px;color:var(--accent2);border:1px solid var(--accent2);direction:rtl;display:inline-block";
+        dateEl.appendChild(au);
+      }
       const tier = getTier(it.count);
       const tierEl = el("span", "tier-badge", tier.label);
       tierEl.style.setProperty("--tier-color", tier.color);
@@ -2501,7 +2506,7 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closePayou
     loadLastUpdate();
     const { data, error } = await supabaseClient
       .from("orders")
-      .select("order_date, order_count")
+      .select("order_date, order_count, source")
       .eq("username", username);
 
     const listEl = $("list");
@@ -2529,6 +2534,7 @@ payoutBtn.disabled = false;
 
     ORDER_ITEMS = asc.map((r, i) => ({
       date: r.order_date,
+      auto: r.source === "sheet",
       count: counts[i],
       delta: i > 0 ? Math.round((counts[i] - counts[i - 1]) * 100) / 100 : null
     })).reverse();
