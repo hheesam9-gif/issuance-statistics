@@ -1526,7 +1526,7 @@ button.sort-btn.active { background: linear-gradient(135deg, var(--accent1), var
       setBulkMsg("در حال ذخیره... " + done + " از " + pendingRows.length);
 
       const { error } = await supabaseClient
-        .from("orders").upsert(batch, { onConflict: "username,order_date" });
+        .from("orders").upsert(batch.map(r => ({ ...r, source: "manual" })), { onConflict: "username,order_date" });
 
       if (error) {
         setBulkMsg("ثبت متوقف شد (" + done + " نفر ثبت شده بود): " + (error.message || "خطای نامشخص"), "error");
@@ -1896,7 +1896,7 @@ async function searchUsers() {
   async function loadHistory(username) {
     const { data, error } = await supabaseClient
       .from("orders")
-      .select("order_date, order_count")
+      .select("order_date, order_count, source")
       .eq("username", username)
       .order("order_date", { ascending: true });
 
@@ -1924,6 +1924,12 @@ async function searchUsers() {
       vals.className = "vals";
       const countEl = document.createElement("b");
       countEl.textContent = fmt(r.order_count);
+      if (r.source === "sheet") {
+        const tg = document.createElement("span");
+        tg.textContent = "گزارش اتومات";
+        tg.style.cssText = "font-size:10px;color:var(--accent2);border:1px solid var(--accent2);border-radius:6px;padding:1px 6px;";
+        vals.appendChild(tg);
+      }
       const del = document.createElement("button");
       del.className = "delete-btn";
       del.title = "حذف این تاریخ";
@@ -1976,7 +1982,7 @@ async function searchUsers() {
 
     const { error } = await supabaseClient
       .from("orders")
-      .upsert({ username: selectedUsername, order_date: date, order_count: count }, { onConflict: "username,order_date" });
+      .upsert({ username: selectedUsername, order_date: date, order_count: count, source: "manual" }, { onConflict: "username,order_date" });
 
     if (error) {
       msgEl.textContent = "ذخیره نشد، دوباره امتحان کنید";
@@ -2321,7 +2327,10 @@ async function searchUsers() {
       $("wipeCancel").disabled = false;
       return;
     }
-
+    await supabaseClient.from("app_settings").upsert(
+      { key: "sheet_sync_cutoff", value: todayJalali(), updated_at: new Date().toISOString() },
+      { onConflict: "key" }
+    );
     const alsoErrors = $("wipeErrors").checked;
     if (alsoErrors) {
       const r = await supabaseClient.from("errors").delete().not("id", "is", null);
