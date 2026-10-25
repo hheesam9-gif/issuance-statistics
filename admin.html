@@ -1000,6 +1000,11 @@ button.sort-btn.active { background: linear-gradient(135deg, var(--accent1), var
       <input class="ltr" id="usersMgmtSearch" type="text" placeholder="جستجوی نام کاربری..." autocomplete="off" spellcheck="false" />
     </div>
     <div class="history" id="usersMgmtList" style="max-height:280px;"></div>
+<div class="actions" style="margin-top:10px;">
+  <label class="check" style="margin:0; flex:1;"><input type="checkbox" id="mgmtSelectAll" /> انتخاب همه (نتایج فعلی)</label>
+  <button type="button" class="btn-danger" id="mgmtDeleteBtn" disabled><span>حذف انتخاب‌شده‌ها</span></button>
+</div>
+<div id="mgmtMsg" role="status" aria-live="polite" style="text-align:center; font-size:13px; min-height:18px; margin-top:8px; color:var(--text-dim);"></div>
 
     <div class="sub-title">
       <span>نماینده‌های بدون صدور (صفر)</span>
