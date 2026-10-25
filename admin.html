@@ -2374,6 +2374,7 @@ function setUsersMsg(text, cls) {
 }
 
 let allMgmtUsers = [];
+let mgmtSel = new Set();
 
 function renderUserMgmtRow(u) {
   const row = document.createElement("div");
@@ -2400,20 +2401,88 @@ function renderUserMgmtRow(u) {
 
   vals.appendChild(editBtn);
   vals.appendChild(delBtn);
-  row.appendChild(name);
+  const left = document.createElement("label");
+  left.className = "check";
+  left.style.margin = "0";
+  const cb = document.createElement("input");
+  cb.type = "checkbox";
+  cb.className = "mgmt-cb";
+  cb.checked = mgmtSel.has(u.id);
+  cb.addEventListener("change", () => {
+    cb.checked ? mgmtSel.add(u.id) : mgmtSel.delete(u.id);
+    updateMgmtBulk();
+  });
+  left.appendChild(cb);
+  left.appendChild(name);
+  row.appendChild(left);
   row.appendChild(vals);
   return row;
+}
+
+function visibleMgmtUsers() {
+  const term = ($("usersMgmtSearch").value || "").trim().toLowerCase();
+  return term ? allMgmtUsers.filter(u => u.username.toLowerCase().includes(term)) : allMgmtUsers;
+}
+
+function updateMgmtBulk() {
+  const n = mgmtSel.size;
+  $("mgmtDeleteBtn").disabled = n === 0;
+  $("mgmtDeleteBtn").querySelector("span").textContent = "حذف انتخاب‌شده‌ها" + (n ? " (" + n + ")" : "");
+  const vis = visibleMgmtUsers();
+  $("mgmtSelectAll").checked = vis.length > 0 && vis.every(u => mgmtSel.has(u.id));
 }
 
 function renderUsersMgmtList(filterTerm) {
   const list = $("usersMgmtList");
   list.replaceChildren();
-  if (!allMgmtUsers.length) { list.appendChild(hintEl("نماینده‌ای ثبت نشده")); return; }
+  mgmtSel = new Set([...mgmtSel].filter(id => allMgmtUsers.some(u => u.id === id)));
+  if (!allMgmtUsers.length) { list.appendChild(hintEl("نماینده‌ای ثبت نشده")); updateMgmtBulk(); return; }
   const term = (filterTerm || "").trim().toLowerCase();
   const filtered = term ? allMgmtUsers.filter(u => u.username.toLowerCase().includes(term)) : allMgmtUsers;
-  if (!filtered.length) { list.appendChild(hintEl("نماینده‌ای با این نام پیدا نشد")); return; }
+  if (!filtered.length) { list.appendChild(hintEl("نماینده‌ای با این نام پیدا نشد")); updateMgmtBulk(); return; }
   filtered.forEach(u => list.appendChild(renderUserMgmtRow(u)));
+  updateMgmtBulk();
 }
+
+$("mgmtSelectAll").addEventListener("change", (e) => {
+  visibleMgmtUsers().forEach(u => e.target.checked ? mgmtSel.add(u.id) : mgmtSel.delete(u.id));
+  renderUsersMgmtList($("usersMgmtSearch").value);
+});
+
+$("mgmtDeleteBtn").addEventListener("click", async () => {
+  const targets = allMgmtUsers.filter(u => mgmtSel.has(u.id));
+  if (!targets.length) return;
+  if (!confirm(targets.length + " نماینده به‌طور کامل حذف بشن (حساب و آمارشون)؟ این کار برگشت نداره.")) return;
+
+  $("mgmtDeleteBtn").disabled = true;
+  $("mgmtSelectAll").disabled = true;
+  const msg = $("mgmtMsg");
+  let done = 0;
+  const failed = [];
+  const deleted = new Set();
+  for (const u of targets) {
+    msg.style.color = "var(--text-dim)";
+    msg.textContent = "در حال حذف... " + done + " از " + targets.length;
+    try {
+      await callAdminFn({ action: "delete", userId: u.id });
+      deleted.add(u.id);
+      done++;
+    } catch (e) {
+      failed.push(u.username + ": " + e.message);
+    }
+  }
+  msg.textContent = failed.length
+    ? "✔ " + done + " نفر حذف شد؛ " + failed.length + " ناموفق (" + failed.slice(0, 3).join(" | ") + ")"
+    : "✔ " + done + " نماینده حذف شد";
+  msg.style.color = failed.length ? "var(--error)" : "var(--ok)";
+
+  allMgmtUsers = allMgmtUsers.filter(u => !deleted.has(u.id));
+  deleted.forEach(id => mgmtSel.delete(id));
+  $("mgmtSelectAll").disabled = false;
+  renderUsersMgmtList($("usersMgmtSearch").value);
+  loadStats();
+  searchUsers();
+});
 
 async function loadUsersMgmtList() {
   const list = $("usersMgmtList");
