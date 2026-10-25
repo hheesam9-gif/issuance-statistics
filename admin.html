@@ -9309,6 +9309,126 @@ if(gate)new MutationObserver(gateIn).observe(gate,{attributes:true,attributeFilt
 gateIn();
 })();
 </script>
-  
+  <script id="ldx-script">
+(function(){
+"use strict";
+var $=function(i){return document.getElementById(i)};
+var low=function(s){return String(s||"").trim().toLowerCase()};
+
+var CFG=[
+ {search:"ldSearch",  chips:"ldChips",   table:"agent_leaders",         grp:null,      tabs:"gpTabs", title:"گروه ثالث"},
+ {search:"naLdSearch",chips:"naLdChips", table:"agent_leaders_nonauto", grp:"nonauto", tabs:"naTabs", title:"گروه غیر خودرویی"},
+ {search:"bdLdSearch",chips:"bdLdChips", table:"agent_leaders_body",     grp:"body",    tabs:"bdTabs", title:"گروه بدنه"}
+];
+
+async function raw(p){
+  var s=(await supabaseClient.auth.getSession()).data.session;
+  var res=await fetch(ADMIN_FN_URL,{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+s.access_token},body:JSON.stringify(p)});
+  var j=await res.json();
+  if(!res.ok)throw new Error(j.error||"خطای نامشخص");
+  return j;
+}
+async function all(table,cols){
+  var r=[],f=0;
+  for(;;){
+    var x=await supabaseClient.from(table).select(cols).range(f,f+999);
+    if(x.error)throw x.error;
+    r.push.apply(r,x.data);
+    if(x.data.length<1000)break;f+=1000;
+  }
+  return r;
+}
+async function soft(t,c){try{return await all(t,c)}catch(e){return[]}}
+
+async function run(c,name){
+  var btn=c.btn;btn.disabled=true;
+  try{
+    var res=await Promise.all([
+      all(c.table,"username,leaders"),all("agent_groups","username,grp"),raw({action:"list"}),
+      soft("leaders","username"),soft("leaders_nonauto","username"),soft("leaders_body","username")
+    ]);
+    var gm=new Map(res[1].map(function(x){return[low(x.username),x.grp]}));
+    var ids=new Map((res[2].data||[]).map(function(u){return[low(u.username),u.id]}));
+    var skip=new Set(["h-abbasi"]);
+    res[3].concat(res[4],res[5]).forEach(function(x){skip.add(low(x.username))});
+
+    var targets=[];
+    res[0].forEach(function(r){
+      var k=low(r.username),g=gm.get(k);
+      if(skip.has(k))return;
+      if(c.grp===null?!!g:g!==c.grp)return;           /* فقط همین گروه */
+      var L=(r.leaders||[]).map(function(x){return String(x).trim()});
+      if(L.indexOf(name)<0)return;
+      var id=ids.get(k);if(!id)return;
+      targets.push({u:r.username,id:id,k:k,shared:L.length>1});
+    });
+
+    if(!targets.length){toast("نماینده‌ای برای این سرگروه پیدا نشد","error");btn.disabled=false;return}
+
+    var shared=targets.filter(function(t){return t.shared}).length;
+    if(shared){
+      var all_=confirm(targets.length+" نماینده زیر سرگروه «"+name+"» هست و "+shared+" نفرشون سرگروه دیگه‌ای هم دارن.\n\nOK = همه‌ی "+targets.length+" نفر حذف بشن\nCancel = فقط "+(targets.length-shared)+" نفری که فقط زیر همین سرگروهن");
+      if(!all_)targets=targets.filter(function(t){return !t.shared});
+      if(!targets.length){toast("موردی برای حذف نمونده","error");btn.disabled=false;return}
+    }
+    var typed=prompt("⚠️ "+targets.length+" نماینده‌ی سرگروه «"+name+"» (حساب و آمارشون) برای همیشه حذف می‌شن.\nپیشنهاد: اول از «پایان دوره ← دانلود پشتیبان» CSV بگیر.\n\nبرای تأیید، کلمه‌ی «حذف» رو تایپ کن:");
+    if(typed===null)return;
+    if(typed.trim()!=="حذف"){toast("تأیید نشد؛ چیزی حذف نشد","error");return}
+
+    var done=0,failed=[];
+    for(var i=0;i<targets.length;i++){
+      var t=targets[i];
+      toast("در حال حذف... "+done+" از "+targets.length);
+      try{
+        await raw({action:"delete",userId:t.id});
+        await supabaseClient.from(c.table).delete().eq("username",t.u);
+        if(c.grp!==null)await supabaseClient.from("agent_groups").delete().eq("username",t.k);
+        done++;
+      }catch(e){failed.push(t.u+": "+e.message)}
+    }
+    toast(failed.length?("✔ "+done+" نفر حذف شد؛ "+failed.length+" ناموفق ("+failed.slice(0,3).join(" | ")+")"):("✔ "+done+" نماینده حذف شد"),failed.length?"error":"ok");
+
+    /* بازخوانی لیست‌ها */
+    var tb=$(c.tabs);if(tb){var b=tb.querySelectorAll("button")[1];if(b)b.click()}
+    if(typeof loadStats==="function")loadStats();
+  }catch(e){
+    toast("خطا: "+(e.message||e),"error");
+  }
+  btn.disabled=false;
+}
+
+function setup(c){
+  var s=$(c.search),box=$(c.chips);
+  if(!s||!box)return;
+  var wrap=s.closest(".search-box");if(!wrap)return;
+
+  var bar=document.createElement("div");
+  bar.hidden=true;bar.style.cssText="margin:-6px 0 12px";
+  var btn=document.createElement("button");
+  btn.type="button";btn.className="btn-danger";btn.style.width="100%";btn.style.justifyContent="center";
+  btn.innerHTML='<span></span>';
+  bar.appendChild(btn);
+  wrap.parentNode.insertBefore(bar,wrap.nextSibling);
+  c.btn=btn;
+
+  var cur="";
+  function update(){
+    var term=s.value.trim(),n=0,found=false;
+    box.querySelectorAll(".chip-btn").forEach(function(b){
+      var m=/^(.*)\s\((\d+)\)$/.exec(b.textContent.trim());
+      if(m&&m[1].trim()===term){found=true;n=+m[2]}
+    });
+    cur=term;
+    bar.hidden=!(found&&n>0);
+    if(!bar.hidden)btn.firstChild.textContent="🗑 حذف همه‌ی نماینده‌های سرگروه «"+term+"» ("+n+" نفر)";
+  }
+  btn.addEventListener("click",function(){run(c,cur)});
+  s.addEventListener("input",update);
+  new MutationObserver(update).observe(box,{childList:true});
+  update();
+}
+CFG.forEach(setup);
+})();
+</script>
 </body>
 </html>
