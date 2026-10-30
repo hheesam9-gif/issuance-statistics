@@ -7305,9 +7305,9 @@ button.qx-t:hover .qx-ar{opacity:1;transform:none}
 .tp-head h2{margin:0 0 4px;font-size:20px;font-weight:800}
 .tp-head p{margin:0;font-size:12.5px;color:var(--text-dim)}
 
-.tp-seg{position:relative;display:grid;grid-template-columns:repeat(4,1fr);margin-right:auto;min-width:300px;padding:4px;border-radius:14px;
+.tp-seg{position:relative;display:grid;grid-template-columns:repeat(5,1fr);margin-right:auto;min-width:360px;padding:4px;border-radius:14px;
   background:var(--row-bg);border:1px solid var(--row-border)}
-.tp-seg .tp-ind{position:absolute;top:4px;bottom:4px;right:4px;width:calc((100% - 8px)/4);border-radius:10px;
+.tp-seg .tp-ind{position:absolute;top:4px;bottom:4px;right:4px;width:calc((100% - 8px)/5);border-radius:10px;
   background:linear-gradient(135deg,var(--accent1),var(--accent2));box-shadow:0 8px 20px -6px var(--glow);
   transition:transform .4s cubic-bezier(.4,0,.2,1)}
 .tp-seg button{position:relative;z-index:1;padding:8px 10px;border-radius:10px;background:transparent;box-shadow:none;
@@ -7551,7 +7551,7 @@ var GROUPS=[
  {key:"nonauto",title:"گروه غیر خودرویی",sub:"نمایندگان گروه غیر خودرویی",c:"#ffb020",c2:"#ff8a3d",icon:IC.block},
  {key:"body",title:"گروه بدنه",sub:"نمایندگان گروه بدنه",c:"#14d1b8",c2:"#3ddc84",icon:'<path d="M4 15l1.5-5A2 2 0 0 1 7.4 8.5h9.2a2 2 0 0 1 1.9 1.5L20 15v3H4zM4 15h16M7 18v2M17 18v2"/>'}
 ];
-var ORDER=[7,14,30,0],LAB={7:"۷ روز",14:"۱۴ روز",30:"۳۰ روز",0:"کل دوره"};
+var ORDER=[-1,7,14,30,0],LAB={"-1":"امروز",7:"۷ روز",14:"۱۴ روز",30:"۳۰ روز",0:"کل دوره"};
 var range=0;try{var sr=parseInt(localStorage.getItem("admin_top_range"),10);if(ORDER.indexOf(sr)>-1)range=sr}catch(e){}
 var DATA=null,CUR=null,EXP={},busy=false,tmr=null;
 
@@ -7615,7 +7615,15 @@ function pack(map){
   return {list:arr,total:Math.round(tot*100)/100,n:arr.length};
 }
    function compute(n){
-     var set=n>0?new Set(DATA.dates.slice(-n)):null,T=new Map(),N=new Map(),B=new Map();
+     function todayKey(){
+  try{
+    var p=new Intl.DateTimeFormat("en-u-ca-persian-nu-latn",{year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());
+    var g=function(t){return p.find(function(x){return x.type===t}).value};
+    return g("year")+"/"+g("month")+"/"+g("day");
+  }catch(e){return ""}
+}
+function compute(n){
+  var set=n===-1?new Set([todayKey()]):(n>0?new Set(DATA.dates.slice(-n)):null),T=new Map(),N=new Map(),B=new Map();
      DATA.rows.forEach(function(r){
        if(set&&!set.has(r.d))return;
        var g=DATA.gm.get(String(r.u).toLowerCase()),tg=g==="nonauto"?N:(g==="body"?B:(!g?T:null));
