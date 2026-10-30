@@ -7614,8 +7614,7 @@ function pack(map){
   arr.forEach(function(x){tot+=x.v});
   return {list:arr,total:Math.round(tot*100)/100,n:arr.length};
 }
-   function compute(n){
-     function todayKey(){
+function todayKey(){
   try{
     var p=new Intl.DateTimeFormat("en-u-ca-persian-nu-latn",{year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());
     var g=function(t){return p.find(function(x){return x.type===t}).value};
@@ -7624,14 +7623,14 @@ function pack(map){
 }
 function compute(n){
   var set=n===-1?new Set([todayKey()]):(n>0?new Set(DATA.dates.slice(-n)):null),T=new Map(),N=new Map(),B=new Map();
-     DATA.rows.forEach(function(r){
-       if(set&&!set.has(r.d))return;
-       var g=DATA.gm.get(String(r.u).toLowerCase()),tg=g==="nonauto"?N:(g==="body"?B:(!g?T:null));
-       if(!tg)return;
-       tg.set(r.u,(tg.get(r.u)||0)+r.v);
-     });
-     return {third:pack(T),nonauto:pack(N),body:pack(B)};
-   }
+  DATA.rows.forEach(function(r){
+    if(set&&!set.has(r.d))return;
+    var g=DATA.gm.get(String(r.u).toLowerCase()),tg=g==="nonauto"?N:(g==="body"?B:(!g?T:null));
+    if(!tg)return;
+    tg.set(r.u,(tg.get(r.u)||0)+r.v);
+  });
+  return {third:pack(T),nonauto:pack(N),body:pack(B)};
+}
 
 /* ---------- رندر ---------- */
 function countUp(el,to,delay){
